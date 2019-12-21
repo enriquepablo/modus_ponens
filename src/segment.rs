@@ -1,12 +1,12 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-mod constants;
+use crate::constants;
 
 #[derive(Debug)]
-struct Segment {
-    text: String,
-    name: String,
+pub struct Segment {
+    pub text: String,
+    pub name: String,
     start: usize,
     end: usize,
     is_leaf: bool,
@@ -14,7 +14,7 @@ struct Segment {
 }
 
 impl Segment {
-    fn make_segment(name: &str, text: &str, start: usize, is_leaf: bool) -> Segment {
+    pub fn make_segment(name: &str, text: &str, start: usize, is_leaf: bool) -> Segment {
         let end = start + text.len();
         let is_var = name == constants::VAR_RULE_NAME.to_string();
         Segment {
