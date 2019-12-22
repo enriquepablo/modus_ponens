@@ -9,8 +9,8 @@ pub struct Segment {
     pub name: String,
     start: usize,
     end: usize,
-    is_leaf: bool,
-    is_var: bool,
+    pub is_leaf: bool,
+    pub is_var: bool,
 }
 
 impl Segment {
@@ -27,7 +27,7 @@ impl Segment {
         }
     }
 
-    fn make_var(n: u16) -> Segment {
+    pub fn make_var(n: u16) -> Segment {
         let text = format!("<__X{}>", &n);
         Segment::make_segment(constants::VAR_RULE_NAME, &text, 0, true)
     }
