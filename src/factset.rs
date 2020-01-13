@@ -5,134 +5,84 @@ use std::rc::Rc;
 
 use crate::path::Path;
 
-pub struct FSNode<'a> {
-    path: Option<&'a Path<'a>>,
-    logic_children: HashMap<Path<'a>, Rc<RefCell<FSNode<'a>>>>,
-    nonlogic_children: HashMap<Path<'a>, Rc<RefCell<FSNode<'a>>>>,
+#[derive(Debug)]
+struct Node<T> {
+    data: T,
+    children: HashMap<Path, Node<T>>,
 }
 
-impl<'a> fmt::Debug for FSNode<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let path;
-        if self.path.is_none() {
-            path = "ROOT".to_string();
-        } else {
-            path = format!("{}", self.path.expect("no path"));
-        }
-        write!(f, "Node {{ path: {}, logic: {}, nonlogic: {} }}",
-               path, self.logic_children.len(), self.nonlogic_children.len())
+impl<T> Node<T> {
+    fn new(data: T) -> Node<T> {
+        Node { data: data, children: HashMap::new() }
+    }
+
+    fn add_child(&mut self, path: Path, child: Node<T>) {
+        self.children.insert(path, child);
     }
 }
 
-impl<'a> PartialEq for FSNode<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.path == other.path
+#[derive(Debug)]
+struct NodeZipper<T> {
+    node: Node<T>,
+    parent: Option<Box<NodeZipper<T>>>,
+    index_in_parent: usize,
+}
+
+impl<T> NodeZipper<T> {
+    fn child(mut self, index: usize) -> NodeZipper<T> {
+        // Remove the specified child from the node's children.
+        // A NodeZipper shouldn't let its users inspect its parent,
+        // since we mutate the parents
+        // to move the focused nodes out of their list of children.
+        // We use swap_remove() for efficiency.
+        let child = self.node.children.swap_remove(index);
+
+        // Return a new NodeZipper focused on the specified child.
+        NodeZipper {
+            node: child,
+            parent: Some(Box::new(self)),
+            index_in_parent: index,
+        }
+    }
+
+    fn parent(self) -> NodeZipper<T> {
+        // Destructure this NodeZipper
+        let NodeZipper { node, parent, index_in_parent } = self;
+
+        // Destructure the parent NodeZipper
+        let NodeZipper {
+            node: mut parent_node,
+            parent: parent_parent,
+            index_in_parent: parent_index_in_parent,
+        } = *parent.unwrap();
+
+        // Insert the node of this NodeZipper back in its parent.
+        // Since we used swap_remove() to remove the child,
+        // we need to do the opposite of that.
+        parent_node.children.push(node);
+        let len = parent_node.children.len();
+        parent_node.children.swap(index_in_parent, len - 1);
+
+        // Return a new NodeZipper focused on the parent.
+        NodeZipper {
+            node: parent_node,
+            parent: parent_parent,
+            index_in_parent: parent_index_in_parent,
+        }
+    }
+
+    fn finish(mut self) -> Node<T> {
+        while let Some(_) = self.parent {
+            self = self.parent();
+        }
+
+        self.node
     }
 }
 
-impl<'a> Eq for FSNode<'a> {}
-
-impl<'a> FSNode<'a> {
-
-    fn get_fact_leaf(&'a self, paths: &'a Vec<&Path>) -> Option<&'a FSNode<'a>> {
-        let mut parent: Option<&'a FSNode> = None;
-        let mut preparent;
-        let mut reparent;
-        let plen = paths.len();
-        if plen > 0 {
-            parent = Some(self);
-            for i in 0..paths.len() {
-                if parent.is_none() {
-                    break;
-                } else {
-                    let path = paths[i];
-                    preparent = parent.expect("node").nonlogic_children.get(path);
-                    if preparent.is_none() {
-                        preparent = parent.expect("node").logic_children.get(path);
-                    }
-                    if !preparent.is_none() {
-                        reparent = Rc::clone(preparent.expect("node"));
-                        parent = Some(&reparent.borrow_mut());
-                    } else {
-                        parent = None;
-                    }
-                }
-            }
-        }
-        parent
-    }
-
-    fn get_fact_leaf(&'a self, paths: &'a Vec<&Path>) -> Option<&'a FSNode<'a>> {
-        let plen = paths.len();
-        if plen > 0 {
-            let path = paths[0];
-            let mut child = self.nonlogic_children.get(path);
-            if child.is_none() {
-                child = self.logic_children.get(path);
-            }
-            if !child.is_none() {
-                let child_node = &child.expect("rc").borrow_mut();
-                child_node.get_fact_leaf(&paths[1..].to_vec())
-            } else {
-                None
-            }
-        } else {
-            Some(self)
-        }
-    }
-
-    fn follow_or_create_paths(&mut self, paths: &'a [&Path]) {
-        if paths.len() > 0 {
-            let mut node = self;
-            for i in 0..paths.len() {
-                let path = paths[i];
-                let next;
-                if path.value.in_var_range() {
-                    next = node.logic_children.get_mut(path);
-                    if !path.is_leaf() {
-                        let new_paths = path.paths_after(paths, true);
-                        if next.is_none() {
-                            let mut next_paths = new_paths.clone();
-                            next_paths.insert(0, path);
-                            node.create_paths(&next_paths);
-                        } else {
-                            node.follow_or_create_paths(&new_paths);
-                        }
-                        continue;
-                    }
-                } else {
-                    next = node.nonlogic_children.get_mut(path);
-                }
-                if next.is_none() {
-                    node.create_paths(&paths[i..]);
-                    break;
-                }
-                node = &mut next.expect("node").borrow_mut();
-            }
-        }
-    }
-
-    fn create_paths(&mut self, paths: &'a [&Path]) {
-        let mut parent = self;
-        for path in paths {
-            let new_node = Rc::new(RefCell::new(FSNode {
-                path: Some(&path),
-                logic_children: HashMap::new(),
-                nonlogic_children: HashMap::new(),
-            }));
-            if path.value.in_var_range() {
-                parent.logic_children.insert(**path, new_node);
-                if !path.is_leaf() {
-                    let new_paths = path.paths_after(paths, true);
-                    let mut young_parent = new_node.borrow_mut();
-                    young_parent.create_paths(&new_paths);
-                    continue;
-                }
-            } else {
-                parent.nonlogic_children.insert(**path, new_node);
-            }
-        parent = &mut new_node.borrow_mut();
-        }
+impl<T> Node<T> {
+    fn zipper(self) -> NodeZipper<T> {
+        NodeZipper { node: self, parent: None, index_in_parent: 0 }
     }
 }
 
