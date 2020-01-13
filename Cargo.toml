@@ -1,0 +1,9 @@
+[package]
+name = "syntree"
+version = "0.1.0"
+authors = ["Enrique Pérez Arnaud <enrique@cazalla.net>"]
+edition = "2018"
+
+[dependencies]
+pest = "2.1.2"
+config = "0.10.1"
