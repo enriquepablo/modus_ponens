@@ -1,7 +1,6 @@
-use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::fmt;
 
-use crate::constants;
 use crate::segment::Segment;
 
 #[derive(Debug, Clone)]
@@ -38,13 +37,9 @@ impl<'a> Path<'a> {
     pub fn starts_with(&self, path: &Path) -> bool {
         let lself = self.len();
         let lpath = path.len();
-        if lself >= lpath && &self.segments[0..lpath] == &path.segments[0..lpath] {
-            true
-        } else {
-            false
-        }
+        lself >= lpath && &self.segments[0..lpath] == &path.segments[0..lpath]
     }
-    pub fn paths_after(&self, paths: &'a Vec<Path>, try_to_see: bool) -> Vec<&'a Path> {
+    pub fn paths_after(&self, paths: &'a [&Path], try_to_see: bool) -> Vec<&'a Path> {
         let mut seen = false;
         let mut new_paths = Vec::new();
         for path in paths {
@@ -52,11 +47,17 @@ impl<'a> Path<'a> {
                 seen = true;
             } else {
                 if (!try_to_see || seen) && (!path.starts_with(&self) || path.len() == self.len()) {
-                    new_paths.push(path);
+                    new_paths.push(*path);
                 }
             }
         }
         new_paths
+    }
+}
+
+impl<'a> fmt::Display for Path<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<{}>", self.value)
     }
 }
 
@@ -77,6 +78,9 @@ impl<'a> Hash for Path<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::hash_map::DefaultHasher;
+    
+    use crate::constants;
 
     fn calculate_hash<T: Hash>(t: &T) -> u64 {
         let mut s = DefaultHasher::new();
@@ -266,7 +270,7 @@ mod tests {
         let segms5 = vec![segm51, segm52, segm53, segm54, segm55];
         let path5 = Path::make_path(&segms5);
 
-        let paths = vec![path1, path2, path3, path4, path5];
+        let paths = vec![&path1, &path2, &path3, &path4, &path5];
 
         let segm61 = Segment::make_segment("rule-name1", "some text1", 0, false);
         let segm62 = Segment::make_segment("rule-name2", "some text2", 0, false);

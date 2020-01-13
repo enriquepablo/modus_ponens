@@ -1,7 +1,6 @@
 use std::hash::{Hash, Hasher};
 
 use crate::path::Path;
-use crate::segment::Segment;
 
 #[derive(Debug)]
 pub struct Fact<'a> {
@@ -55,6 +54,7 @@ impl<'a> Hash for Fact<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::segment::Segment;
 
     #[test]
     fn fact_1() {

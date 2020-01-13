@@ -1,5 +1,5 @@
-use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::fmt;
 
 use crate::constants;
 
@@ -31,6 +31,16 @@ impl Segment {
         let text = format!("<__X{}>", &n);
         Segment::make_segment(constants::VAR_RULE_NAME, &text, 0, true)
     }
+
+    pub fn in_var_range(&self) -> bool {
+        self.text.starts_with(constants::VAR_RANGE)
+    }
+}
+
+impl fmt::Display for Segment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({} | {})", self.name, self.text)
+    }
 }
 
 impl PartialEq for Segment {
@@ -51,6 +61,7 @@ impl Hash for Segment {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::hash_map::DefaultHasher;
 
     #[test]
     fn make_segment() {

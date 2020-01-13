@@ -4,7 +4,7 @@ use crate::segment::Segment;
 
 pub type Matching<'a> = HashMap<&'a Segment, &'a Segment>;
 
-pub fn invert<'a>(matching: &'a Matching) -> Matching<'a> {
+pub fn invert(matching: Matching) -> Matching {
     let mut inverted: Matching = HashMap::new();
     for (key, value) in matching {
         inverted.insert(value, key);
@@ -36,7 +36,7 @@ mod tests {
 
         let mut matching: Matching = HashMap::new();
         matching.insert(&segm1, &segm2);
-        let inverted = invert(&matching);
+        let inverted = invert(matching);
 
         assert_eq!(*inverted.get(&segm2).expect("bad"), &segm1);
     }
