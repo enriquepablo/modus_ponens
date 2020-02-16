@@ -1,2 +1,2 @@
-pub const VAR_RULE_NAME: &str = "__var__";
-pub const VAR_RANGE: &str = "v_";
+pub const VAR_RULE_NAME: &str = "var";
+pub const VAR_RANGE_PREFIX: &str = "v_";

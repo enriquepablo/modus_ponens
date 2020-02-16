@@ -1,0 +1,11 @@
+knowledge   = { (fact ~ ".")+ }
+
+var         = { "<X" ~ ('0'..'9')+ ~ ">" | "X" ~ ('₀'..'₉') }
+
+pred        = { "ISA" }
+name        = { v_name | var }
+v_name      = { ASCII_ALPHA_LOWER+ }
+fact        = { name ~ pred ~ name }
+
+COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+WHITESPACE  = _{ " " | "\t" | "\r" | "\n" }

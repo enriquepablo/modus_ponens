@@ -1,164 +1,90 @@
 use std::collections::HashMap;
-use std::fmt;
-use std::cell::RefCell;
-use std::rc::Rc;
 
-use crate::path::Path;
+use crate::matching::SynMatching;
+use crate::fact::Fact;
+use crate::facttree::FSNode;
+use crate::parser::parse_text;
 
-#[derive(Debug)]
-struct Node<T> {
-    data: T,
-    children: HashMap<Path, Node<T>>,
+
+pub struct FactSet {
+    pub root: Box<FSNode>,
 }
 
-impl<T> Node<T> {
-    fn new(data: T) -> Node<T> {
-        Node { data: data, children: HashMap::new() }
+
+impl<'a> FactSet {
+    fn new () -> FactSet {
+        FactSet { root: Box::new(FSNode::new()) }
     }
-
-    fn add_child(&mut self, path: Path, child: Node<T>) {
-        self.children.insert(path, child);
+    fn add_fact (self, fact: Fact) -> FactSet {
+        let FactSet { mut root } = self;
+        let mut zipper = root.zipper();
+        let paths = fact.get_all_paths();
+        zipper = zipper.follow_and_create_paths(&paths);
+        root = zipper.finish();
+        FactSet { root }
+    }
+    fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching<'a>> {
+        let mut response: Box<Vec<SynMatching>> = Box::new(vec![]);
+        let mut qzipper = self.root.qzipper(response);
+        let paths = fact.get_leaf_paths();
+        let matching: SynMatching = HashMap::new();
+        qzipper = qzipper.query_paths(paths, matching);
+        response = qzipper.finish();
+        *response
     }
 }
 
-#[derive(Debug)]
-struct NodeZipper<T> {
-    node: Node<T>,
-    parent: Option<Box<NodeZipper<T>>>,
-    index_in_parent: usize,
+
+pub struct Knowledge {
+    pub factset: FactSet,
 }
 
-impl<T> NodeZipper<T> {
-    fn child(mut self, index: usize) -> NodeZipper<T> {
-        // Remove the specified child from the node's children.
-        // A NodeZipper shouldn't let its users inspect its parent,
-        // since we mutate the parents
-        // to move the focused nodes out of their list of children.
-        // We use swap_remove() for efficiency.
-        let child = self.node.children.swap_remove(index);
 
-        // Return a new NodeZipper focused on the specified child.
-        NodeZipper {
-            node: child,
-            parent: Some(Box::new(self)),
-            index_in_parent: index,
+impl<'a> Knowledge {
+    pub fn new () -> Knowledge {
+        Knowledge { factset: FactSet::new() }
+    }
+    fn tell(self, k: &str) -> Knowledge {
+        let Knowledge {
+            mut factset
+        } = self;
+        let parsed = parse_text(k);
+        let facts = parsed.ok().unwrap().facts;
+        for fact in facts {
+            factset = factset.add_fact(fact);
+        }
+        Knowledge {
+            factset
         }
     }
-
-    fn parent(self) -> NodeZipper<T> {
-        // Destructure this NodeZipper
-        let NodeZipper { node, parent, index_in_parent } = self;
-
-        // Destructure the parent NodeZipper
-        let NodeZipper {
-            node: mut parent_node,
-            parent: parent_parent,
-            index_in_parent: parent_index_in_parent,
-        } = *parent.unwrap();
-
-        // Insert the node of this NodeZipper back in its parent.
-        // Since we used swap_remove() to remove the child,
-        // we need to do the opposite of that.
-        parent_node.children.push(node);
-        let len = parent_node.children.len();
-        parent_node.children.swap(index_in_parent, len - 1);
-
-        // Return a new NodeZipper focused on the parent.
-        NodeZipper {
-            node: parent_node,
-            parent: parent_parent,
-            index_in_parent: parent_index_in_parent,
-        }
-    }
-
-    fn finish(mut self) -> Node<T> {
-        while let Some(_) = self.parent {
-            self = self.parent();
-        }
-
-        self.node
+    fn ask(&'a self, q: &str) -> bool {
+        let parsed = parse_text(q);
+        let mut facts = parsed.ok().unwrap().facts;
+        let fact = facts.pop().unwrap();
+        let response = self.factset.ask_fact(&fact);
+        response.len() > 0
     }
 }
 
-impl<T> Node<T> {
-    fn zipper(self) -> NodeZipper<T> {
-        NodeZipper { node: self, parent: None, index_in_parent: 0 }
-    }
-}
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::segment::Segment;
 
     #[test]
-    fn factset_1() {
-        let mut factset = FSNode {
-            path: None,
-            logic_children: HashMap::new(),
-            nonlogic_children: HashMap::new(),
-        };
-
-        let segm11 = Segment::make_segment("rule-name1", "(text)", 0, false);
-        let segms1 = vec![segm11];
-        let path1 = Path::make_path(&segms1);
-        let cpath1 = path1.clone();
-
-        let node1 = Rc::new(RefCell::new(FSNode {
-            path: Some(&path1),
-            logic_children: HashMap::new(),
-            nonlogic_children: HashMap::new(),
-        }));
-        {
-            factset.nonlogic_children.insert(cpath1, node1);
-        }
-
-        let segm21 = Segment::make_segment("rule-name1", "(text)", 0, false);
-        let segm22 = Segment::make_segment("rule-name2", "(", 0, true);
-        let segms2 = vec![segm21, segm22];
-        let path2 = Path::make_path(&segms2);
-        let cpath2 = path2.clone();
-
-        let node2 = Rc::new(RefCell::new(FSNode {
-            path: Some(&path2),
-            logic_children: HashMap::new(),
-            nonlogic_children: HashMap::new(),
-        }));
-        let rnode1 = factset.nonlogic_children.get_mut(&path1).expect("path");
-        rnode1.borrow_mut().nonlogic_children.insert(cpath2, node2);
-
-        let segm31 = Segment::make_segment("rule-name1", "(text)", 0, false);
-        let segm32 = Segment::make_segment("rule-name3", "text", 0, true);
-        let segms3 = vec![segm31, segm32];
-        let path3 = Path::make_path(&segms3);
-        let cpath3 = path3.clone();
-
-        let node3 = Rc::new(RefCell::new(FSNode {
-            path: Some(&path3),
-            logic_children: HashMap::new(),
-            nonlogic_children: HashMap::new(),
-        }));
-        let rnode2 = rnode1.borrow_mut().nonlogic_children.get_mut(&path2).expect("path");
-        rnode2.borrow_mut().nonlogic_children.insert(cpath3, node3);
-
-        let segm41 = Segment::make_segment("rule-name1", "(text)", 0, false);
-        let segm42 = Segment::make_segment("rule-name4", ")", 0, true);
-        let segms4 = vec![segm41, segm42];
-        let path4 = Path::make_path(&segms4);
-        let cpath4 = path4.clone();
-
-        let node4 = Rc::new(RefCell::new(FSNode {
-            path: Some(&path4),
-            logic_children: HashMap::new(),
-            nonlogic_children: HashMap::new(),
-        }));
-        let rnode3 = rnode2.borrow_mut().nonlogic_children.get_mut(&path3).expect("path");
-        rnode3.borrow_mut().nonlogic_children.insert(cpath4, node4);
-
-        let paths = vec![&path1, &path2, &path3, &path4];
-
-        let leaf = factset.get_fact_leaf(&paths);
-
-        assert_eq!(leaf.expect("node").path.expect("path"), &path4);
+    fn test_1() {
+        let mut kb = Knowledge::new();
+        kb = kb.tell("susan ISA person. john ISA person.");
+        let resp1 = kb.ask("susan ISA person.");
+        assert_eq!(resp1, true);
+        let resp2 = kb.ask("pepe ISA person.");
+        assert_eq!(resp2, false);
+        let resp3 = kb.ask("john ISA person.");
+        assert_eq!(resp3, true);
+        let resp4 = kb.ask("<X0> ISA person.");
+        assert_eq!(resp4, true);
+        let resp5 = kb.ask("<X0> ISA animal.");
+        assert_eq!(resp5, false);
     }
 }
