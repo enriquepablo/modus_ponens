@@ -1,11 +1,18 @@
 knowledge   = { (fact ~ ".")+ }
 
-var         = { "<X" ~ ('0'..'9')+ ~ ">" | "X" ~ ('₀'..'₉') }
+fact        = { value ~ pred ~ value }
 
-pred        = { "ISA" }
+var         = @{ "<X" ~ ('0'..'9')+ ~ ">" | "X" ~ ('₀'..'₉') }
+
+pred        = { "ISA" | "IS" }
+
 name        = { v_name | var }
-v_name      = { ASCII_ALPHA_LOWER+ }
-fact        = { name ~ pred ~ name }
+v_name      = @{ ASCII_ALPHA_LOWER+ }
+
+pair        = { name ~ ":" ~ value }
+v_pairs     = { "(" ~ pair ~ ("," ~ pair)* ~ ")" }
+
+value       = { v_pairs | v_name | var }
 
 COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 WHITESPACE  = _{ " " | "\t" | "\r" | "\n" }
