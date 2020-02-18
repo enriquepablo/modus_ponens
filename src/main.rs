@@ -10,6 +10,7 @@ mod fact;
 mod parser;
 mod facttree;
 mod factset;
+mod ruletree;
 
 fn main() {
     println!("Hello, world!");

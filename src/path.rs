@@ -23,6 +23,10 @@ impl<'a> SynPath {
         identity.push(value.text.clone());
         SynPath { value, segments: new_segments, identity, }
     }
+    pub fn empty_root() -> SynPath {
+        let segments = vec![SynSegment::new("root", "empty", false)];
+        SynPath::new(segments)
+    }
     pub fn len(&self) -> usize {
         self.segments.len()
     }
@@ -36,6 +40,15 @@ impl<'a> SynPath {
         let lself = self.len();
         let lpath = path.len();
         lself >= lpath && &self.segments[0..lpath] == &path.segments[0..lpath]
+    }
+    pub fn sub_path(&self, lpath: usize) -> (SynPath, &SynSegment) {
+        let new_segments = self.segments
+                               .as_slice()
+                               .into_iter()
+                               .take(lpath)
+                               .map(|s| s.clone())
+                               .collect();
+        (SynPath::new(new_segments), self.segments.last().unwrap())
     }
     pub fn paths_after(&self, paths: &'a [&'a SynPath], try_to_see: bool) -> &'a [&'a SynPath] {
         let mut seen = false;

@@ -106,19 +106,19 @@ impl<'a> NodeZipper<'a> {
             lchildren,
         } = self;
 
-        // Destructure the parent NodeZipper
-        let NodeZipper {
-            parent: parent_parent,
-            path_in_parent: parent_path_in_parent,
-            logic_node: parent_logic_node,
-            children: mut parent_children,
-            lchildren: mut parent_lchildren,
-        } = *parent.unwrap();
-
-        // Insert the node of this NodeZipper back in its parent.
         if path_in_parent.is_none() {
             None
         } else {
+            // Destructure the parent NodeZipper
+            let NodeZipper {
+                parent: parent_parent,
+                path_in_parent: parent_path_in_parent,
+                logic_node: parent_logic_node,
+                children: mut parent_children,
+                lchildren: mut parent_lchildren,
+            } = *parent.unwrap();
+
+            // Insert the node of this NodeZipper back in its parent.
             let node = FSNode {children, lchildren};
             let ppc = path_in_parent.expect("path").clone();    
             if logic_node {

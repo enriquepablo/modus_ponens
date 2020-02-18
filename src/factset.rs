@@ -115,6 +115,8 @@ mod tests {
         assert_eq!(resp, true);
         resp = kb.ask("(say: <X1>, what: (want: <X1>, what: (love: <X0>, who: <X1>))) ISA fact.");
         assert_eq!(resp, true);
+        resp = kb.ask("(say: <X1>, want: (what: <X1>, what: (love: <X0>, who: <X1>))) ISA fact.");
+        assert_eq!(resp, false);
         resp = kb.ask("(say: <X1>, what: (want: <X1>, what: (love: <X1>, who: <X1>))) ISA fact.");
         assert_eq!(resp, false);
         resp = kb.ask("(say: <X1>, what: (want: <X1>, what: <X1>)) ISA fact.");
