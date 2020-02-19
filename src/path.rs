@@ -2,7 +2,7 @@ use std::hash::{Hash, Hasher};
 use std::fmt;
 
 use crate::segment::SynSegment;
-use crate::matching::{SynMatching, get_or_key};
+use crate::matching::{ SynMatching, get_or_key };
 
 #[derive(Debug, Clone)]
 pub struct SynPath {
@@ -77,33 +77,61 @@ impl<'a> SynPath {
         self.value.in_var_range()
     }
 
-    pub fn substitute(&self, matching: &SynMatching) -> SynPath {
+    pub fn substitute2(&self, matching: &SynMatching) -> SynPath {
         let mut segments = self.segments.clone();
         let var = segments.pop().unwrap();
-        let value = *matching.get(&var).unwrap();
-        segments.push(value.clone());
+        let value = matching.get(&var);
+        let segment: SynSegment;
+        if value.is_some() {
+            segment = (*value.unwrap()).clone();
+        } else {
+            segment = var;
+        }
+        segments.push(segment);
         SynPath::new(segments)
     }
 
-    pub fn substitute2(self, matching: &SynMatching) -> (SynPath, SynPath) {
-        let SynPath { segments, .. } = self;
+    pub fn substitute(&self, matching: &SynMatching) -> (SynPath, Option<SynPath>) {
         let mut new_segment: SynSegment;
         let mut new_segments = vec![];
         let mut old_segments = vec![];
-        for segment in segments {
+        for segment in self.segments.iter() {
             new_segment = get_or_key(matching, &segment);
-            let is_new = new_segment != segment;
+            let is_new = &new_segment != segment;
             new_segments.push(new_segment);
-            old_segments.push(segment);
+            old_segments.push(segment.clone());
             if is_new {
                 let new_path = SynPath::new(new_segments);
                 let old_path = SynPath::new(old_segments);
-                return (new_path, old_path);
+                return (new_path, Some(old_path));
             }
         }
-        (SynPath::new(new_segments), SynPath::new(old_segments))
+        (SynPath::new(new_segments), None)
+    }
+
+    pub fn substitute_paths(paths: &[&SynPath], matching: SynMatching) -> Vec<SynPath> {
+        let mut new_paths: Vec<SynPath> = vec![];
+        let mut old_paths: Vec<SynPath> = vec![];
+        for &path in paths {
+            let mut seen = false;
+            for opath in old_paths.iter() {
+                if path.starts_with(opath) && path.len() != opath.len() {
+                    seen = true;
+                    break;
+                }
+            }
+            if !seen {
+                let (new_path, old_path) = path.substitute(&matching);
+                if old_path.is_some() {
+                    old_paths.push(old_path.unwrap());
+                }
+                new_paths.push(new_path);
+            }
+        }
+        new_paths
     }
 }
+
 
 impl<'a> fmt::Display for SynPath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -365,7 +393,7 @@ mod tests {
         let path1 = SynPath::new(segms1);
         assert!(!path1.in_var_range());
     }
-
+    
     #[test]
     fn substitute_1() {
         let segm11 = SynSegment::new("rule-name1", "some text1", false);
@@ -377,11 +405,10 @@ mod tests {
         let segm24 = SynSegment::new("rule-name4", "some text4", false);
         let mut matching: SynMatching = HashMap::new();
         matching.insert(&segm23, &segm24);
-
-        let (new_path, old_path) = path1.substitute2(&matching);
+        let (new_path, old_path) = path1.substitute(&matching);
 
         assert_eq!(new_path.value.name, "rule-name4");
-        assert_eq!(old_path.value.name, "rule-name3");
+        assert_eq!(old_path.unwrap().value.name, "rule-name3");
     }
 
     #[test]
@@ -395,10 +422,41 @@ mod tests {
         let segm24 = SynSegment::new("rule-name4", "some text4", false);
         let mut matching: SynMatching = HashMap::new();
         matching.insert(&segm23, &segm24);
-
-        let (new_path, old_path) = path1.substitute2(&matching);
+        let (new_path, old_path) = path1.substitute(&matching);
 
         assert_eq!(new_path.value.name, "rule-name3");
-        assert_eq!(old_path.value.name, "rule-name3");
+        assert_eq!(old_path, None);
+    }
+
+    #[test]
+    fn substitute_3() {
+        let segm11 = SynSegment::new("rule-name1", "some text1", false);
+        let segm12 = SynSegment::new("rule-name2", "some text2", false);
+        let segm13 = SynSegment::new("rule-name3", "some text3", true);
+        let segms1 = vec![segm11, segm12, segm13];
+        let path1 = SynPath::new(segms1);
+        let segm23 = SynSegment::new("rule-name3", "some text3", false);
+        let segm24 = SynSegment::new("rule-name4", "some text4", false);
+        let mut matching: SynMatching = HashMap::new();
+        matching.insert(&segm23, &segm24);
+        let new_path = path1.substitute2(&matching);
+
+        assert_eq!(new_path.value.name, "rule-name4");
+    }
+
+    #[test]
+    fn substitute_4() {
+        let segm11 = SynSegment::new("rule-name1", "some text1", false);
+        let segm12 = SynSegment::new("rule-name2", "some text2", false);
+        let segm13 = SynSegment::new("rule-name3", "some text3", true);
+        let segms1 = vec![segm11, segm12, segm13];
+        let path1 = SynPath::new(segms1);
+        let segm23 = SynSegment::new("rule-name5", "some text3", false);
+        let segm24 = SynSegment::new("rule-name4", "some text4", false);
+        let mut matching: SynMatching = HashMap::new();
+        matching.insert(&segm23, &segm24);
+        let new_path = path1.substitute2(&matching);
+
+        assert_eq!(new_path.value.name, "rule-name3");
     }
 }

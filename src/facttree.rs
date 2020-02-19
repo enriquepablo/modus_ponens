@@ -333,7 +333,7 @@ impl<'a> INodeZipper<'a> {
                         response: resp,
                     };
                 } else {
-                    let new_path = path.substitute(&matching);
+                    let (new_path, _) = path.substitute(&matching);
                     subs_path = Some(new_path);
                 }
             }
