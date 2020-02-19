@@ -23,7 +23,7 @@ impl<'a> FactSet {
         root = zipper.finish();
         FactSet { root }
     }
-    fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching<'a>> {
+    fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching> {
         let mut response: Box<Vec<SynMatching>> = Box::new(vec![]);
         let mut qzipper = self.root.qzipper(response);
         let paths = fact.get_leaf_paths();

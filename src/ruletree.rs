@@ -236,8 +236,8 @@ pub struct IRSZipper<'a> {
     var_child: Option<&'a Box<RSNode>>,
     var_children: &'a HashMap<SynPath, RSNode>,
     children: &'a HashMap<SynPath, RSNode>,
-    matched: SynMatching<'a>,
-    response: Box<Vec<SynMatching<'a>>>,
+    matched: SynMatching,
+    response: Box<Vec<SynMatching>>,
 }
 
 impl<'a> IRSZipper<'a> {
@@ -281,7 +281,7 @@ impl<'a> IRSZipper<'a> {
                 let (new_path, _) = path.sub_path(vpath.len());
                 let old_value = parent_matched.get(&vpath.value);
                 if old_value.is_some() {
-                    if &new_path.value == *old_value.unwrap() {
+                    if &new_path.value == old_value.unwrap() {
                         let new_paths = new_path.paths_after(rest_paths, false);
                         let vchild = match &varchild.var_child {
                             None => None,
@@ -311,7 +311,7 @@ impl<'a> IRSZipper<'a> {
                 let (new_path, val) = path.sub_path(var_child.path.len());
                 let new_paths = new_path.paths_after(rest_paths, false);
                 let mut new_matched = parent_matched.clone();
-                new_matched.insert(&var_child.path.value, val);
+                new_matched.insert(var_child.path.value.clone(), val.clone());
                 let vchild = match &var_child.var_child {
                     None => None,
                     Some(node) => Some(node),
@@ -346,7 +346,7 @@ impl<'a> IRSZipper<'a> {
         }
     }
 
-    pub fn finish(self) -> Box<Vec<SynMatching<'a>>> {
+    pub fn finish(self) -> Box<Vec<SynMatching>> {
         
         let IRSZipper {
             response, ..
@@ -357,7 +357,7 @@ impl<'a> IRSZipper<'a> {
 
 
 impl<'a> RSNode {
-    pub fn izipper(&'a self, response: Box<Vec<SynMatching<'a>>>) -> IRSZipper<'a> {
+    pub fn izipper(&'a self, response: Box<Vec<SynMatching>>) -> IRSZipper<'a> {
         
         let matching: SynMatching = HashMap::new();
         let vchild = match &self.var_child {

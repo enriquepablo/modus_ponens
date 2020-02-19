@@ -72,7 +72,7 @@ mod tests {
     fn make_var() {
         let var = SynSegment::make_var(0);
         assert_eq!(var.name, constants::VAR_RULE_NAME);
-        assert_eq!(var.text, "<__X0>");
+        assert_eq!(var.text, "<X0>");
         assert_eq!(var.is_leaf, true);
         assert_eq!(var.is_var, true);
     }

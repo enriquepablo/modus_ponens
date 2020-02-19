@@ -112,7 +112,7 @@ impl<'a> SynPath {
     pub fn substitute_paths(paths: &[SynPath], matching: SynMatching) -> Vec<SynPath> {
         let mut new_paths: Vec<SynPath> = vec![];
         let mut old_paths: Vec<SynPath> = vec![];
-        for &path in paths {
+        for path in paths {
             let mut seen = false;
             for opath in old_paths.iter() {
                 if path.starts_with(opath) && path.len() != opath.len() {
@@ -189,7 +189,7 @@ mod tests {
         let segms = vec![segm];
         let path = SynPath::new(segms);
         assert_eq!(path.identity[0], constants::VAR_RULE_NAME);
-        assert_eq!(path.identity[1], "<__X0>");
+        assert_eq!(path.identity[1], "<X0>");
         assert_eq!(path.len(), 1);
         assert_eq!(path.is_var(), true);
         assert_eq!(path.is_leaf(), true);
@@ -404,7 +404,7 @@ mod tests {
         let segm23 = SynSegment::new("rule-name3", "some text3", false);
         let segm24 = SynSegment::new("rule-name4", "some text4", false);
         let mut matching: SynMatching = HashMap::new();
-        matching.insert(&segm23, &segm24);
+        matching.insert(segm23, segm24);
         let (new_path, old_path) = path1.substitute(&matching);
 
         assert_eq!(new_path.value.name, "rule-name4");
@@ -421,7 +421,7 @@ mod tests {
         let segm23 = SynSegment::new("rule-name5", "some text3", false);
         let segm24 = SynSegment::new("rule-name4", "some text4", false);
         let mut matching: SynMatching = HashMap::new();
-        matching.insert(&segm23, &segm24);
+        matching.insert(segm23, segm24);
         let (new_path, old_path) = path1.substitute(&matching);
 
         assert_eq!(new_path.value.name, "rule-name3");
@@ -438,7 +438,7 @@ mod tests {
         let segm23 = SynSegment::new("rule-name3", "some text3", false);
         let segm24 = SynSegment::new("rule-name4", "some text4", false);
         let mut matching: SynMatching = HashMap::new();
-        matching.insert(&segm23, &segm24);
+        matching.insert(segm23, segm24);
         let new_path = path1.substitute2(&matching);
 
         assert_eq!(new_path.value.name, "rule-name4");
@@ -454,7 +454,7 @@ mod tests {
         let segm23 = SynSegment::new("rule-name5", "some text3", false);
         let segm24 = SynSegment::new("rule-name4", "some text4", false);
         let mut matching: SynMatching = HashMap::new();
-        matching.insert(&segm23, &segm24);
+        matching.insert(segm23, segm24);
         let new_path = path1.substitute2(&matching);
 
         assert_eq!(new_path.value.name, "rule-name3");

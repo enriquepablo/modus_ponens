@@ -50,7 +50,7 @@ impl Fact {
                 if old_var.is_none() {
                     let new_var = SynSegment::make_var(counter);
                     counter += 1;
-                    varmap.insert(&path.value, &new_var);
+                    varmap.insert(path.value.clone(), new_var);
                 }
             }
         }
