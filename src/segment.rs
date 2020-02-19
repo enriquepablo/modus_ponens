@@ -21,8 +21,8 @@ impl SynSegment {
         }
     }
 
-    pub fn make_var(n: u16) -> SynSegment {
-        let text = format!("<__X{}>", &n);
+    pub fn make_var(n: usize) -> SynSegment {
+        let text = format!("<X{}>", &n);
         SynSegment::new(constants::VAR_RULE_NAME, &text, true)
     }
 
