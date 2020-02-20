@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 use crate::segment::SynSegment;
 use crate::path::SynPath;
 use crate::matching::{ SynMatching, invert };
+use crate::parser::parse_text;
 
 #[derive(Debug)]
 pub struct Fact {
@@ -12,7 +13,10 @@ pub struct Fact {
 }
 
 impl Fact {
-    fn new(paths: Vec<SynPath>) -> Fact {
+    fn new(text: String, paths: Vec<SynPath>) -> Fact {
+        Fact { text, paths, }
+    }
+    fn from_paths(paths: Vec<SynPath>) -> Fact {
         let text = paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
         Fact { text, paths, }
     }
@@ -34,11 +38,16 @@ impl Fact {
         }
         paths
     }
-
     pub fn substitute(&self, matching: SynMatching) -> Fact {
         let new_paths = SynPath::substitute_paths(&self.paths, matching);
-        // XXX let's check that we do not need to re-parse
-        Fact::new(new_paths)
+        let text = new_paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
+        let parsed = parse_text(&text);
+        parsed.ok().unwrap().facts.pop().unwrap()
+    }
+
+    pub fn substitute_fast(&self, matching: SynMatching) -> Fact {
+        let new_paths = SynPath::substitute_paths(&self.paths, matching);
+        Fact::from_paths(new_paths)
     }
     pub fn normalize (&self) -> (SynMatching, Fact) {
         let mut varmap: SynMatching = HashMap::new();
@@ -55,7 +64,7 @@ impl Fact {
             }
         }
         let invarmap = invert(varmap.clone());
-        let new_fact = self.substitute(varmap);
+        let new_fact = self.substitute_fast(varmap);
         (invarmap, new_fact)
     }
 }
@@ -102,7 +111,7 @@ mod tests {
         let path4 = SynPath::new(segms4);
 
         let paths = vec![path1, path2, path3, path4];
-        let fact = Fact::new(paths);
+        let fact = Fact::from_paths(paths);
 
         assert_eq!(fact.get_all_paths().len(), 4);
         assert_eq!(fact.get_leaf_paths().len(), 3);
@@ -135,7 +144,7 @@ mod tests {
         let path5 = SynPath::new(segms5);
 
         let paths = vec![path1, path2, path3, path4, path5];
-        let fact = Fact::new(paths);
+        let fact = Fact::from_paths(paths);
 
         assert_eq!(fact.get_all_paths().len(), 4);
         assert_eq!(fact.get_leaf_paths().len(), 3);
