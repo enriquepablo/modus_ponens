@@ -30,17 +30,20 @@ pub struct RSNode {
     rule_refs: Vec<RuleRef>,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ChildType {
+    Absurd,
+    Root,
+    Uvar,
+    Var,
+    Value,
+}
 
-const CHILD_TYPE_ABSURD: u8 = 0;
-const CHILD_TYPE_ROOT: u8 = 1;
-const CHILD_TYPE_UVAR: u8 = 2;
-const CHILD_TYPE_VAR: u8 = 3;
-const CHILD_TYPE_VALUE: u8 = 4;
 
 #[derive(Debug)]
 pub struct RSZipper {
     parent: Option<Box<RSZipper>>,
-    child_type: u8,
+    child_type: ChildType,
     path: SynPath,
     var_child : Option<Box<RSNode>>,
     var_children: HashMap<SynPath, RSNode>,
@@ -51,7 +54,7 @@ pub struct RSZipper {
 
 impl<'a> RSZipper {
 
-    fn follow_and_create_paths(self, paths: &[&SynPath]) -> Box<RSNode> {
+    pub fn follow_and_create_paths(self, paths: &[&SynPath]) -> Box<RSNode> {
         let mut zipper: RSZipper = self; 
         let mut node: Option<RSNode>; 
         let mut visited_vars: Vec<SynSegment> = vec![];
@@ -64,12 +67,12 @@ impl<'a> RSZipper {
                 rule_refs,
                 rule_ref,
             } = zipper;
-            let mut new_child_type: u8 = CHILD_TYPE_ABSURD;
+            let mut new_child_type = ChildType::Absurd;
             let mut found = true;
             if new_path.value.is_var {
                 node = var_children.remove(new_path);
                 if node.is_some() {
-                    new_child_type = CHILD_TYPE_VAR;
+                    new_child_type = ChildType::Var;
                 } else if var_child.is_some() {
                     let RSNode {
                         path: vpath, var_child: vvar_child,
@@ -83,7 +86,7 @@ impl<'a> RSZipper {
                             var_children: vvar_children, children: vchildren,
                             rule_refs: vrule_refs,
                         });
-                        new_child_type = CHILD_TYPE_UVAR;
+                        new_child_type = ChildType::Uvar;
                         var_child = None;
                     } else {
                         found = false;
@@ -98,7 +101,7 @@ impl<'a> RSZipper {
                 }
             } else {
                 node = children.remove(new_path);
-                new_child_type = CHILD_TYPE_VALUE;
+                new_child_type = ChildType::Value;
                 if node.is_none() {
                    found = false;
                 }
@@ -162,16 +165,16 @@ impl<'a> RSZipper {
                 rule_refs: pre_rule_refs,
                 rule_ref: None,
             };
-            let child_type: u8;
+            let child_type: ChildType;
             if new_path.is_var() {
                 if visited.contains(&new_path.value) {
-                    child_type = CHILD_TYPE_VAR;
+                    child_type = ChildType::Var;
                 } else {
                     visited.push(new_path.value.clone());
-                    child_type = CHILD_TYPE_UVAR;
+                    child_type = ChildType::Uvar;
                 }
             } else {
-                child_type = CHILD_TYPE_VALUE;
+                child_type = ChildType::Value;
             }
             let new_zipper = RSZipper {
                 parent: Some(Box::new(zipper)),
@@ -219,7 +222,7 @@ impl<'a> RSZipper {
         } = self;
 
         // Insert the node of this NodeZipper back in its parent.
-        if child_type == CHILD_TYPE_ROOT {
+        if child_type == ChildType::Root {
             None
         } else {
 
@@ -242,11 +245,11 @@ impl<'a> RSZipper {
                 children,
                 rule_refs,
             };
-            if child_type == CHILD_TYPE_VALUE {
+            if child_type == ChildType::Value {
                 parent_children.insert(ppc, node);
-            } else if child_type == CHILD_TYPE_VAR {
+            } else if child_type == ChildType::Var {
                 parent_var_children.insert(ppc, node);
-            } else if child_type == CHILD_TYPE_UVAR {
+            } else if child_type == ChildType::Uvar {
                 parent_var_child = Some(Box::new(node));
             }
             // Return a new NodeZipper focused on the parent.
@@ -295,7 +298,7 @@ impl<'a> RSNode {
           
         RSZipper {
             parent: None,
-            child_type: CHILD_TYPE_ROOT,
+            child_type: ChildType::Root,
             path, var_child,
             var_children, children,
             rule_refs,
