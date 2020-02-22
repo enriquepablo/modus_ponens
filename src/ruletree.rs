@@ -9,14 +9,14 @@ use crate::fact::Fact;
 
 #[derive(Debug)]
 pub struct Rule {
-    premises: Vec<Fact>,
-    consecs: Vec<Fact>,
+    pub antecedents: Vec<Fact>,
+    pub consequents: Vec<Fact>,
 }
 
 #[derive(Debug)]
 pub struct RuleRef {
     rule: Rule,
-    premise: Fact,
+    antecedent: Fact,
     varmap: SynMatching,
 }
 

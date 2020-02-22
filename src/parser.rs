@@ -6,6 +6,7 @@ use crate::constants;
 use crate::segment::SynSegment;
 use crate::path::SynPath;
 use crate::fact::Fact;
+use crate::ruletree::Rule as SynRule;
 
 
 #[derive(Parser)]
@@ -79,22 +80,47 @@ pub fn build_fact(parse_tree: Pair<Rule>) -> Fact {
 
 pub struct ParseResult {
     pub facts: Vec<Fact>,
+    pub rules: Vec<SynRule>,
 }
 
 
 pub fn parse_text(text: &str) -> Result<ParseResult, Error<Rule>> {
     let parse_tree = SynParser::parse(Rule::knowledge, text)?.next().unwrap();
     let mut facts: Vec<Fact> = vec![];
+    let mut rules: Vec<SynRule> = vec![];
     for pair in parse_tree.into_inner() {
         match pair.as_rule() {
             Rule::fact => {
                 let fact = build_fact(pair);
                 facts.push(fact);
             },
+            Rule::rule => {
+                let mut antecedents = vec![];
+                let mut consequents = vec![];
+                for pairset in pair.into_inner() {
+                    match pairset.as_rule() {
+                        Rule::antecedents => {
+                            for factpair in pairset.into_inner() {
+                                let antecedent = build_fact(factpair);
+                                antecedents.push(antecedent);
+                            }
+                        },
+                        Rule::consequents => {
+                            for factpair in pairset.into_inner() {
+                                let consequent = build_fact(factpair);
+                                consequents.push(consequent);
+                            }
+                        },
+                        _ => {}
+                    }
+                }
+                let rule = SynRule { antecedents, consequents};
+                rules.push(rule);
+            },
             _ => {}
         }
     }
-    Ok(ParseResult { facts })
+    Ok(ParseResult { facts, rules })
 }
 
 
@@ -114,6 +140,34 @@ mod tests {
         assert!(text == "susan ISA person");
         assert_eq!(format!("{:?}", first.unwrap().value.text), "\"susan\"");
 
+    }
+
+    #[test]
+    fn rule_1() {
+        let f1 = parse_text("susan ISA person -> susan ISA monkey.");
+        let rules = f1.ok().unwrap().rules;
+        let rule = rules.first().unwrap();
+        let SynRule {
+            antecedents, consequents
+        } = rule;
+        {
+            let fact = antecedents.get(0).unwrap();
+            let Fact {
+                text, paths
+            } = fact;
+            let first = paths.get(0);
+            assert!(text == "susan ISA person");
+            assert_eq!(format!("{:?}", first.unwrap().value.text), "\"susan\"");
+        }
+        {
+            let fact = consequents.get(0).unwrap();
+            let Fact {
+                text, paths
+            } = fact;
+            let first = paths.get(0);
+            assert!(text == "susan ISA monkey");
+            assert_eq!(format!("{:?}", first.unwrap().value.text), "\"susan\"");
+        }
     }
 }
 

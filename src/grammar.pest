@@ -1,4 +1,11 @@
-knowledge   = { (fact ~ ".")+ }
+knowledge   = { (sentence ~ ".")+ }
+
+sentence    = _{ rule | fact }
+
+rule        = { antecedents ~ "->" ~ consequents }
+
+antecedents = { fact ~ (";" ~ fact)* }
+consequents = { fact ~ (";" ~ fact)* }
 
 fact        = { value ~ pred ~ value }
 
