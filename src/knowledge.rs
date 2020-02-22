@@ -66,8 +66,8 @@ impl KnowledgeBase {
         }
     }
 
-    pub fn tell(mut self, knowledge: String) -> KnowledgeBase {
-        let ParseResult { rules, facts } = parse_text(&knowledge).ok().unwrap();
+    pub fn tell(mut self, knowledge: &str) -> KnowledgeBase {
+        let ParseResult { rules, facts } = parse_text(knowledge).ok().unwrap();
         for rule in rules {
             let act = Activation::from_rule(rule);
             self.queue.push_back(act);
@@ -78,8 +78,8 @@ impl KnowledgeBase {
         }
         self.process_activations()
     }
-    pub fn ask(self, knowledge: String) -> (KnowledgeBase, bool) {
-        let ParseResult { rules: _, mut facts } = parse_text(&knowledge).ok().unwrap();
+    pub fn ask(self, knowledge: &str) -> (KnowledgeBase, bool) {
+        let ParseResult { rules: _, mut facts } = parse_text(knowledge).ok().unwrap();
         let fact = facts.pop().unwrap();
         let resps = self.facts.ask_fact(&fact);
         (self, resps.len() > 0)
@@ -178,10 +178,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn fact_1() {
-    }
-
-    #[test]
-    fn rule_1() {
+    fn kb_1() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("susan ISA person.");
+        let (kb, resp) = kb.ask("susan ISA person.");
+        assert!(resp);
     }
 }
