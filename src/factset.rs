@@ -35,42 +35,40 @@ impl<'a> FactSet {
 }
 
 
-pub struct Knowledge {
-    pub factset: FactSet,
-}
-
-
-impl<'a> Knowledge {
-    pub fn new () -> Knowledge {
-        Knowledge { factset: FactSet::new() }
-    }
-    fn tell(self, k: &str) -> Knowledge {
-        let Knowledge {
-            mut factset
-        } = self;
-        let parsed = parse_text(k);
-        let facts = parsed.ok().unwrap().facts;
-        for fact in facts {
-            factset = factset.add_fact(fact);
-        }
-        Knowledge {
-            factset
-        }
-    }
-    fn ask(&'a self, q: &str) -> bool {
-        let parsed = parse_text(q);
-        let mut facts = parsed.ok().unwrap().facts;
-        let fact = facts.pop().unwrap();
-        let response = self.factset.ask_fact(&fact);
-        response.len() > 0
-    }
-}
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    pub struct Knowledge {
+        pub factset: FactSet,
+    }
+
+
+    impl<'a> Knowledge {
+        pub fn new () -> Knowledge {
+            Knowledge { factset: FactSet::new() }
+        }
+        fn tell(self, k: &str) -> Knowledge {
+            let Knowledge {
+                mut factset
+            } = self;
+            let parsed = parse_text(k);
+            let facts = parsed.ok().unwrap().facts;
+            for fact in facts {
+                factset = factset.add_fact(fact);
+            }
+            Knowledge {
+                factset
+            }
+        }
+        fn ask(&'a self, q: &str) -> bool {
+            let parsed = parse_text(q);
+            let mut facts = parsed.ok().unwrap().facts;
+            let fact = facts.pop().unwrap();
+            let response = self.factset.ask_fact(&fact);
+            response.len() > 0
+        }
+    }
 
     #[test]
     fn test_1() {
