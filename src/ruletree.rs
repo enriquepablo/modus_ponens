@@ -7,16 +7,15 @@ use crate::matching::SynMatching;
 use crate::fact::Fact;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rule {
     pub antecedents: Vec<Fact>,
     pub consequents: Vec<Fact>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RuleRef {
     rule: Rule,
-    antecedent: Fact,
     varmap: SynMatching,
 }
 
@@ -317,14 +316,23 @@ impl<'a> RSNode {
 }
 
 
+type Response<'a> = Box<Vec<(&'a Vec<RuleRef>, SynMatching)>>;
+
+pub fn new_response<'a>() -> Response<'a> {
+    Box::new(
+        vec![]
+    )
+}
+
 #[derive(Debug)]
 pub struct IRSZipper<'a> {
     path: &'a SynPath,
     var_child: Option<&'a Box<RSNode>>,
     var_children: &'a HashMap<SynPath, RSNode>,
     children: &'a HashMap<SynPath, RSNode>,
+    rule_refs: &'a Vec<RuleRef>,
     matched: SynMatching,
-    response: Box<Vec<SynMatching>>,
+    response: Response<'a>,
 }
 
 impl<'a> IRSZipper<'a> {
@@ -333,9 +341,10 @@ impl<'a> IRSZipper<'a> {
         let IRSZipper {
             path: parent_path,
             var_child: mut parent_var_child,
-            matched: mut parent_matched,
-            children: parent_children,
             var_children: parent_var_children,
+            children: parent_children,
+            rule_refs: parent_rule_refs,
+            matched: mut parent_matched,
             mut response,
         } = self;
         let split_paths = paths.split_first();
@@ -352,8 +361,9 @@ impl<'a> IRSZipper<'a> {
                     path: &child.path,
                     matched: parent_matched,
                     var_child: vchild,
-                    children: &child.children,
                     var_children: &child.var_children,
+                    children: &child.children,
+                    rule_refs: &child.rule_refs,
                     response,
                 };
                 zipper = zipper.climb(rest_paths);
@@ -378,8 +388,9 @@ impl<'a> IRSZipper<'a> {
                             path: &varchild.path,
                             matched: parent_matched,
                             var_child: vchild,
-                            children: &varchild.children,
                             var_children: &varchild.var_children,
+                            children: &varchild.children,
+                            rule_refs: &varchild.rule_refs,
                             response,
                         };
                         zipper = zipper.climb(new_paths);
@@ -407,8 +418,9 @@ impl<'a> IRSZipper<'a> {
                     path: &var_child.path,
                     matched: new_matched,
                     var_child: vchild,
-                    children: &var_child.children,
                     var_children: &var_child.var_children,
+                    children: &var_child.children,
+                    rule_refs: &var_child.rule_refs,
                     response,
                 };
                 zipper = zipper.climb(new_paths);
@@ -421,7 +433,7 @@ impl<'a> IRSZipper<'a> {
             }
         } else {
             // ENDNODE
-            response.push(parent_matched.clone());
+            response.push(( parent_rule_refs, parent_matched.clone() ));
         }
         IRSZipper {
             path: parent_path,
@@ -429,11 +441,12 @@ impl<'a> IRSZipper<'a> {
             matched: parent_matched,
             children: parent_children,
             var_children: parent_var_children,
+            rule_refs: parent_rule_refs,
             response,
         }
     }
 
-    pub fn finish(self) -> Box<Vec<SynMatching>> {
+    pub fn finish(self) -> Response<'a> {
         
         let IRSZipper {
             response, ..
@@ -442,10 +455,10 @@ impl<'a> IRSZipper<'a> {
     }
 }
 
-
 impl<'a> RSNode {
-    pub fn izipper(&'a self, response: Box<Vec<SynMatching>>) -> IRSZipper<'a> {
+    pub fn izipper(&'a self) -> IRSZipper<'a> {
         
+        let response = new_response();
         let matching: SynMatching = HashMap::new();
         let vchild = match &self.var_child {
             None => None,
@@ -457,6 +470,7 @@ impl<'a> RSNode {
             var_child: vchild,
             var_children: &self.var_children,
             children: &self.children,
+            rule_refs: &self.rule_refs,
             matched: matching,
             response
         }
@@ -488,11 +502,10 @@ mod tests {
             PremSet { root }
         }
         fn ask_fact (&'a self, fact: &'a Fact) -> usize {
-            let mut response: Box<Vec<SynMatching>> = Box::new(vec![]);
-            let mut qzipper = self.root.izipper(response);
+            let mut qzipper = self.root.izipper();
             let paths = fact.get_leaf_paths();
             qzipper = qzipper.climb(&paths);
-            response = qzipper.finish();
+            let response = qzipper.finish();
             response.len()
         }
     }

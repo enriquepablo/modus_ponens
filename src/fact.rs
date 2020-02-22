@@ -1,3 +1,4 @@
+use std::clone::Clone;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
@@ -6,7 +7,7 @@ use crate::path::SynPath;
 use crate::matching::{ SynMatching, invert };
 use crate::parser::parse_text;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Fact {
     pub text: String,
     pub paths: Vec<SynPath>,

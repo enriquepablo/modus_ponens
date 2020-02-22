@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use crate::matching::SynMatching;
 use crate::fact::Fact;
 use crate::facttree::FSNode;
-use crate::parser::parse_text;
 
 
 pub struct FactSet {
@@ -38,6 +37,7 @@ impl<'a> FactSet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parser::parse_text;
 
     pub struct Knowledge {
         pub factset: FactSet,
