@@ -39,14 +39,14 @@ impl Fact {
         }
         paths
     }
-    pub fn substitute(&self, matching: SynMatching) -> Fact {
+    pub fn substitute(&self, matching: &SynMatching) -> Fact {
         let new_paths = SynPath::substitute_paths(&self.paths, matching);
         let text = new_paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
         let parsed = parse_text(&text);
         parsed.ok().unwrap().facts.pop().unwrap()
     }
 
-    pub fn substitute_fast(&self, matching: SynMatching) -> Fact {
+    pub fn substitute_fast(&self, matching: &SynMatching) -> Fact {
         let new_paths = SynPath::substitute_paths(&self.paths, matching);
         Fact::from_paths(new_paths)
     }
@@ -65,7 +65,7 @@ impl Fact {
             }
         }
         let invarmap = invert(varmap.clone());
-        let new_fact = self.substitute_fast(varmap);
+        let new_fact = self.substitute_fast(&varmap);
         (invarmap, new_fact)
     }
 }

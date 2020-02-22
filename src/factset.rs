@@ -11,10 +11,10 @@ pub struct FactSet {
 
 
 impl<'a> FactSet {
-    fn new () -> FactSet {
+    pub fn new () -> FactSet {
         FactSet { root: Box::new(FSNode::new()) }
     }
-    fn add_fact (self, fact: Fact) -> FactSet {
+    pub fn add_fact (self, fact: Fact) -> FactSet {
         let FactSet { mut root } = self;
         let mut zipper = root.zipper();
         let paths = fact.get_all_paths();
@@ -22,7 +22,7 @@ impl<'a> FactSet {
         root = zipper.finish();
         FactSet { root }
     }
-    fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching> {
+    pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching> {
         let mut response: Box<Vec<SynMatching>> = Box::new(vec![]);
         let mut qzipper = self.root.qzipper(response);
         let paths = fact.get_leaf_paths();

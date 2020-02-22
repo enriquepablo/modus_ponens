@@ -15,8 +15,8 @@ pub struct Rule {
 
 #[derive(Debug, Clone)]
 pub struct RuleRef {
-    rule: Rule,
-    varmap: SynMatching,
+    pub rule: Rule,
+    pub varmap: SynMatching,
 }
 
 

@@ -11,6 +11,7 @@ mod parser;
 mod facttree;
 mod factset;
 mod ruletree;
+mod knowledge;
 
 fn main() {
     println!("Hello, world!");

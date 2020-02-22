@@ -109,7 +109,7 @@ impl<'a> SynPath {
         (SynPath::new(new_segments), None)
     }
 
-    pub fn substitute_paths(paths: &[SynPath], matching: SynMatching) -> Vec<SynPath> {
+    pub fn substitute_paths(paths: &[SynPath], matching: &SynMatching) -> Vec<SynPath> {
         let mut new_paths: Vec<SynPath> = vec![];
         let mut old_paths: Vec<SynPath> = vec![];
         for path in paths {
