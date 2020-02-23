@@ -73,7 +73,7 @@ impl Fact {
             }
         }
         let invarmap = invert(varmap.clone());
-        let new_fact = self.substitute(&varmap);
+        let new_fact = self.substitute_fast(&varmap);
         (invarmap, new_fact)
     }
 }
