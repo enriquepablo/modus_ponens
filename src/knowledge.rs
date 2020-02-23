@@ -71,20 +71,22 @@ impl KnowledgeBase {
         for rule in rules {
             let act = Activation::from_rule(rule);
             self.queue.push_back(act);
+            self = self.process_activations();
         }
         for fact in facts {
             let act = Activation::from_fact(fact);
             self.queue.push_back(act);
+            self = self.process_activations();
         }
-        self.process_activations()
+        self
     }
-    pub fn ask(self, knowledge: &str) -> (KnowledgeBase, bool) {
+    pub fn ask(&self, knowledge: &str) -> bool {
         let ParseResult { rules: _, mut facts } = parse_text(knowledge).ok().unwrap();
         let fact = facts.pop().unwrap();
         let resps = self.facts.ask_fact(&fact);
-        (self, resps.len() > 0)
+        resps.len() > 0
     }
-    fn process_activations(mut self) -> KnowledgeBase {
+    fn process_activations(mut self) -> Self {
         while !self.queue.is_empty() {
             let next = self.queue.pop_front().unwrap();
             match next {
@@ -103,8 +105,7 @@ impl KnowledgeBase {
                 Activation {
                     atype: ActType::Match,
                     rule: Some(rule),
-                    fact: None,
-                    matched: Some(matched),
+                    matched: Some(matched), ..
                 } => {
                     self = self.process_match(rule, matched);
                 },
@@ -113,7 +114,9 @@ impl KnowledgeBase {
         }
         self
     }
-    fn process_rule(mut self, mut rule: Rule) -> KnowledgeBase {
+    fn process_rule(mut self, mut rule: Rule) -> Self {
+        
+        println!("ADDING RULE: {}", rule);
         let n_ants = rule.antecedents.len();
         for n in 0..n_ants {
             let mut new_ants = vec![];
@@ -142,7 +145,10 @@ impl KnowledgeBase {
         }
         self
     }
-    fn process_fact(mut self, fact: Fact) -> KnowledgeBase {
+    fn process_fact(mut self, fact: Fact) -> Self {
+        
+        println!("ADDING FACT: {}", fact);
+        
         let izipper = self.rules.izipper();
         let paths = fact.get_leaf_paths();
         let response = izipper.climb(&paths).finish();
@@ -152,15 +158,20 @@ impl KnowledgeBase {
                 self.queue.push_back(Activation::from_matching(rule.clone(), real_matching));
             }
         }
-        self.facts = Box::new(self.facts.add_fact(fact));
+        self.facts = self.facts.add_fact(fact);
+
         self
     }
-    fn process_match(mut self, rule: Rule, matching: SynMatching) -> KnowledgeBase {
+    fn process_match(mut self, rule: Rule, matching: SynMatching) -> Self {
         let Rule { antecedents, consequents } = rule;
         let n_ants = antecedents.len();
         if n_ants > 0 {
-            let new_antecedents = antecedents.iter().map(|antecedent| antecedent.substitute(&matching)).collect();
-            let new_consequents = consequents.iter().map(|consequent| consequent.substitute(&matching)).collect();
+            let new_antecedents = antecedents.iter()
+                                             .map(|antecedent| antecedent.substitute(&matching))
+                                             .collect();
+            let new_consequents = consequents.iter()
+                                             .map(|consequent| consequent.substitute(&matching))
+                                             .collect();
             let new_rule = Rule { antecedents: new_antecedents, consequents: new_consequents };
             self.queue.push_back(Activation::from_rule(new_rule));
         } else {
@@ -181,7 +192,30 @@ mod tests {
     fn kb_1() {
         let mut kb = KnowledgeBase::new();
         kb = kb.tell("susan ISA person.");
-        let (kb, resp) = kb.ask("susan ISA person.");
+        let resp = kb.ask("susan ISA person.");
+        assert!(resp);
+    }
+    #[test]
+    fn kb_2() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("susan ISA person.");
+        let resp = kb.ask("susan ISA animal.");
+        assert!(!resp);
+    }
+//    #[test]
+//    fn kb_3() {
+//        let mut kb = KnowledgeBase::new();
+//        kb = kb.tell("<X0> ISA <X1>; <X1> IS <X2> -> <X0> ISA <X2>.");
+//        kb = kb.tell("susan ISA person.");
+//        kb = kb.tell("person IS animal.");
+//        let (kb, resp) = kb.ask("susan ISA animal");
+//        assert!(resp);
+//    }
+    #[test]
+    fn kb_4() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("<X0> ISA <X1>; <X1> IS <X2> -> <X0> ISA <X2>. susan ISA person. person IS animal.");
+        let resp = kb.ask("susan ISA animal.");
         assert!(resp);
     }
 }

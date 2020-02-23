@@ -1,5 +1,6 @@
 use std::clone::Clone;
 use std::collections::HashMap;
+use std::fmt;
 
 use crate::path::SynPath;
 use crate::segment::SynSegment;
@@ -11,6 +12,20 @@ use crate::fact::Fact;
 pub struct Rule {
     pub antecedents: Vec<Fact>,
     pub consequents: Vec<Fact>,
+}
+
+impl fmt::Display for Rule {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} -> {}", &self.antecedents.iter()
+                                   .map(|a| format!("{}", a))
+                                   .collect::<Vec<String>>()
+                                   .join("; "),
+                              &self.consequents.iter()
+                                   .map(|a| format!("{}", a))
+                                   .collect::<Vec<String>>()
+                                   .join("; "))
+    }
 }
 
 #[derive(Debug, Clone)]

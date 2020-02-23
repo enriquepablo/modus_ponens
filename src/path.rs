@@ -60,13 +60,10 @@ impl<'a> SynPath {
             if path_starts_with_self {
                 after = i;
             }
-            println!("starts {} really with: {}", after, path);
             if try_to_see && !seen && path_starts_with_self {
                 seen = true;
-                println!("seen: {}", path);
             } else if (!try_to_see || seen) && (!path_starts_with_self || path.len() == self.len()) {
                 after = i;
-                println!("break: {}", after);
                 break;
             }
             i += 1;
@@ -189,7 +186,7 @@ mod tests {
         let segms = vec![segm];
         let path = SynPath::new(segms);
         assert_eq!(path.identity[0], constants::VAR_RULE_NAME);
-        assert_eq!(path.identity[1], "<X0>");
+        assert_eq!(path.identity[1], "<__X0>");
         assert_eq!(path.len(), 1);
         assert_eq!(path.is_var(), true);
         assert_eq!(path.is_leaf(), true);

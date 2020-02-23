@@ -9,7 +9,7 @@ consequents = { fact ~ (";" ~ fact)* }
 
 fact        = { value ~ pred ~ value }
 
-var         = @{ "<X" ~ ('0'..'9')+ ~ ">" | "X" ~ ('₀'..'₉') }
+var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" | "X" ~ ('₀'..'₉') }
 
 pred        = { "ISA" | "IS" }
 
@@ -22,4 +22,4 @@ v_pairs     = { "(" ~ pair ~ ("," ~ pair)* ~ ")" }
 value       = { v_pairs | v_name | var }
 
 COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
-WHITESPACE  = _{ " " | "\t" | "\r" | "\n" }
+WHITESPACE  = { " " | "\t" | "\r" | "\n" }

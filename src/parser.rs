@@ -101,14 +101,24 @@ pub fn parse_text(text: &str) -> Result<ParseResult, Error<Rule>> {
                     match pairset.as_rule() {
                         Rule::antecedents => {
                             for factpair in pairset.into_inner() {
-                                let antecedent = build_fact(factpair);
-                                antecedents.push(antecedent);
+                                match factpair.as_rule() {
+                                    Rule::fact => {
+                                        let antecedent = build_fact(factpair);
+                                        antecedents.push(antecedent);
+                                    },
+                                    _ => {}
+                                }
                             }
                         },
                         Rule::consequents => {
                             for factpair in pairset.into_inner() {
-                                let consequent = build_fact(factpair);
-                                consequents.push(consequent);
+                                match factpair.as_rule() {
+                                    Rule::fact => {
+                                        let consequent = build_fact(factpair);
+                                        consequents.push(consequent);
+                                    },
+                                    _ => {}
+                                }
                             }
                         },
                         _ => {}
@@ -121,6 +131,12 @@ pub fn parse_text(text: &str) -> Result<ParseResult, Error<Rule>> {
         }
     }
     Ok(ParseResult { facts, rules })
+}
+
+
+pub fn parse_fact(text: &str) -> Fact {
+    let parse_tree = SynParser::parse(Rule::fact, text).ok().unwrap().next().unwrap();
+    build_fact(parse_tree)
 }
 
 

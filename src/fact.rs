@@ -1,16 +1,25 @@
 use std::clone::Clone;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use std::fmt;
+
 
 use crate::segment::SynSegment;
 use crate::path::SynPath;
 use crate::matching::{ SynMatching, invert };
-use crate::parser::parse_text;
+use crate::parser::{ parse_text, parse_fact };
 
 #[derive(Debug, Clone)]
 pub struct Fact {
     pub text: String,
     pub paths: Vec<SynPath>,
+}
+
+impl fmt::Display for Fact {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", &self.text)
+    }
 }
 
 impl Fact {
@@ -42,8 +51,7 @@ impl Fact {
     pub fn substitute(&self, matching: &SynMatching) -> Fact {
         let new_paths = SynPath::substitute_paths(&self.paths, matching);
         let text = new_paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
-        let parsed = parse_text(&text);
-        parsed.ok().unwrap().facts.pop().unwrap()
+        parse_fact(&text)
     }
 
     pub fn substitute_fast(&self, matching: &SynMatching) -> Fact {
@@ -65,7 +73,7 @@ impl Fact {
             }
         }
         let invarmap = invert(varmap.clone());
-        let new_fact = self.substitute_fast(&varmap);
+        let new_fact = self.substitute(&varmap);
         (invarmap, new_fact)
     }
 }
