@@ -259,12 +259,12 @@ mod tests {
     fn kb_4() {
         let mut kb = KnowledgeBase::new();
         kb = kb.tell("<X0> ISA <X1>; <X1> IS <X2> -> <X0> ISA <X2>. susan ISA person. person IS animal.");
-        //kb = kb.tell("<X0> IS <X1>; <X1> IS <X2> -> <X0> IS <X2>. animal IS thing.");
+        kb = kb.tell("<X0> IS <X1>; <X1> IS <X2> -> <X0> IS <X2>. animal IS thing.");
         let mut resp = kb.ask("susan ISA person.");
         assert!(resp);
         resp = kb.ask("susan ISA animal.");
         assert!(resp);
-        //resp = kb.ask("susan ISA thing.");
-        //assert!(resp);
+        resp = kb.ask("susan ISA thing.");
+        assert!(resp);
     }
 }
