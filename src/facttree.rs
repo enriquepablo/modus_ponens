@@ -172,14 +172,14 @@ impl<'a> NodeZipper<'a> {
         }
     }
     
-    fn get_child(mut self, path: &'a SynPath, l: bool) -> (Option<NodeZipper<'a>>, Option<NodeZipper<'a>>) {
+    fn get_child(mut self, path: &'a SynPath, logic: bool) -> (Option<NodeZipper<'a>>, Option<NodeZipper<'a>>) {
         // Remove the specified child from the node's children.
         // A NodeZipper shouldn't let its users inspect its parent,
         // since we mutate the parents
         // to move the focused nodes out of their list of children.
         // We use swap_remove() for efficiency.
         let child: Option<FSNode>;
-        if l {
+        if logic {
             child = self.lchildren.remove(path);
         } else {
             child = self.children.remove(path);
@@ -197,7 +197,7 @@ impl<'a> NodeZipper<'a> {
             (Some(NodeZipper {
                 parent: Some(Box::new(self)),
                 path_in_parent: Some(path),
-                logic_node: true,
+                logic_node: logic,
                 children: child_children,
                 lchildren: child_lchildren,
             }), None)
@@ -208,11 +208,9 @@ impl<'a> NodeZipper<'a> {
         let mut parent = self;
         let mut child: NodeZipper;
         let mut child_index = 0;
-        let mut path_index: i16 = -1;
-        for path in paths {
-            path_index += 1;
+        for (path_index, path) in paths.iter().enumerate() {
             if path.in_var_range() {
-                   let (opt_child, opt_node) = parent.get_child(path, true);
+                let (opt_child, opt_node) = parent.get_child(path, true);
                 let mut new_paths = path.paths_after(&paths, true);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
@@ -222,8 +220,7 @@ impl<'a> NodeZipper<'a> {
                         continue;
                     }
                 } else if path.is_leaf() {
-                    let i = path_index as usize;
-                    parent = opt_node.expect("node").create_paths(&paths[i..]);
+                    parent = opt_node.expect("node").create_paths(&paths[path_index..]);
                     return parent.ancestor(child_index);
                 } else {
                     new_paths = &paths[(paths.len() - new_paths.len() - 1)..];
@@ -231,10 +228,9 @@ impl<'a> NodeZipper<'a> {
                     continue;
                 }
             } else {
-                   let (opt_child, opt_node) = parent.get_child(path, false);
+                let (opt_child, opt_node) = parent.get_child(path, false);
                 if opt_child.is_none() {
-                    let i = path_index as usize;
-                    parent = opt_node.expect("node").create_paths(&paths[i..]);
+                    parent = opt_node.expect("node").create_paths(&paths[path_index..]);
                     return parent.ancestor(child_index);
                 } else {
                     child = opt_child.expect("node");

@@ -14,13 +14,13 @@ impl<'a> FactSet {
     pub fn new () -> FactSet {
         FactSet { root: Box::new(FSNode::new()) }
     }
-    pub fn add_fact (self, fact: Fact) -> Box<FactSet> {
+    pub fn add_fact (self, fact: Fact) -> FactSet {
         let FactSet { mut root } = self;
         let mut zipper = root.zipper();
         let paths = fact.get_all_paths();
         zipper = zipper.follow_and_create_paths(&paths);
         root = zipper.finish();
-        Box::new(FactSet { root })
+        FactSet { root }
     }
     pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching> {
         let mut response: Box<Vec<SynMatching>> = Box::new(vec![]);
@@ -40,13 +40,13 @@ mod tests {
     use crate::parser::parse_text;
 
     pub struct Knowledge {
-        pub factset: Box<FactSet>,
+        pub factset: FactSet,
     }
 
 
     impl<'a> Knowledge {
         pub fn new () -> Knowledge {
-            Knowledge { factset: Box::new(FactSet::new()) }
+            Knowledge { factset: FactSet::new() }
         }
         fn tell(self, k: &str) -> Knowledge {
             let Knowledge {

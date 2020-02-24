@@ -51,7 +51,7 @@ impl Activation {
 }
 
 pub struct KnowledgeBase {
-    facts: Box<FactSet>,
+    facts: FactSet,
     rules: Box<RSNode>,
     queue: Box<VecDeque<Activation>>,
 }
@@ -60,7 +60,7 @@ impl KnowledgeBase {
 
     pub fn new () -> KnowledgeBase {
         KnowledgeBase {
-            facts: Box::new(FactSet::new()),
+            facts: FactSet::new(),
             rules: Box::new(RSNode::new()),
             queue: Box::new(VecDeque::new()),
         }
@@ -129,7 +129,7 @@ impl KnowledgeBase {
                     new_ants.push(ant.clone());
                 }
             }
-            let new_conseqs = consequents.iter().map(|c| c.clone()).collect();
+            let new_conseqs = consequents.clone();
             let new_rule = Rule {
                 antecedents: new_ants,
                 consequents: new_conseqs
@@ -199,23 +199,66 @@ mod tests {
     fn kb_2() {
         let mut kb = KnowledgeBase::new();
         kb = kb.tell("susan ISA person.");
-        let resp = kb.ask("susan ISA animal.");
+        let mut resp = kb.ask("susan ISA person.");
+        assert!(resp);
+        resp = kb.ask("susan ISA walrus.");
         assert!(!resp);
     }
-//    #[test]
-//    fn kb_3() {
-//        let mut kb = KnowledgeBase::new();
-//        kb = kb.tell("<X0> ISA <X1>; <X1> IS <X2> -> <X0> ISA <X2>.");
-//        kb = kb.tell("susan ISA person.");
-//        kb = kb.tell("person IS animal.");
-//        let (kb, resp) = kb.ask("susan ISA animal");
-//        assert!(resp);
-//    }
+    #[test]
+    fn kb_3() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("susan ISA person.");
+        kb = kb.tell("susan ISA animal.");
+        let mut resp = kb.ask("susan ISA person.");
+        assert!(resp);
+        resp = kb.ask("susan ISA animal.");
+        assert!(resp);
+        resp = kb.ask("susan ISA walrus.");
+        assert!(!resp);
+    }
+    #[test]
+    fn kb_3_1() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("susan ISA person.");
+        kb = kb.tell("peter ISA animal.");
+        let mut resp = kb.ask("susan ISA person.");
+        assert!(resp);
+        resp = kb.ask("peter ISA animal.");
+        assert!(resp);
+        resp = kb.ask("susan ISA walrus.");
+        assert!(!resp);
+    }
+    #[test]
+    fn kb_3_2() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("susan ISA person.");
+        kb = kb.tell("susan IS animal.");
+        let mut resp = kb.ask("susan ISA person.");
+        assert!(resp);
+        resp = kb.ask("susan IS animal.");
+        assert!(resp);
+        resp = kb.ask("susan ISA walrus.");
+        assert!(!resp);
+    }
+    #[test]
+    fn kb_4_0() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("<X0> ISA <X1>; <X1> IS <X2> -> <X0> ISA <X2>.");
+        kb = kb.tell("susan ISA person.");
+        kb = kb.tell("person IS animal.");
+        let resp = kb.ask("susan ISA animal.");
+        assert!(resp);
+    }
     #[test]
     fn kb_4() {
         let mut kb = KnowledgeBase::new();
         kb = kb.tell("<X0> ISA <X1>; <X1> IS <X2> -> <X0> ISA <X2>. susan ISA person. person IS animal.");
-        let resp = kb.ask("susan ISA animal.");
+        //kb = kb.tell("<X0> IS <X1>; <X1> IS <X2> -> <X0> IS <X2>. animal IS thing.");
+        let mut resp = kb.ask("susan ISA person.");
         assert!(resp);
+        resp = kb.ask("susan ISA animal.");
+        assert!(resp);
+        //resp = kb.ask("susan ISA thing.");
+        //assert!(resp);
     }
 }
