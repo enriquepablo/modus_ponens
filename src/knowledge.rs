@@ -86,6 +86,10 @@ impl KnowledgeBase {
         let resps = self.facts.ask_fact(&fact);
         resps.len() > 0
     }
+    pub fn check_fact(&self, fact: &Fact) -> bool {
+        let resps = self.facts.ask_fact(fact);
+        resps.len() > 0
+    }
     fn process_activations(mut self) -> Self {
         while !self.queue.is_empty() {
             let next = self.queue.pop_front().unwrap();
@@ -94,7 +98,9 @@ impl KnowledgeBase {
                     atype: ActType::Fact,
                     fact: Some(fact), ..
                 } => {
-                    self = self.process_fact(fact);
+                    if !self.check_fact(&fact) {
+                        self = self.process_fact(fact);
+                    }
                 },
                 Activation {
                     atype: ActType::Rule,
