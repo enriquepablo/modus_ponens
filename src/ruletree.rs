@@ -595,7 +595,7 @@ mod tests {
         resp = kb.ask("pepe ISA person.");
         assert_eq!(resp, 0);
         resp = kb.ask("(say: susan, what: (want: susan, what: (love: john, who: susan))) ISA fact.");
-        assert_eq!(resp, 1);  // XXX should be 2
+        assert_eq!(resp, 2);  // XXX should be 2
         resp = kb.ask("(say: susan, what: (want: susan, what: (love: john, who: pepe))) ISA fact.");
         assert_eq!(resp, 1);
         resp = kb.ask("(want: john, what: (love: john, who: susan)) ISA fact.");

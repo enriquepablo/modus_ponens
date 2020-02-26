@@ -9,17 +9,21 @@ consequents = { fact ~ (";" ~ fact)* }
 
 fact        = { value ~ pred ~ value }
 
-var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" | "X" ~ ('₀'..'₉') }
+var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
 
-pred        = { "ISA" | "IS" }
+pred        = { "ISA" | "IS" | "EQ" }
 
-name        = _{ v_name | var }
-v_name      = @{ ASCII_ALPHA_LOWER+ }
+v_name      = @{ ASCII_ALPHANUMERIC+ }
 
-pair        = { name ~ ":" ~ value }
-v_pairs     = { "(" ~ pair ~ ("," ~ pair)* ~ ")" }
+pair        = { value ~ colon ~ value }
+v_pairs     = { open_paren ~ pair ~ (comma ~ pair)* ~ close_paren }
 
-value       = _{ v_pairs | v_name | var }
+open_paren  = { "(" }
+close_paren = { ")" }
+comma       = { "," }
+colon       = { ":" }
+
+value       = { v_pairs | v_name | var }
 
 COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 WHITESPACE  = { " " | "\t" | "\r" | "\n" }

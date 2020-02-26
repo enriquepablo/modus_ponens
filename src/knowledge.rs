@@ -67,7 +67,11 @@ impl KnowledgeBase {
     }
 
     pub fn tell(mut self, knowledge: &str) -> KnowledgeBase {
-        let ParseResult { rules, facts } = parse_text(knowledge).ok().unwrap();
+        let result = parse_text(knowledge);
+        if result.is_err() {
+            panic!("Mistake forlongorl!! {}", result.err().unwrap());
+        }
+        let ParseResult { rules, facts } = result.ok().unwrap();
         for rule in rules {
             let act = Activation::from_rule(rule);
             self.queue.push_back(act);
@@ -202,6 +206,20 @@ mod tests {
         assert!(resp);
     }
     #[test]
+    fn kb_1_1() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("susan ISA (what: person, kind: female).");
+        let resp = kb.ask("susan ISA (what: person, kind: female).");
+        assert!(resp);
+    }
+    #[test]
+    fn kb_1_2() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("susan ISA (what: person, kind: female).");
+        let resp = kb.ask("susan ISA (what: person, kind: <X0>).");
+        assert!(resp);
+    }
+    #[test]
     fn kb_2() {
         let mut kb = KnowledgeBase::new();
         kb = kb.tell("susan ISA person.");
@@ -267,4 +285,79 @@ mod tests {
         resp = kb.ask("susan ISA thing.");
         assert!(resp);
     }
+    #[test]
+    fn kb_5_0() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("<X4> ISA (hom: <X2>, hom: <X2>)\
+                       -> \
+                      <X2> ISA <X4>.");
+    }
+    #[test]
+    fn kb_5() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("<X4> ISA (hom1: <X2>, hom2: <X2>);\
+                      <X5> ISA (hom1: <X3>, hom2: <X3>);\
+                      (p1: <X4>, p2: <X5>) ISA (hom1: (p1: <X2>, p2: <X3>), hom2: (p1: <X2>, p2: <X3>));\
+                      (p1: <X6>, p2: <X8>) ISA (fn: <X1>, on: (p1: <X2>, p2: <X3>));\
+                      (fn: (fn: <X1>, on: <X4>), on: <X6>) EQ <X7>;\
+                      (fn: (fn: <X1>, on: <X5>), on: <X8>) EQ <X9>\
+                       -> \
+                      (p1: <X7>, p2: <X9>) ISA (fn: <X1>, on: (p1: <X2>, p2: <X3>));\
+                      (fn: (fn: <X1>, on: (p1: <X4>, p2: <X5>)), on: (p1: <X6>, p2: <X8>)) EQ (p1: <X7>, p2: <X9>).");
+    }
 }
+        // self.kb.tell("""
+        //               
+        //               
+        //               
+        //               ;
+        //               ;
+        //               {{logic}}
+        //               ->
+        //               ;
+        //               .
+        //               """)
+
+        // self.kb.tell("""
+        //              p(<X2> X <X3>) ISA (<X1> p(<X4> X <X5>))
+        //              ->
+        //              <X2> ISA (<X1> <X4>);
+        //              <X3> ISA (<X1> <X5>).
+        //               """)
+
+        // self.kb.tell("""
+        //              <X1> ISA (pr nat)
+        //              ->
+        //              ((pr s1) <X1>) EQ [s,<X1>].
+        //               """)
+
+        // # self.kb.tell("people ISA object.")
+        // self.kb.tell("s2 ISA h(hom people,people).")
+
+        // # self.kb.tell("p(nat X people) ISA object.")
+        // self.kb.tell("p(s1 X s2) ISA h(hom p(nat X people),p(nat X people)).")
+
+        // # self.kb.tell("pr ISA presheaf.")
+
+        // # self.kb.tell("nat ISA object.")
+
+        // self.kb.tell("s1 ISA h(hom nat,nat).")
+
+        // self.kb.tell("""
+        //               john ISA (pr people).
+        //               susan ISA (pr people).
+        //               mary ISA (pr people).
+        //               peter ISA (pr people).
+        //               """)
+
+        // self.kb.tell("""
+        //              ((pr s2) john) EQ susan.
+        //              ((pr s2) susan) EQ mary.
+        //              ((pr s2) mary) EQ peter.
+        //               """)
+
+        // self.kb.tell("""
+        //              p([s,0] X john) ISA (pr p(nat X people))
+        //               """)
+
+        // /*  */resp = self.kb.query("p(<X1> X susan) ISA (pr p(nat X people))")
