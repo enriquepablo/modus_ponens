@@ -304,32 +304,40 @@ mod tests {
                        -> \
                       (p1: <X7>, p2: <X9>) ISA (fn: <X1>, on: (p1: <X2>, p2: <X3>));\
                       (fn: (fn: <X1>, on: (p1: <X4>, p2: <X5>)), on: (p1: <X6>, p2: <X8>)) EQ (p1: <X7>, p2: <X9>).");
-    }
+        kb = kb.tell("(p1: <X2>, p2: <X3>) ISA (fn: <X1>, on: (p1: <X4>, p2: <X5>))\
+                     -> \
+                     <X2> ISA (fn: <X1>, on: <X4>);\
+                     <X3> ISA (fn: <X1>, on: <X5>).");
+        kb = kb.tell("<X1> ISA (fn: pr, on: nat)\
+                     -> \
+                     (fn: (fn: pr, on: s1), on: <X1>) EQ (s: <X1>).");
+        kb = kb.tell("s2 ISA (hom1: people, hom2: people).");
+        kb = kb.tell("(p1: s1, p2: s2) ISA (hom1: (p1: nat, p2: people), hom2: (p1: nat, p2: people)).");
+        kb = kb.tell("s1 ISA (hom1: nat, hom2: nat).");
+        kb = kb.tell("john ISA (fn: pr, on: people).\
+                      susan ISA (fn: pr, on: people).\
+                      mary ISA (fn: pr, on: people).\
+                      gwen ISA (fn: pr, on: people).\
+                      pedro ISA (fn: pr, on: people).\
+                      isa ISA (fn: pr, on: people).\
+                      mimi ISA (fn: pr, on: people).\
+                      jose ISA (fn: pr, on: people).\
+                      kem ISA (fn: pr, on: people).\
+                      peter ISA (fn: pr, on: people).");
+        kb = kb.tell("(fn: (fn: pr, on: s2), on: john) EQ susan.\
+                     (fn: (fn: pr, on: s2), on: susan) EQ mary.\
+                     (fn: (fn: pr, on: s2), on: mary) EQ gwen.\
+                     (fn: (fn: pr, on: s2), on: gwen) EQ pedro.\
+                     (fn: (fn: pr, on: s2), on: pedro) EQ isa.\
+                     (fn: (fn: pr, on: s2), on: isa) EQ mimi.\
+                     (fn: (fn: pr, on: s2), on: mimi) EQ jose.\
+                     (fn: (fn: pr, on: s2), on: jose) EQ kem.\
+                     (fn: (fn: pr, on: s2), on: kem) EQ peter.");
+        kb = kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let resp = kb.ask("(p1: <X0>, p2: kem) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp);
+        }
 }
-        // self.kb.tell("""
-        //               
-        //               
-        //               
-        //               ;
-        //               ;
-        //               {{logic}}
-        //               ->
-        //               ;
-        //               .
-        //               """)
-
-        // self.kb.tell("""
-        //              p(<X2> X <X3>) ISA (<X1> p(<X4> X <X5>))
-        //              ->
-        //              <X2> ISA (<X1> <X4>);
-        //              <X3> ISA (<X1> <X5>).
-        //               """)
-
-        // self.kb.tell("""
-        //              <X1> ISA (pr nat)
-        //              ->
-        //              ((pr s1) <X1>) EQ [s,<X1>].
-        //               """)
 
         // # self.kb.tell("people ISA object.")
         // self.kb.tell("s2 ISA h(hom people,people).")

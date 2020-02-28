@@ -390,7 +390,7 @@ impl<'a> IRSZipper<'a> {
                 parent_matched = old_parent_matched;
             }
             for (vpath, varchild) in parent_var_children.iter() {
-                let (new_path, _) = path.sub_path(vpath.len());
+                let new_path = path.sub_path(vpath.len());
                 let old_value = parent_matched.get(&vpath.value);
                 if old_value.is_some() {
                     if &new_path.value == old_value.unwrap() {
@@ -421,10 +421,10 @@ impl<'a> IRSZipper<'a> {
             }
             if parent_var_child.is_some() {
                 let var_child = parent_var_child.unwrap();
-                let (new_path, val) = path.sub_path(var_child.path.len());
+                let new_path = path.sub_path(var_child.path.len());
                 let new_paths = new_path.paths_after(rest_paths, false);
                 let mut new_matched = parent_matched.clone();
-                new_matched.insert(var_child.path.value.clone(), val.clone());
+                new_matched.insert(var_child.path.value.clone(), new_path.value.clone());
                 let vchild = match &var_child.var_child {
                     None => None,
                     Some(node) => Some(node),

@@ -41,14 +41,14 @@ impl<'a> SynPath {
         let lpath = path.len();
         lself >= lpath && &self.segments[0..lpath] == &path.segments[0..lpath]
     }
-    pub fn sub_path(&self, lpath: usize) -> (SynPath, &SynSegment) {
+    pub fn sub_path(&self, lpath: usize) -> SynPath {
         let new_segments = self.segments
                                .as_slice()
                                .into_iter()
                                .take(lpath)
                                .map(|s| s.clone())
                                .collect();
-        (SynPath::new(new_segments), self.segments.last().unwrap())
+        SynPath::new(new_segments)
     }
     pub fn paths_after(&self, paths: &'a [&'a SynPath], try_to_see: bool) -> &'a [&'a SynPath] {
         let mut seen = false;
@@ -122,7 +122,9 @@ impl<'a> SynPath {
                 if old_path.is_some() {
                     old_paths.push(old_path.unwrap());
                 }
-                new_paths.push(new_path);
+                if new_path.is_leaf() {
+                    new_paths.push(new_path);
+                }
             }
         }
         new_paths
