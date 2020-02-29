@@ -159,6 +159,25 @@ impl<'a> RSZipper {
                 break;
             }
         }
+        let RSZipper {
+            parent, child_type,
+            path, var_child,
+            var_children, children,
+            mut rule_refs,
+            rule_ref,
+        } = zipper;
+
+        if rule_ref.is_some() {
+            rule_refs.push(rule_ref.unwrap());
+        }
+
+        zipper = RSZipper {
+            parent, child_type,
+            path, var_child,
+            var_children, children,
+            rule_refs,
+            rule_ref: None,
+        };
         zipper.finish()
     }
 
@@ -202,25 +221,6 @@ impl<'a> RSZipper {
             };
             zipper = new_zipper;
         }
-        let RSZipper {
-            parent, child_type,
-            path, var_child,
-            var_children, children,
-            mut rule_refs,
-            rule_ref,
-        } = zipper;
-
-        if rule_ref.is_some() {
-            rule_refs.push(rule_ref.unwrap());
-        }
-
-        let zipper = RSZipper {
-            parent, child_type,
-            path, var_child,
-            var_children, children,
-            rule_refs,
-            rule_ref: None,
-        };
         zipper
     }
     
@@ -448,6 +448,7 @@ impl<'a> IRSZipper<'a> {
             }
         } else {
             // ENDNODE
+            println!("Found rules: {}", parent_rule_refs.len());
             response.push(( parent_rule_refs, parent_matched.clone() ));
         }
         IRSZipper {

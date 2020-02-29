@@ -276,13 +276,32 @@ mod tests {
     #[test]
     fn kb_4() {
         let mut kb = KnowledgeBase::new();
-        kb = kb.tell("<X0> ISA <X1>; <X1> IS <X2> -> <X0> ISA <X2>. susan ISA person. person IS animal.");
-        kb = kb.tell("<X0> IS <X1>; <X1> IS <X2> -> <X0> IS <X2>. animal IS thing.");
-        let mut resp = kb.ask("susan ISA person.");
+        kb = kb.tell("<X0> ISA <X1>; <X1> IS <X2> -> <X0> ISA <X2>.");
+        kb = kb.tell("<X0> IS <X1>; <X1> IS <X2> -> <X0> IS <X2>.");
+        kb = kb.tell("animal IS thing.");
+        kb = kb.tell("mammal IS animal.");
+        kb = kb.tell("carnivore IS mammal.");
+        kb = kb.tell("human IS carnivore.");
+        kb = kb.tell("susan ISA human.");
+        let mut resp = kb.ask("susan ISA human.");
         assert!(resp);
         resp = kb.ask("susan ISA animal.");
         assert!(resp);
         resp = kb.ask("susan ISA thing.");
+        assert!(resp);
+    }
+    #[test]
+    fn kb_4_1() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("<X0> ISA carnivore;\
+                      <X1> ISA lamb;
+                      (located: <X0>, near: <X1>) ISA fact
+                        -> \
+                      (eat: <X0>, what: <X1>) ISA fact.");
+        kb = kb.tell("lobo ISA carnivore.");
+        kb = kb.tell("melinda ISA lamb.");
+        kb = kb.tell("(located: lobo, near: melinda) ISA fact.");
+        let resp = kb.ask("(eat: lobo, what: melinda) ISA fact.");
         assert!(resp);
     }
     #[test]
@@ -334,7 +353,7 @@ mod tests {
                      (fn: (fn: pr, on: s2), on: jose) EQ kem.\
                      (fn: (fn: pr, on: s2), on: kem) EQ peter.");
         kb = kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
-        let resp = kb.ask("(p1: <X0>, p2: kem) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let resp = kb.ask("(p1: <X0>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
         assert!(resp);
         }
 }
