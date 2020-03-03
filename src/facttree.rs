@@ -223,8 +223,18 @@ impl<'a> NodeZipper<'a> {
                     parent = opt_node.expect("node").create_paths(&paths[path_index..]);
                     return parent.ancestor(child_index);
                 } else {
-                    new_paths = &paths[(paths.len() - new_paths.len() - 1)..];
-                    parent = opt_node.expect("node").create_paths(&new_paths);
+                    parent = opt_node.expect("node");
+                    child = NodeZipper {
+                        parent: Some(Box::new(parent)),
+                        path_in_parent: Some(path),
+                        logic_node: path.in_var_range(),
+                        children: HashMap::new(),
+                        lchildren: HashMap::new(),
+                    };
+                    let renew_paths = path.paths_after(&new_paths, true);
+                    child = child.create_paths(&renew_paths);
+                    parent = child.get_parent().expect("we set the parent");
+                    parent = parent.create_paths(&new_paths);
                     continue;
                 }
             } else {
@@ -291,6 +301,7 @@ impl<'a> INodeZipper<'a> {
         }
     }
     
+    #[allow(dead_code)]
     pub fn query_paths(self,
                    all_paths: Vec<&'a SynPath>,
                    matching: SynMatching,
@@ -299,9 +310,8 @@ impl<'a> INodeZipper<'a> {
         let INodeZipper {
             children: parent_children,
             lchildren: parent_lchildren,
-            response: parent_response,
+            response: mut resp,
         } = self;
-        let mut resp = parent_response;
         let split_paths = all_paths.split_first();
         if split_paths.is_some() {
             let mut subs_path: Option<SynPath> = None;

@@ -4,7 +4,6 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
         {
             "type": "lldb",
             "request": "launch",
@@ -40,6 +39,25 @@
                 }
             },
             "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug ONE unit test in 'syntree'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=syntree",
+                    "--package=syntree"
+                ],
+                "filter": {
+                    "name": "syntree",
+                    "kind": "bin"
+                }
+            },
+            "args": ["test_fs_5"],
             "cwd": "${workspaceFolder}"
         }
     ]

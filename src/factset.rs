@@ -136,4 +136,31 @@ mod tests {
         resp = kb.ask("(love: susan, who: john) ISA fact.");
         assert_eq!(resp, true);
     }
+    #[test]
+    fn test_3() {
+        let mut kb = Knowledge::new();
+        kb = kb.tell("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let resp1 = kb.ask("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp1);
+        let resp2 = kb.ask("(p1: (s: <X0>), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp2);
+        let resp3 = kb.ask("(p1: <X0>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp3);
+    }
+    #[test]
+    fn test_fs_4() {
+        let mut kb = Knowledge::new();
+        kb = kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        kb = kb.tell("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let resp2 = kb.ask("(p1: <X0>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp2);
+    }
+    #[test]
+    fn test_fs_5() {
+        let mut kb = Knowledge::new();
+        kb = kb.tell("(p1: (s: 0), p2: john) ISA fact.");
+        kb = kb.tell("(p1: (s: (s: 0)), p2: susan) ISA fact.");
+        let resp2 = kb.ask("(p1: <X0>, p2: susan) ISA fact.");
+        assert!(resp2);
+    }
 }

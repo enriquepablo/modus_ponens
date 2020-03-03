@@ -69,7 +69,7 @@ impl KnowledgeBase {
     pub fn tell(mut self, knowledge: &str) -> KnowledgeBase {
         let result = parse_text(knowledge);
         if result.is_err() {
-            panic!("Mistake forlongorl!! {}", result.err().unwrap());
+            panic!("Parsing problem! {}", result.err().unwrap());
         }
         let ParseResult { rules, facts } = result.ok().unwrap();
         for rule in rules {
@@ -126,7 +126,7 @@ impl KnowledgeBase {
     }
     fn process_rule(mut self, mut rule: Rule) -> Self {
         
-        println!("ADDING RULE: {}", rule);
+        //println!("ADDING RULE: {}", rule);
         let n_ants = rule.antecedents.len();
         for n in 0..n_ants {
             let mut new_ants = vec![];
@@ -169,7 +169,6 @@ impl KnowledgeBase {
             }
         }
         self.facts = self.facts.add_fact(fact);
-
         self
     }
     fn process_match(mut self, rule: Rule, matching: SynMatching) -> Self {
@@ -335,27 +334,23 @@ mod tests {
         kb = kb.tell("s1 ISA (hom1: nat, hom2: nat).");
         kb = kb.tell("john ISA (fn: pr, on: people).\
                       susan ISA (fn: pr, on: people).\
-                      mary ISA (fn: pr, on: people).\
-                      gwen ISA (fn: pr, on: people).\
-                      pedro ISA (fn: pr, on: people).\
-                      isa ISA (fn: pr, on: people).\
-                      mimi ISA (fn: pr, on: people).\
-                      jose ISA (fn: pr, on: people).\
-                      kem ISA (fn: pr, on: people).\
                       peter ISA (fn: pr, on: people).");
         kb = kb.tell("(fn: (fn: pr, on: s2), on: john) EQ susan.\
-                     (fn: (fn: pr, on: s2), on: susan) EQ mary.\
-                     (fn: (fn: pr, on: s2), on: mary) EQ gwen.\
-                     (fn: (fn: pr, on: s2), on: gwen) EQ pedro.\
-                     (fn: (fn: pr, on: s2), on: pedro) EQ isa.\
-                     (fn: (fn: pr, on: s2), on: isa) EQ mimi.\
-                     (fn: (fn: pr, on: s2), on: mimi) EQ jose.\
-                     (fn: (fn: pr, on: s2), on: jose) EQ kem.\
-                     (fn: (fn: pr, on: s2), on: kem) EQ peter.");
+                     (fn: (fn: pr, on: s2), on: susan) EQ peter.");
         kb = kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
-        let resp = kb.ask("(p1: <X0>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let mut resp = kb.ask("s1 ISA (hom1: nat, hom2: nat).");
         assert!(resp);
-        }
+        resp = kb.ask("(s: (s: (s: 0))) ISA (fn: pr, on: nat).");
+        assert!(resp);
+        resp = kb.ask("(fn: (fn: pr, on: s1), on: (s: (s: (s: 0)))) EQ (s: (s: (s: (s: 0)))).");
+        assert!(resp);
+        resp = kb.ask("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp);
+        let resp2 = kb.ask("(p1: (s: <X1>), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp2);
+        let resp3 = kb.ask("(p1: <X1>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp3);
+    }
 }
 
         // # self.kb.tell("people ISA object.")
