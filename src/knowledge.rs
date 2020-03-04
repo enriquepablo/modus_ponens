@@ -416,15 +416,15 @@ mod tests {
         kb = kb.tell("<X1> ISA (fn: pr, on: nat)\
                      -> \
                      (fn: (fn: pr, on: s1), on: <X1>) EQ (s: <X1>).");
-        kb = kb.tell("s2 ISA (hom1: people, hom2: people).");
         kb = kb.tell("(p1: s1, p2: s2) ISA (hom1: (p1: nat, p2: people), hom2: (p1: nat, p2: people)).");
+        kb = kb.tell("s2 ISA (hom1: people, hom2: people).");
         kb = kb.tell("s1 ISA (hom1: nat, hom2: nat).");
+        kb = kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
         kb = kb.tell("john ISA (fn: pr, on: people).\
                       susan ISA (fn: pr, on: people).\
                       peter ISA (fn: pr, on: people).");
         kb = kb.tell("(fn: (fn: pr, on: s2), on: john) EQ susan.\
                      (fn: (fn: pr, on: s2), on: susan) EQ peter.");
-        kb = kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
         let mut resp = kb.ask("s1 ISA (hom1: nat, hom2: nat).");
         assert!(resp);
         resp = kb.ask("(s: (s: (s: 0))) ISA (fn: pr, on: nat).");
