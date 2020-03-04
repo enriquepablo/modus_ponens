@@ -131,7 +131,11 @@ impl KnowledgeBase {
         for n in 0..n_ants {
             let mut new_ants = vec![];
             let mut new_ant: Option<Fact> = None;
-            let Rule { antecedents, consequents } = rule;
+            let Rule {
+                antecedents,
+                more_antecedents,
+                consequents
+            } = rule;
             for (i, ant) in antecedents.iter().enumerate() {
                 if n == i {
                     new_ant = Some(ant.clone());
@@ -140,8 +144,10 @@ impl KnowledgeBase {
                 }
             }
             let new_conseqs = consequents.clone();
+            let new_more_ants = more_antecedents.clone();
             let new_rule = Rule {
                 antecedents: new_ants,
+                more_antecedents: new_more_ants,
                 consequents: new_conseqs
             };
             let (varmap, normal_ant) = new_ant.unwrap().normalize();
@@ -151,7 +157,11 @@ impl KnowledgeBase {
             };
             let zipper = self.rules.zipper(Some(rule_ref));
             self.rules = zipper.follow_and_create_paths(&normal_ant.get_leaf_paths());
-            rule = Rule { antecedents, consequents };
+            rule = Rule {
+                antecedents,
+                more_antecedents,
+                consequents
+            };
         }
         self
     }
@@ -172,24 +182,57 @@ impl KnowledgeBase {
         self
     }
     fn process_match(mut self, rule: Rule, matching: SynMatching) -> Self {
-        let Rule { antecedents, consequents } = rule;
+        let Rule {
+            antecedents,
+            mut more_antecedents,
+            consequents
+        } = rule;
         let n_ants = antecedents.len();
         if n_ants > 0 {
-            let new_antecedents = antecedents.iter()
-                                             .map(|antecedent| antecedent.substitute(&matching))
-                                             .collect();
-            let new_consequents = consequents.iter()
-                                             .map(|consequent| consequent.substitute(&matching))
-                                             .collect();
-            let new_rule = Rule { antecedents: new_antecedents, consequents: new_consequents };
+            let new_rule = self.preprocess_matched_rule(matching,
+                                                        antecedents,
+                                                        more_antecedents,
+                                                        consequents);
             self.queue.push_back(Activation::from_rule(new_rule));
         } else {
-            for consequent in consequents{
-                let new_consequent = consequent.substitute(&matching);
-                self.queue.push_back(Activation::from_fact(new_consequent));
+            if more_antecedents.len() > 0 {
+                let new_ants = more_antecedents.pop_front().unwrap();
+                let new_rule = self.preprocess_matched_rule(matching,
+                                                            new_ants,
+                                                            more_antecedents,
+                                                            consequents);
+                self.queue.push_back(Activation::from_rule(new_rule));
+            } else {
+                for consequent in consequents{
+                    let new_consequent = consequent.substitute(&matching);
+                    self.queue.push_back(Activation::from_fact(new_consequent));
+                }
             }
         }
         self
+    }
+    fn preprocess_matched_rule(&self, matching: SynMatching,
+                               antecedents: Vec<Fact>,
+                               more_antecedents: VecDeque<Vec<Fact>>,
+                               consequents: Vec<Fact>) -> Rule {
+        let new_antecedents = antecedents.iter()
+                                         .map(|antecedent| antecedent.substitute(&matching))
+                                         .collect();
+        let mut new_more_antecedents = VecDeque::new();
+        for more_ants in more_antecedents {
+            new_more_antecedents.push_back(more_ants.iter()
+                                                    .map(|antecedent| antecedent.substitute(&matching))
+                                                    .collect())
+        }
+        let new_consequents = consequents.iter()
+                                         .map(|consequent| consequent.substitute(&matching))
+                                         .collect();
+        Rule {
+            antecedents: new_antecedents,
+            more_antecedents: new_more_antecedents,
+            consequents: new_consequents
+        }
+
     }
 }
 

@@ -1,6 +1,7 @@
 use std::clone::Clone;
 use std::collections::HashMap;
 use std::fmt;
+use std::collections::VecDeque;
 
 use crate::path::SynPath;
 use crate::segment::SynSegment;
@@ -11,6 +12,7 @@ use crate::fact::Fact;
 #[derive(Debug, Clone)]
 pub struct Rule {
     pub antecedents: Vec<Fact>,
+    pub more_antecedents: VecDeque<Vec<Fact>>,
     pub consequents: Vec<Fact>,
 }
 

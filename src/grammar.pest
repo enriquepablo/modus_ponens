@@ -2,10 +2,12 @@ knowledge   = { (sentence ~ ".")+ }
 
 sentence    = _{ rule | fact }
 
-rule        = { antecedents ~ "->" ~ consequents }
+rule        = { antecedents+ ~ consequents }
 
-antecedents = { fact ~ (";" ~ fact)* }
-consequents = { fact ~ (";" ~ fact)* }
+antecedents = { factset ~ "->" }
+consequents = { factset }
+
+factset     = _{ fact ~ (";" ~ fact)* }
 
 fact        = { value ~ pred ~ value }
 

@@ -1,6 +1,7 @@
 use pest::error::Error;
 use crate::pest::Parser;
 use crate::pest::iterators::Pair;
+use std::collections::VecDeque;
 
 use crate::constants;
 use crate::segment::SynSegment;
@@ -95,20 +96,22 @@ pub fn parse_text(text: &str) -> Result<ParseResult, Error<Rule>> {
                 facts.push(fact);
             },
             Rule::rule => {
-                let mut antecedents = vec![];
+                let mut more_antecedents = VecDeque::new();
                 let mut consequents = vec![];
-                for pairset in pair.into_inner() {
+                for (i, pairset) in pair.into_inner().enumerate() {
                     match pairset.as_rule() {
                         Rule::antecedents => {
+                            let mut ants = vec![];
                             for factpair in pairset.into_inner() {
                                 match factpair.as_rule() {
                                     Rule::fact => {
                                         let antecedent = build_fact(factpair);
-                                        antecedents.push(antecedent);
+                                        ants.push(antecedent);
                                     },
                                     _ => {}
                                 }
                             }
+                            more_antecedents.push_back(ants);
                         },
                         Rule::consequents => {
                             for factpair in pairset.into_inner() {
@@ -124,7 +127,12 @@ pub fn parse_text(text: &str) -> Result<ParseResult, Error<Rule>> {
                         _ => {}
                     }
                 }
-                let rule = SynRule { antecedents, consequents};
+                let antecedents = more_antecedents.pop_front();
+                let rule = SynRule {
+                    antecedents: antecedents.unwrap(),
+                    more_antecedents,
+                    consequents
+                };
                 rules.push(rule);
             },
             _ => {}
@@ -164,7 +172,9 @@ mod tests {
         let rules = f1.ok().unwrap().rules;
         let rule = rules.first().unwrap();
         let SynRule {
-            antecedents, consequents
+            antecedents,
+            more_antecedents,
+            consequents
         } = rule;
         {
             let fact = antecedents.get(0).unwrap();
