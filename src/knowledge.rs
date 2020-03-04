@@ -354,12 +354,56 @@ mod tests {
                       <X2> ISA <X4>.");
     }
     #[test]
+    #[ignore]
     fn kb_5() {
         let mut kb = KnowledgeBase::new();
         kb = kb.tell("<X4> ISA (hom1: <X2>, hom2: <X2>);\
                       <X5> ISA (hom1: <X3>, hom2: <X3>);\
                       (p1: <X4>, p2: <X5>) ISA (hom1: (p1: <X2>, p2: <X3>), hom2: (p1: <X2>, p2: <X3>));\
                       (p1: <X6>, p2: <X8>) ISA (fn: <X1>, on: (p1: <X2>, p2: <X3>));\
+                      (fn: (fn: <X1>, on: <X4>), on: <X6>) EQ <X7>;\
+                      (fn: (fn: <X1>, on: <X5>), on: <X8>) EQ <X9>\
+                       -> \
+                      (p1: <X7>, p2: <X9>) ISA (fn: <X1>, on: (p1: <X2>, p2: <X3>));\
+                      (fn: (fn: <X1>, on: (p1: <X4>, p2: <X5>)), on: (p1: <X6>, p2: <X8>)) EQ (p1: <X7>, p2: <X9>).");
+        kb = kb.tell("(p1: <X2>, p2: <X3>) ISA (fn: <X1>, on: (p1: <X4>, p2: <X5>))\
+                     -> \
+                     <X2> ISA (fn: <X1>, on: <X4>);\
+                     <X3> ISA (fn: <X1>, on: <X5>).");
+        kb = kb.tell("<X1> ISA (fn: pr, on: nat)\
+                     -> \
+                     (fn: (fn: pr, on: s1), on: <X1>) EQ (s: <X1>).");
+        kb = kb.tell("s2 ISA (hom1: people, hom2: people).");
+        kb = kb.tell("(p1: s1, p2: s2) ISA (hom1: (p1: nat, p2: people), hom2: (p1: nat, p2: people)).");
+        kb = kb.tell("s1 ISA (hom1: nat, hom2: nat).");
+        kb = kb.tell("john ISA (fn: pr, on: people).\
+                      susan ISA (fn: pr, on: people).\
+                      peter ISA (fn: pr, on: people).");
+        kb = kb.tell("(fn: (fn: pr, on: s2), on: john) EQ susan.\
+                     (fn: (fn: pr, on: s2), on: susan) EQ peter.");
+        kb = kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let mut resp = kb.ask("s1 ISA (hom1: nat, hom2: nat).");
+        assert!(resp);
+        resp = kb.ask("(s: (s: (s: 0))) ISA (fn: pr, on: nat).");
+        assert!(resp);
+        resp = kb.ask("(fn: (fn: pr, on: s1), on: (s: (s: (s: 0)))) EQ (s: (s: (s: (s: 0)))).");
+        assert!(resp);
+        resp = kb.ask("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp);
+        let resp2 = kb.ask("(p1: (s: <X1>), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp2);
+        let resp3 = kb.ask("(p1: <X1>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        assert!(resp3);
+    }
+    #[test]
+    fn kb_6() {
+        let mut kb = KnowledgeBase::new();
+        kb = kb.tell("(p1: <X4>, p2: <X5>) ISA (hom1: (p1: <X2>, p2: <X3>), hom2: (p1: <X2>, p2: <X3>))\
+                      -> \
+                      <X4> ISA (hom1: <X2>, hom2: <X2>);\
+                      <X5> ISA (hom1: <X3>, hom2: <X3>);\
+                      (p1: <X6>, p2: <X8>) ISA (fn: <X1>, on: (p1: <X2>, p2: <X3>))\
+                      -> \
                       (fn: (fn: <X1>, on: <X4>), on: <X6>) EQ <X7>;\
                       (fn: (fn: <X1>, on: <X5>), on: <X8>) EQ <X9>\
                        -> \
