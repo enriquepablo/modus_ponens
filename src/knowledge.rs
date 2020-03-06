@@ -82,7 +82,7 @@ impl KnowledgeBase {
             self = self.process_activations();
         }
         for fact in facts {
-            let act = Activation::from_fact(fact, false);
+            let act = Activation::from_fact(fact, true);
             self.queue.push_back(act);
             self = self.process_activations();
         }
@@ -132,7 +132,7 @@ impl KnowledgeBase {
     }
     fn process_rule(mut self, mut rule: Rule) -> Self {
         
-        //println!("ADDING RULE: {}", rule);
+        println!("ADDING RULE: {}", rule);
         let n_ants = rule.antecedents.len();
         for n in 0..n_ants {
             let mut new_ants = vec![];
@@ -195,11 +195,31 @@ impl KnowledgeBase {
         } = rule;
         let n_ants = antecedents.len();
         if n_ants > 0 {
+            let mut more_acts: Vec<Activation> = vec![];
+            if query_rules {
+                let mut new_ants;
+                for i in 0..n_ants {
+                    new_ants = antecedents.clone();
+                    let ant = new_ants.remove(i);
+                    let resps = self.facts.ask_fact(&ant);
+                    for resp in resps {
+                        let new_rule = self.preprocess_matched_rule(resp,
+                                                                    new_ants.clone(),
+                                                                    more_antecedents.clone(),
+                                                                    consequents.clone());
+                        let act = Activation::from_rule(new_rule, query_rules);
+                        more_acts.push(act);
+                    }
+                }
+            }
             let new_rule = self.preprocess_matched_rule(matching,
                                                         antecedents,
                                                         more_antecedents,
                                                         consequents);
             self.queue.push_back(Activation::from_rule(new_rule, query_rules));
+            for na in more_acts {
+                self.queue.push_back(na);
+            }
         } else {
             if more_antecedents.len() > 0 {
                 let new_ants = more_antecedents.pop_front().unwrap();
@@ -207,7 +227,7 @@ impl KnowledgeBase {
                                                             new_ants,
                                                             more_antecedents,
                                                             consequents);
-                self.queue.push_back(Activation::from_rule(new_rule, query_rules));
+                self.queue.push_back(Activation::from_rule(new_rule, true));
             } else {
                 for consequent in consequents{
                     let new_consequent = consequent.substitute(&matching);
@@ -422,15 +442,59 @@ mod tests {
         kb = kb.tell("<X1> ISA (fn: pr, on: nat)\
                      -> \
                      (fn: (fn: pr, on: s1), on: <X1>) EQ (s: <X1>).");
-        kb = kb.tell("(p1: s1, p2: s2) ISA (hom1: (p1: nat, p2: people), hom2: (p1: nat, p2: people)).");
         kb = kb.tell("s2 ISA (hom1: people, hom2: people).");
+        kb = kb.tell("(p1: s1, p2: s2) ISA (hom1: (p1: nat, p2: people), hom2: (p1: nat, p2: people)).");
         kb = kb.tell("s1 ISA (hom1: nat, hom2: nat).");
         kb = kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
         kb = kb.tell("john ISA (fn: pr, on: people).\
                       susan ISA (fn: pr, on: people).\
+                      sue1 ISA (fn: pr, on: people).\
+                      sue2 ISA (fn: pr, on: people).\
+                      sue3 ISA (fn: pr, on: people).\
+                      sue4 ISA (fn: pr, on: people).\
+                      sue5 ISA (fn: pr, on: people).\
+                      sue6 ISA (fn: pr, on: people).\
+                      sue7 ISA (fn: pr, on: people).\
+                      sue8 ISA (fn: pr, on: people).\
+                      sue9 ISA (fn: pr, on: people).\
+                      sue10 ISA (fn: pr, on: people).\
+                      sue11 ISA (fn: pr, on: people).\
+                      sue12 ISA (fn: pr, on: people).\
+                      sue13 ISA (fn: pr, on: people).\
+                      sue14 ISA (fn: pr, on: people).\
+                      sue15 ISA (fn: pr, on: people).\
+                      sue16 ISA (fn: pr, on: people).\
+                      sue17 ISA (fn: pr, on: people).\
+                      sue18 ISA (fn: pr, on: people).\
+                      sue19 ISA (fn: pr, on: people).\
+                      ken ISA (fn: pr, on: people).\
+                      bob ISA (fn: pr, on: people).\
+                      isa ISA (fn: pr, on: people).\
                       peter ISA (fn: pr, on: people).");
         kb = kb.tell("(fn: (fn: pr, on: s2), on: john) EQ susan.\
-                     (fn: (fn: pr, on: s2), on: susan) EQ peter.");
+                     (fn: (fn: pr, on: s2), on: susan) EQ sue1.\
+                     (fn: (fn: pr, on: s2), on: sue1) EQ sue2.\
+                     (fn: (fn: pr, on: s2), on: sue2) EQ sue3.\
+                     (fn: (fn: pr, on: s2), on: sue3) EQ sue4.\
+                     (fn: (fn: pr, on: s2), on: sue4) EQ sue5.\
+                     (fn: (fn: pr, on: s2), on: sue5) EQ sue6.\
+                     (fn: (fn: pr, on: s2), on: sue6) EQ sue7.\
+                     (fn: (fn: pr, on: s2), on: sue7) EQ sue8.\
+                     (fn: (fn: pr, on: s2), on: sue8) EQ sue9.\
+                     (fn: (fn: pr, on: s2), on: sue9) EQ sue10.\
+                     (fn: (fn: pr, on: s2), on: sue10) EQ sue11.\
+                     (fn: (fn: pr, on: s2), on: sue11) EQ sue12.\
+                     (fn: (fn: pr, on: s2), on: sue12) EQ sue13.\
+                     (fn: (fn: pr, on: s2), on: sue13) EQ sue14.\
+                     (fn: (fn: pr, on: s2), on: sue14) EQ sue15.\
+                     (fn: (fn: pr, on: s2), on: sue15) EQ sue16.\
+                     (fn: (fn: pr, on: s2), on: sue16) EQ sue17.\
+                     (fn: (fn: pr, on: s2), on: sue17) EQ sue18.\
+                     (fn: (fn: pr, on: s2), on: sue18) EQ sue19.\
+                     (fn: (fn: pr, on: s2), on: sue19) EQ ken.\
+                     (fn: (fn: pr, on: s2), on: ken) EQ bob.\
+                     (fn: (fn: pr, on: s2), on: bob) EQ isa.\
+                     (fn: (fn: pr, on: s2), on: isa) EQ peter.");
         let mut resp = kb.ask("s1 ISA (hom1: nat, hom2: nat).");
         assert!(resp);
         resp = kb.ask("(s: (s: (s: 0))) ISA (fn: pr, on: nat).");
