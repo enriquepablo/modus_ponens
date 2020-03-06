@@ -20,32 +20,36 @@ pub struct Activation {
     rule: Option<Rule>,
     fact: Option<Fact>,
     matched: Option<SynMatching>,
+    query_rules: bool,
 }
 
 impl Activation {
 
-    pub fn from_fact(fact: Fact) -> Activation {
+    pub fn from_fact(fact: Fact, query_rules: bool) -> Activation {
         Activation {
             atype: ActType::Fact,
             rule: None,
             fact: Some(fact),
             matched: None,
+            query_rules,
         }
     }
-    pub fn from_rule(rule: Rule) -> Activation {
+    pub fn from_rule(rule: Rule, query_rules: bool) -> Activation {
         Activation {
             atype: ActType::Rule,
             rule: Some(rule),
             fact: None,
             matched: None,
+            query_rules,
         }
     }
-    pub fn from_matching(rule: Rule, matched: SynMatching) -> Activation {
+    pub fn from_matching(rule: Rule, matched: SynMatching, query_rules: bool) -> Activation {
         Activation {
             atype: ActType::Match,
             rule: Some(rule),
             fact: None,
             matched: Some(matched),
+            query_rules,
         }
     }
 }
@@ -73,12 +77,12 @@ impl KnowledgeBase {
         }
         let ParseResult { rules, facts } = result.ok().unwrap();
         for rule in rules {
-            let act = Activation::from_rule(rule);
+            let act = Activation::from_rule(rule, true);
             self.queue.push_back(act);
             self = self.process_activations();
         }
         for fact in facts {
-            let act = Activation::from_fact(fact);
+            let act = Activation::from_fact(fact, false);
             self.queue.push_back(act);
             self = self.process_activations();
         }
@@ -100,10 +104,11 @@ impl KnowledgeBase {
             match next {
                 Activation {
                     atype: ActType::Fact,
-                    fact: Some(fact), ..
+                    fact: Some(fact),
+                    query_rules, ..
                 } => {
                     if !self.check_fact(&fact) {
-                        self = self.process_fact(fact);
+                        self = self.process_fact(fact, query_rules);
                     }
                 },
                 Activation {
@@ -115,9 +120,10 @@ impl KnowledgeBase {
                 Activation {
                     atype: ActType::Match,
                     rule: Some(rule),
-                    matched: Some(matched), ..
+                    matched: Some(matched),
+                    query_rules, ..
                 } => {
-                    self = self.process_match(rule, matched);
+                    self = self.process_match(rule, matched, query_rules);
                 },
                 _ => {}
             }
@@ -165,7 +171,7 @@ impl KnowledgeBase {
         }
         self
     }
-    fn process_fact(mut self, fact: Fact) -> Self {
+    fn process_fact(mut self, fact: Fact, query_rules: bool) -> Self {
         
         println!("ADDING FACT: {}", fact);
         
@@ -175,13 +181,13 @@ impl KnowledgeBase {
         for (rule_refs, matching) in *response {
             for RuleRef { rule, varmap } in rule_refs {
                 let real_matching = get_real_matching(&matching, varmap); 
-                self.queue.push_back(Activation::from_matching(rule.clone(), real_matching));
+                self.queue.push_back(Activation::from_matching(rule.clone(), real_matching, query_rules));
             }
         }
         self.facts = self.facts.add_fact(fact);
         self
     }
-    fn process_match(mut self, rule: Rule, matching: SynMatching) -> Self {
+    fn process_match(mut self, rule: Rule, matching: SynMatching, query_rules: bool) -> Self {
         let Rule {
             antecedents,
             mut more_antecedents,
@@ -193,7 +199,7 @@ impl KnowledgeBase {
                                                         antecedents,
                                                         more_antecedents,
                                                         consequents);
-            self.queue.push_back(Activation::from_rule(new_rule));
+            self.queue.push_back(Activation::from_rule(new_rule, query_rules));
         } else {
             if more_antecedents.len() > 0 {
                 let new_ants = more_antecedents.pop_front().unwrap();
@@ -201,11 +207,11 @@ impl KnowledgeBase {
                                                             new_ants,
                                                             more_antecedents,
                                                             consequents);
-                self.queue.push_back(Activation::from_rule(new_rule));
+                self.queue.push_back(Activation::from_rule(new_rule, query_rules));
             } else {
                 for consequent in consequents{
                     let new_consequent = consequent.substitute(&matching);
-                    self.queue.push_back(Activation::from_fact(new_consequent));
+                    self.queue.push_back(Activation::from_fact(new_consequent, query_rules));
                 }
             }
         }
