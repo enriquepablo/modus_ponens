@@ -348,10 +348,10 @@ mod tests {
     }
     #[test]
     fn kb_5_0() {
-        let mut kb = KnowledgeBase::new();
-        kb = kb.tell("<X4> ISA (hom: <X2>, hom: <X2>)\
-                       -> \
-                      <X2> ISA <X4>.");
+        let kb = KnowledgeBase::new();
+        kb.tell("<X4> ISA (hom: <X2>, hom: <X2>)\
+                  -> \
+                 <X2> ISA <X4>.");
     }
     #[test]
     #[ignore]

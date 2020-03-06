@@ -7,7 +7,7 @@ use std::fmt;
 use crate::segment::SynSegment;
 use crate::path::SynPath;
 use crate::matching::{ SynMatching, invert };
-use crate::parser::{ parse_text, parse_fact };
+use crate::parser::{ parse_fact };
 
 #[derive(Debug, Clone)]
 pub struct Fact {

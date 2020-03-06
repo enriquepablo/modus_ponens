@@ -98,7 +98,7 @@ pub fn parse_text(text: &str) -> Result<ParseResult, Error<Rule>> {
             Rule::rule => {
                 let mut more_antecedents = VecDeque::new();
                 let mut consequents = vec![];
-                for (i, pairset) in pair.into_inner().enumerate() {
+                for pairset in pair.into_inner() {
                     match pairset.as_rule() {
                         Rule::antecedents => {
                             let mut ants = vec![];
@@ -173,8 +173,7 @@ mod tests {
         let rule = rules.first().unwrap();
         let SynRule {
             antecedents,
-            more_antecedents,
-            consequents
+            consequents, ..
         } = rule;
         {
             let fact = antecedents.get(0).unwrap();

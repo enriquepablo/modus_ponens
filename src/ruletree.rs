@@ -247,8 +247,7 @@ impl<'a> RSZipper {
             var_children,
             children,
             rule_refs,
-            rule_ref,
-            end_node,
+            end_node, ..
         } = self;
 
         // Insert the node of this NodeZipper back in its parent.

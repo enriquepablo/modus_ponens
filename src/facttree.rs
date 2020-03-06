@@ -211,7 +211,7 @@ impl<'a> NodeZipper<'a> {
         for (path_index, path) in paths.iter().enumerate() {
             if path.in_var_range() {
                 let (opt_child, opt_node) = parent.get_child(path, true);
-                let mut new_paths = path.paths_after(&paths, true);
+                let new_paths = path.paths_after(&paths, true);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
                     if !path.is_leaf() {
