@@ -55,11 +55,19 @@ impl Activation {
     }
 }
 
+pub struct KStat {
+    pub rules: usize,
+    pub rules_known: usize,
+    pub facts: usize,
+    pub facts_known: usize,
+}
+
 pub struct KnowledgeBase {
     facts: FactSet,
     rules: Box<RSNode>,
     queue: Box<VecDeque<Activation>>,
     known: Box<HashSet<String>>,
+    pub stats: KStat,
 }
 
 impl KnowledgeBase {
@@ -70,6 +78,7 @@ impl KnowledgeBase {
             rules: Box::new(RSNode::new()),
             queue: Box::new(VecDeque::new()),
             known: Box::new(HashSet::new()),
+            stats: KStat {rules: 0, rules_known: 0, facts: 0, facts_known: 0},
         }
     }
 
@@ -115,6 +124,9 @@ impl KnowledgeBase {
                 } => {
                     if !self.knew(format!("{}", &fact)) {
                         self = self.process_fact(fact, query_rules);
+                        self.stats.facts += 1;
+                    } else {
+                        self.stats.facts_known += 1;
                     }
                 },
                 Activation {
@@ -123,6 +135,9 @@ impl KnowledgeBase {
                 } => {
                     if !self.knew(format!("{}", &rule)) {
                         self = self.process_rule(rule);
+                        self.stats.rules += 1;
+                    } else {
+                        self.stats.rules_known += 1;
                     }
                 },
                 Activation {
