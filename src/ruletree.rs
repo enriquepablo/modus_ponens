@@ -19,10 +19,18 @@ pub struct Rule {
 impl fmt::Display for Rule {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} -> {}", &self.antecedents.iter()
+        let more = &self.more_antecedents.iter()
+                                         .map(|ants| ants.iter()
+                                                         .map(|a| format!("{}", a))
+                                                         .collect::<Vec<String>>()
+                                                         .join("; "))
+                                         .collect::<Vec<String>>()
+                                         .join(" -> ");
+        write!(f, "{} -> {} -> {}", &self.antecedents.iter()
                                    .map(|a| format!("{}", a))
                                    .collect::<Vec<String>>()
                                    .join("; "),
+                              more,
                               &self.consequents.iter()
                                    .map(|a| format!("{}", a))
                                    .collect::<Vec<String>>()

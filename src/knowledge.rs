@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::collections::HashSet;
 
 use crate::matching::{ SynMatching, get_real_matching };
 use crate::fact::Fact;
@@ -58,6 +59,7 @@ pub struct KnowledgeBase {
     facts: FactSet,
     rules: Box<RSNode>,
     queue: Box<VecDeque<Activation>>,
+    known: Box<HashSet<String>>,
 }
 
 impl KnowledgeBase {
@@ -67,6 +69,7 @@ impl KnowledgeBase {
             facts: FactSet::new(),
             rules: Box::new(RSNode::new()),
             queue: Box::new(VecDeque::new()),
+            known: Box::new(HashSet::new()),
         }
     }
 
@@ -82,7 +85,7 @@ impl KnowledgeBase {
             self = self.process_activations();
         }
         for fact in facts {
-            let act = Activation::from_fact(fact, true);
+            let act = Activation::from_fact(fact, false);
             self.queue.push_back(act);
             self = self.process_activations();
         }
@@ -94,9 +97,12 @@ impl KnowledgeBase {
         let resps = self.facts.ask_fact(&fact);
         resps.len() > 0
     }
-    pub fn check_fact(&self, fact: &Fact) -> bool {
-        let resps = self.facts.ask_fact(fact);
-        resps.len() > 0
+    pub fn knew(&mut self, k: String) -> bool {
+        if !self.known.contains(&k) {
+            self.known.insert(k);
+            return false;
+        }
+        true
     }
     fn process_activations(mut self) -> Self {
         while !self.queue.is_empty() {
@@ -107,7 +113,7 @@ impl KnowledgeBase {
                     fact: Some(fact),
                     query_rules, ..
                 } => {
-                    if !self.check_fact(&fact) {
+                    if !self.knew(format!("{}", &fact)) {
                         self = self.process_fact(fact, query_rules);
                     }
                 },
@@ -115,7 +121,9 @@ impl KnowledgeBase {
                     atype: ActType::Rule,
                     rule: Some(rule), ..
                 } => {
-                    self = self.process_rule(rule);
+                    if !self.knew(format!("{}", &rule)) {
+                        self = self.process_rule(rule);
+                    }
                 },
                 Activation {
                     atype: ActType::Match,
@@ -123,7 +131,7 @@ impl KnowledgeBase {
                     matched: Some(matched),
                     query_rules, ..
                 } => {
-                    self = self.process_match(rule, matched, query_rules);
+                    self.process_match(rule, matched, query_rules);
                 },
                 _ => {}
             }
@@ -187,77 +195,72 @@ impl KnowledgeBase {
         self.facts = self.facts.add_fact(fact);
         self
     }
-    fn process_match(mut self, rule: Rule, matching: SynMatching, query_rules: bool) -> Self {
+    fn process_match(&mut self, rule: Rule, matching: SynMatching, mut query_rules: bool) {
+        let old_len = rule.more_antecedents.len();
+        let (mut rule, new) = self.preprocess_matched_rule(&matching, rule);
+
+        if new {
+            if rule.more_antecedents.len() < old_len {
+                query_rules = true;
+            }
+            if query_rules {
+                rule = self.query_rule(rule, query_rules);
+            }
+            self.queue.push_back(Activation::from_rule(rule, query_rules));
+        } else {
+           for consequent in rule.consequents{
+               let new_consequent = consequent.substitute(&matching);
+               self.queue.push_back(Activation::from_fact(new_consequent, query_rules));
+           }
+        }
+    }
+    fn query_rule(&mut self, rule: Rule, query_rules: bool) -> Rule {
+        for i in 0..rule.antecedents.len() {
+            let mut new_ants = rule.antecedents.clone();
+            let ant = new_ants.remove(i);
+            let resps = self.facts.ask_fact(&ant);
+            for resp in resps {
+                let new_rule = Rule {
+                    antecedents: new_ants.clone(),
+                    more_antecedents: rule.more_antecedents.clone(),
+                    consequents: rule.consequents.clone(),
+                };
+                self.process_match(new_rule, resp, query_rules);
+            }
+        }
+        rule
+    }
+    fn preprocess_matched_rule(&self, matching: &SynMatching, rule: Rule) -> (Rule, bool) {
         let Rule {
-            antecedents,
+            mut antecedents,
             mut more_antecedents,
             consequents
         } = rule;
-        let n_ants = antecedents.len();
-        if n_ants > 0 {
-            let mut more_acts: Vec<Activation> = vec![];
-            if query_rules {
-                let mut new_ants;
-                for i in 0..n_ants {
-                    new_ants = antecedents.clone();
-                    let ant = new_ants.remove(i);
-                    let resps = self.facts.ask_fact(&ant);
-                    for resp in resps {
-                        let new_rule = self.preprocess_matched_rule(resp,
-                                                                    new_ants.clone(),
-                                                                    more_antecedents.clone(),
-                                                                    consequents.clone());
-                        let act = Activation::from_rule(new_rule, query_rules);
-                        more_acts.push(act);
-                    }
-                }
-            }
-            let new_rule = self.preprocess_matched_rule(matching,
-                                                        antecedents,
-                                                        more_antecedents,
-                                                        consequents);
-            self.queue.push_back(Activation::from_rule(new_rule, query_rules));
-            for na in more_acts {
-                self.queue.push_back(na);
-            }
-        } else {
-            if more_antecedents.len() > 0 {
-                let new_ants = more_antecedents.pop_front().unwrap();
-                let new_rule = self.preprocess_matched_rule(matching,
-                                                            new_ants,
-                                                            more_antecedents,
-                                                            consequents);
-                self.queue.push_back(Activation::from_rule(new_rule, true));
+        if antecedents.len() == 0 {
+            if more_antecedents.len() == 0 {
+                return (Rule {antecedents, more_antecedents, consequents}, false);
             } else {
-                for consequent in consequents{
-                    let new_consequent = consequent.substitute(&matching);
-                    self.queue.push_back(Activation::from_fact(new_consequent, query_rules));
-                }
+                antecedents = more_antecedents.pop_front().unwrap();
             }
         }
-        self
-    }
-    fn preprocess_matched_rule(&self, matching: SynMatching,
-                               antecedents: Vec<Fact>,
-                               more_antecedents: VecDeque<Vec<Fact>>,
-                               consequents: Vec<Fact>) -> Rule {
         let new_antecedents = antecedents.iter()
                                          .map(|antecedent| antecedent.substitute(&matching))
                                          .collect();
         let mut new_more_antecedents = VecDeque::new();
-        for more_ants in more_antecedents {
+        while more_antecedents.len() > 0 {
+            let more_ants = more_antecedents.pop_front().unwrap(); 
             new_more_antecedents.push_back(more_ants.iter()
                                                     .map(|antecedent| antecedent.substitute(&matching))
-                                                    .collect())
+                                                    .collect());
         }
         let new_consequents = consequents.iter()
                                          .map(|consequent| consequent.substitute(&matching))
                                          .collect();
-        Rule {
+        (Rule {
             antecedents: new_antecedents,
             more_antecedents: new_more_antecedents,
             consequents: new_consequents
-        }
+        }, true)
 
     }
 }
@@ -427,7 +430,8 @@ mod tests {
         kb = kb.tell("(p1: <X4>, p2: <X5>) ISA (hom1: (p1: <X2>, p2: <X3>), hom2: (p1: <X2>, p2: <X3>))\
                       -> \
                       <X4> ISA (hom1: <X2>, hom2: <X2>);\
-                      <X5> ISA (hom1: <X3>, hom2: <X3>);\
+                      <X5> ISA (hom1: <X3>, hom2: <X3>)\
+                      -> \
                       (p1: <X6>, p2: <X8>) ISA (fn: <X1>, on: (p1: <X2>, p2: <X3>))\
                       -> \
                       (fn: (fn: <X1>, on: <X4>), on: <X6>) EQ <X7>;\
