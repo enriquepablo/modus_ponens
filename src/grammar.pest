@@ -17,7 +17,7 @@ pred        = { "ISA" | "IS" | "EQ" }
 
 v_name      = @{ ASCII_ALPHANUMERIC+ }
 
-pair        = { value ~ colon ~ value }
+pair        = _{ value ~ colon ~ value }
 v_pairs     = { open_paren ~ pair ~ (comma ~ pair)* ~ close_paren }
 
 open_paren  = { "(" }
@@ -25,7 +25,7 @@ close_paren = { ")" }
 comma       = { "," }
 colon       = { ":" }
 
-value       = { v_pairs | v_name | var }
+value       = _{ v_pairs | v_name | var }
 
 COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 WHITESPACE  = { " " | "\t" | "\r" | "\n" }

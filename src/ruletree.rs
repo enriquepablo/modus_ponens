@@ -483,7 +483,7 @@ impl<'a> IRSZipper<'a> {
             }
         }
         if parent_end_node {
-            println!("Found rules: {}", parent_rule_refs.len());
+            // println!("Found rules: {}", parent_rule_refs.len());
             response.push(( parent_rule_refs, parent_matched.clone() ));
         }
         IRSZipper {

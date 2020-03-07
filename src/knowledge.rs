@@ -155,7 +155,7 @@ impl KnowledgeBase {
     }
     fn process_rule(mut self, mut rule: Rule) -> Self {
         
-        println!("ADDING RULE: {}", rule);
+        // println!("ADDING RULE: {}", rule);
         let n_ants = rule.antecedents.len();
         for n in 0..n_ants {
             let mut new_ants = vec![];
@@ -196,7 +196,7 @@ impl KnowledgeBase {
     }
     fn process_fact(mut self, fact: Fact, query_rules: bool) -> Self {
         
-        println!("ADDING FACT: {}", fact);
+        // println!("ADDING FACT: {}", fact);
         
         let izipper = self.rules.izipper();
         let paths = fact.get_leaf_paths();
@@ -516,7 +516,7 @@ mod tests {
                      (fn: (fn: pr, on: s2), on: isa) EQ peter.");
         let mut resp = kb.ask("s1 ISA (hom1: nat, hom2: nat).");
         assert!(resp);
-        resp = kb.ask("(s: (s: (s: 0))) ISA (fn: pr, on: nat).");
+        resp = kb.ask("(s: (s: (s: (s: (s: (s: (s: (s: (s: 0))))))))) ISA (fn: pr, on: nat).");
         assert!(resp);
         resp = kb.ask("(fn: (fn: pr, on: s1), on: (s: (s: (s: 0)))) EQ (s: (s: (s: (s: 0)))).");
         assert!(resp);
