@@ -1,40 +1,51 @@
+use std::{cell::RefCell, collections::HashSet, mem};
 use std::clone::Clone;
-use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::fmt;
 
 
-use crate::segment::SynSegment;
 use crate::path::SynPath;
-use crate::matching::{ SynMatching, invert };
-use crate::parser::{ parse_fact };
+
+
 
 #[derive(Debug, Clone)]
-pub struct Fact {
+pub struct Fact<'a> {
     pub text: String,
-    pub paths: Vec<SynPath>,
+    pub paths: Vec<SynPath<'a>>,
 }
 
-impl fmt::Display for Fact {
+impl<'a> fmt::Display for Fact<'a> {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", &self.text)
     }
 }
 
-impl Fact {
+impl<'a> Fact<'a> {
     fn new(text: String, paths: Vec<SynPath>) -> Fact {
         Fact { text, paths, }
     }
-    fn from_paths(paths: Vec<SynPath>) -> Fact {
+    pub fn initialize(text: String) -> Fact<'a> {
+        Fact {
+            text,
+            paths: Vec::new(),
+        }
+    }
+    pub fn initialize_str(text: &str) -> Fact<'a> {
+        Fact {
+            text: String::from(text),
+            paths: Vec::new(),
+        }
+    }
+    pub fn from_paths(paths: Vec<SynPath>) -> Fact {
         let text = paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
         Fact { text, paths, }
     }
-    pub fn get_all_paths(&self) -> Vec<&SynPath> {
-        let mut paths = Vec::new();
-        for path in self.paths.iter() {
+    pub fn get_all_paths(&'a self) -> &'a [&'a SynPath] {
+        let paths = &mut [];
+        for (i, path) in self.paths.iter().enumerate() {
             if !path.value.text.trim().is_empty() {
-                paths.push(path);
+                paths[i] = path;
             }
         }
         paths
@@ -48,48 +59,100 @@ impl Fact {
         }
         paths
     }
-    pub fn substitute(&self, matching: &SynMatching) -> Fact {
-        let new_paths = SynPath::substitute_paths(&self.paths, matching);
-        let text = new_paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
-        parse_fact(&text)
-    }
-
-    pub fn substitute_fast(&self, matching: &SynMatching) -> Fact {
-        let new_paths = SynPath::substitute_paths(&self.paths, matching);
-        Fact::from_paths(new_paths)
-    }
-    pub fn normalize (&self) -> (SynMatching, Fact) {
-        let mut varmap: SynMatching = HashMap::new();
-        let mut counter = 1;
-        let leaves = self.get_leaf_paths();
-        for path in leaves {
-            if path.is_var() {
-                let old_var = varmap.get(&path.value);
-                if old_var.is_none() {
-                    let new_var = SynSegment::make_var(counter);
-                    counter += 1;
-                    varmap.insert(path.value.clone(), new_var);
-                }
-            }
-        }
-        let invarmap = invert(varmap.clone());
-        let new_fact = self.substitute_fast(&varmap);
-        (invarmap, new_fact)
-    }
 }
 
 
-impl PartialEq for Fact {
+impl<'a> PartialEq for Fact<'a> {
     fn eq(&self, other: &Self) -> bool {
         self.text == other.text
     }
 }
 
-impl Eq for Fact {}
+impl<'a> Eq for Fact<'a> {}
 
-impl Hash for Fact {
+impl<'a> Hash for Fact<'a> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.text.hash(state);
+    }
+}
+
+pub struct FLexicon<'a>(RefCell<HashSet<Fact<'a>>>);
+
+impl<'a> FLexicon<'a> {
+    pub fn new() -> Self {
+        FLexicon(RefCell::new(HashSet::new()))
+    }
+
+    pub fn intern(&self, text: &'a str, paths: Vec<SynPath<'a>>) -> &Fact {
+        let mut set = self.0.borrow_mut();
+        
+        let otext = String::from(text);
+        let fact = Fact::new(otext, paths);
+
+        if !set.contains(&fact) {
+            set.insert(fact.clone());
+        }
+
+        let interned = set.get(&fact).unwrap();
+
+        // TODO: Document the pre- and post-conditions that the code must
+        // uphold to make this unsafe code valid instead of copying this
+        // from Stack Overflow without reading it
+        unsafe { mem::transmute(&interned) }
+    }
+    pub fn from_paths(&'a self, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
+        let mut set = self.0.borrow_mut();
+        
+        let text = paths.iter()
+                        .filter(|path| path.is_leaf())
+                        .map(|path| path.value.text.as_str())
+                        .collect::<Vec<&str>>()
+                        .join("");
+        let fact = Fact::new(text, paths);
+
+        if !set.contains(&fact) {
+            set.insert(fact.clone());
+        }
+
+        let interned = set.get(&fact).unwrap();
+
+        // TODO: Document the pre- and post-conditions that the code must
+        // uphold to make this unsafe code valid instead of copying this
+        // from Stack Overflow without reading it
+        unsafe { mem::transmute(&interned) }
+    }
+
+    pub fn complete_fact(&'a self, mut fact: Fact<'a>, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
+        let mut set = self.0.borrow_mut();
+        
+        if !set.contains(&fact) {
+            fact.paths = paths;
+            set.insert(fact.clone());
+        }
+
+        let interned = set.get(&fact).unwrap();
+
+        // TODO: Document the pre- and post-conditions that the code must
+        // uphold to make this unsafe code valid instead of copying this
+        // from Stack Overflow without reading it
+        unsafe { mem::transmute(&interned) }
+    }
+    pub fn intern_string(&self, text: String, paths: Vec<SynPath<'a>>) -> &Fact {
+        let mut set = self.0.borrow_mut();
+        
+        let otext = String::from(text);
+        let fact = Fact::new(otext, paths);
+
+        if !set.contains(&fact) {
+            set.insert(fact.clone());
+        }
+
+        let interned = set.get(&fact).unwrap();
+
+        // TODO: Document the pre- and post-conditions that the code must
+        // uphold to make this unsafe code valid instead of copying this
+        // from Stack Overflow without reading it
+        unsafe { mem::transmute(&interned) }
     }
 }
 
@@ -100,23 +163,23 @@ mod tests {
 
     #[test]
     fn fact_1() {
-        let segm11 = SynSegment::new("rule-name1", "(text)", false);
-        let segms1 = vec![segm11];
+        let segm11 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+        let segms1 = vec![&segm11];
         let path1 = SynPath::new(segms1);
 
-        let segm21 = SynSegment::new("rule-name1", "(text)", false);
-        let segm22 = SynSegment::new("rule-name2", "(", true);
-        let segms2 = vec![segm21, segm22];
+        let segm21 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+        let segm22 = SynSegment::new("rule-name2".to_string(), "(".to_string(), true);
+        let segms2 = vec![&segm21, &segm22];
         let path2 = SynPath::new(segms2);
 
-        let segm31 = SynSegment::new("rule-name1", "(text)", false);
-        let segm32 = SynSegment::new("rule-name3", "text", true);
-        let segms3 = vec![segm31, segm32];
+        let segm31 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+        let segm32 = SynSegment::new("rule-name3".to_string(), "text".to_string(), true);
+        let segms3 = vec![&segm31, &segm32];
         let path3 = SynPath::new(segms3);
 
-        let segm41 = SynSegment::new("rule-name1", "(text)", false);
-        let segm42 = SynSegment::new("rule-name4", ")", true);
-        let segms4 = vec![segm41, segm42];
+        let segm41 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+        let segm42 = SynSegment::new("rule-name4".to_string(), ")".to_string(), true);
+        let segms4 = vec![&segm41, &segm42];
         let path4 = SynPath::new(segms4);
 
         let paths = vec![path1, path2, path3, path4];
@@ -128,28 +191,28 @@ mod tests {
 
     #[test]
     fn fact_2() {
-        let segm11 = SynSegment::new("rule-name1", "(text )", false);
-        let segms1 = vec![segm11];
+        let segm11 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+        let segms1 = vec![&segm11];
         let path1 = SynPath::new(segms1);
 
-        let segm21 = SynSegment::new("rule-name1", "(text )", false);
-        let segm22 = SynSegment::new("rule-name2", "(", true);
-        let segms2 = vec![segm21, segm22];
+        let segm21 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+        let segm22 = SynSegment::new("rule-name2".to_string(), "(".to_string(), true);
+        let segms2 = vec![&segm21, &segm22];
         let path2 = SynPath::new(segms2);
 
-        let segm31 = SynSegment::new("rule-name1", "(text )", false);
-        let segm32 = SynSegment::new("rule-name3", "text", true);
-        let segms3 = vec![segm31, segm32];
+        let segm31 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+        let segm32 = SynSegment::new("rule-name3".to_string(), "text".to_string(), true);
+        let segms3 = vec![&segm31, &segm32];
         let path3 = SynPath::new(segms3);
 
-        let segm41 = SynSegment::new("rule-name1", "(text )", false);
-        let segm42 = SynSegment::new("rule-name4", " ", true);
-        let segms4 = vec![segm41, segm42];
+        let segm41 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+        let segm42 = SynSegment::new("rule-name4".to_string(), " ".to_string(), true);
+        let segms4 = vec![&segm41, &segm42];
         let path4 = SynPath::new(segms4);
 
-        let segm51 = SynSegment::new("rule-name1", "(text )", false);
-        let segm52 = SynSegment::new("rule-name5", ")", true);
-        let segms5 = vec![segm51, segm52];
+        let segm51 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+        let segm52 = SynSegment::new("rule-name5".to_string(), ")".to_string(), true);
+        let segms5 = vec![&segm51, &segm52];
         let path5 = SynPath::new(segms5);
 
         let paths = vec![path1, path2, path3, path4, path5];

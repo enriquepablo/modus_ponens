@@ -5,25 +5,25 @@ use crate::path::SynPath;
 use crate::matching::SynMatching;
 
 #[derive(Debug, PartialEq)]
-pub struct FSNode {
-    children: HashMap<SynPath, FSNode>,
-    lchildren: HashMap<SynPath, FSNode>,
+pub struct FSNode<'a> {
+    children: HashMap<SynPath<'a>, FSNode<'a>>,
+    lchildren: HashMap<SynPath<'a>, FSNode<'a>>,
 }
 
-impl<'a> FSNode {
-    pub fn new() -> FSNode {
+impl<'a> FSNode<'a> {
+    pub fn new() -> FSNode<'a> {
         FSNode { 
             children: HashMap::new(),
             lchildren: HashMap::new(),
         }
     }
 
-    fn add_child(&mut self, path: SynPath) {
+    fn add_child(&mut self, path: SynPath<'a>) {
         let child: FSNode = FSNode::new();
         self.children.insert(path, child);
     }
 
-    fn add_lchild(&mut self, path: SynPath) {
+    fn add_lchild(&mut self, path: SynPath<'a>) {
         let child: FSNode = FSNode::new();
         self.lchildren.insert(path, child);
     }
@@ -37,10 +37,10 @@ impl<'a> FSNode {
 #[derive(Debug)]
 pub struct NodeZipper<'a> {
     parent: Option<Box<NodeZipper<'a>>>,
-    path_in_parent: Option<&'a SynPath>,
+    path_in_parent: Option<&'a SynPath<'a>>,
     logic_node: bool,
-    children: HashMap<SynPath, FSNode>,
-    lchildren: HashMap<SynPath, FSNode>,
+    children: HashMap<SynPath<'a>, FSNode<'a>>,
+    lchildren: HashMap<SynPath<'a>, FSNode<'a>>,
 }
 
 impl<'a> NodeZipper<'a> {
@@ -137,7 +137,7 @@ impl<'a> NodeZipper<'a> {
         }
     }
 
-    pub fn finish(mut self) -> Box<FSNode> {
+    pub fn finish(mut self) -> Box<FSNode<'a>> {
         while let Some(_) = self.parent {
             self = self.get_parent().expect("parent node");
         }
@@ -279,14 +279,14 @@ impl<'a> NodeZipper<'a> {
 
 #[derive(Debug)]
 pub struct INodeZipper<'a> {
-    children: &'a HashMap<SynPath, FSNode>,
-    lchildren: &'a HashMap<SynPath, FSNode>,
-    response: Box<Vec<SynMatching>>,
+    children: &'a HashMap<SynPath<'a>, FSNode<'a>>,
+    lchildren: &'a HashMap<SynPath<'a>, FSNode<'a>>,
+    response: Box<Vec<SynMatching<'a>>>,
 }
 
 impl<'a> INodeZipper<'a> {
     
-    fn add_response(self, matching: SynMatching) -> INodeZipper<'a> {
+    fn add_response(self, matching: SynMatching<'a>) -> INodeZipper<'a> {
         // Destructure this NodeZipper
         let INodeZipper {
             children,
@@ -304,7 +304,7 @@ impl<'a> INodeZipper<'a> {
     #[allow(dead_code)]
     pub fn query_paths(self,
                    all_paths: Vec<&'a SynPath>,
-                   matching: SynMatching,
+                   matching: SynMatching<'a>,
                    ) -> INodeZipper<'a> {
 
         let INodeZipper {
@@ -326,7 +326,7 @@ impl<'a> INodeZipper<'a> {
                             response: resp,
                         };
                         let mut new_matching = matching.clone();
-                        new_matching.insert(path.value.clone(), child_path.value.clone());
+                        new_matching.insert(path.value, child_path.value);
                         child = child.query_paths(paths.to_vec(), new_matching);
                         let INodeZipper {
                             response: new_response, ..
@@ -339,7 +339,7 @@ impl<'a> INodeZipper<'a> {
                         response: resp,
                     };
                 } else {
-                    let (new_path, _) = path.substitute(&matching);
+                    let (new_path, _) = path.substitute_owning(matching.clone());
                     subs_path = Some(new_path);
                 }
             }
@@ -364,14 +364,14 @@ impl<'a> INodeZipper<'a> {
                     lchildren: &next_node.expect("node").lchildren,
                     response: resp,
                 };
-                next_child = next_child.query_paths(paths.to_vec(), matching);
+                next_child = next_child.query_paths(paths.to_vec(), matching.clone());
                 let INodeZipper {
                     response: new_response, ..
                 } = next_child;
                 resp = new_response;
             }
         } else {
-            resp.push(matching);
+            resp.push(matching.clone());
         }
         INodeZipper {
             children: parent_children,
@@ -380,7 +380,7 @@ impl<'a> INodeZipper<'a> {
         }
     }
 
-    pub fn finish(self) -> Box<Vec<SynMatching>> {
+    pub fn finish(self) -> Box<Vec<SynMatching<'a>>> {
         
         let INodeZipper {
             response, ..
@@ -390,7 +390,7 @@ impl<'a> INodeZipper<'a> {
 }
 
 
-impl<'a> FSNode {
+impl<'a> FSNode<'a> {
     pub fn zipper(self) -> NodeZipper<'a> {
         let FSNode {
             children: child_children,
@@ -406,7 +406,7 @@ impl<'a> FSNode {
         }
     }
 
-    pub fn qzipper(&'a self, response: Box<Vec<SynMatching>>) -> INodeZipper<'a> {
+    pub fn qzipper(&'a self, response: Box<Vec<SynMatching<'a>>>) -> INodeZipper<'a> {
         INodeZipper {
             children: &self.children,
             lchildren: &self.lchildren,
@@ -424,8 +424,8 @@ mod tests {
     fn factset_1() {
         let mut factset = FSNode::new();
 
-        let segm11 = SynSegment::new("rule-name1", "(text)", false);
-        let segms1 = vec![segm11];
+        let segm11 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+        let segms1 = vec![&segm11];
         let path1 = SynPath::new(segms1);
         let cpath1 = path1.clone();
 
@@ -433,9 +433,9 @@ mod tests {
         
         factset.children.insert(cpath1, node1);
 
-        let segm21 = SynSegment::new("rule-name1", "(text)", false);
-        let segm22 = SynSegment::new("rule-name2", "(", true);
-        let segms2 = vec![segm21, segm22];
+        let segm21 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+        let segm22 = SynSegment::new("rule-name2".to_string(), "(".to_string(), true);
+        let segms2 = vec![&segm21, &segm22];
         let path2 = SynPath::new(segms2);
         let cpath2 = path2.clone();
 
@@ -443,9 +443,9 @@ mod tests {
         let rnode1 = factset.children.get_mut(&path1).expect("path");
         rnode1.children.insert(cpath2, node2);
 
-        let segm31 = SynSegment::new("rule-name1", "(text)", false);
-        let segm32 = SynSegment::new("rule-name3", "text", true);
-        let segms3 = vec![segm31, segm32];
+        let segm31 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+        let segm32 = SynSegment::new("rule-name3".to_string(), "text".to_string(), true);
+        let segms3 = vec![&segm31, &segm32];
         let path3 = SynPath::new(segms3);
         let cpath3 = path3.clone();
 
@@ -453,9 +453,9 @@ mod tests {
         let rnode2 = rnode1.children.get_mut(&path2).expect("path");
         rnode2.children.insert(cpath3, node3);
 
-        let segm41 = SynSegment::new("rule-name1", "(text)", false);
-        let segm42 = SynSegment::new("rule-name4", ")", true);
-        let segms4 = vec![segm41, segm42];
+        let segm41 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+        let segm42 = SynSegment::new("rule-name4".to_string(), ")".to_string(), true);
+        let segms4 = vec![&segm41, &segm42];
         let path4 = SynPath::new(segms4);
         let cpath4 = path4.clone();
 

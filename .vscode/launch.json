@@ -7,7 +7,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'syntree'",
+            "name": "Executable 'syntree'",
             "cargo": {
                 "args": [
                     "build",
@@ -25,9 +25,29 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'syntree'",
+            "name": "Tests in 'syntree'",
             "cargo": {
                 "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=syntree",
+                    "--package=syntree"
+                ],
+                "filter": {
+                    "name": "syntree",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Nightly Tests in 'syntree'",
+            "cargo": {
+                "args": [
+                    "+nightly",
                     "test",
                     "--no-run",
                     "--bin=syntree",

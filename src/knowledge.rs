@@ -5,7 +5,7 @@ use crate::matching::{ SynMatching, get_real_matching };
 use crate::fact::Fact;
 use crate::factset::FactSet;
 use crate::ruletree::{ Rule, RSNode, RuleRef };
-use crate::parser::{ parse_text, ParseResult };
+use crate::parser::{ Grammar, ParseResult };
 
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -16,17 +16,17 @@ pub enum ActType {
 }
 
 #[derive(Debug)]
-pub struct Activation {
+pub struct Activation<'a> {
     atype: ActType,
-    rule: Option<Rule>,
-    fact: Option<Fact>,
-    matched: Option<SynMatching>,
+    rule: Option<Rule<'a>>,
+    fact: Option<&'a Fact<'a>>,
+    matched: Option<SynMatching<'a>>,
     query_rules: bool,
 }
 
-impl Activation {
+impl<'a> Activation<'a> {
 
-    pub fn from_fact(fact: Fact, query_rules: bool) -> Activation {
+    pub fn from_fact(fact: &'a Fact, query_rules: bool) -> Activation<'a> {
         Activation {
             atype: ActType::Fact,
             rule: None,
@@ -44,7 +44,7 @@ impl Activation {
             query_rules,
         }
     }
-    pub fn from_matching(rule: Rule, matched: SynMatching, query_rules: bool) -> Activation {
+    pub fn from_matching(rule: Rule<'a>, matched: SynMatching<'a>, query_rules: bool) -> Activation<'a> {
         Activation {
             atype: ActType::Match,
             rule: Some(rule),
@@ -62,28 +62,32 @@ pub struct KStat {
     pub facts_known: usize,
 }
 
-pub struct KnowledgeBase {
-    facts: FactSet,
-    rules: Box<RSNode>,
-    queue: Box<VecDeque<Activation>>,
+pub struct KnowledgeBase<'a> {
+    grammar: Grammar<'a>,
+    facts: FactSet<'a>,
+    rules: Box<RSNode<'a>>,
+    queue: Box<VecDeque<Activation<'a>>>,
     known: Box<HashSet<String>>,
     pub stats: KStat,
 }
 
-impl KnowledgeBase {
+impl<'a> KnowledgeBase<'a> {
 
-    pub fn new () -> KnowledgeBase {
+    pub fn new () -> KnowledgeBase<'a> {
+        let mut  grammar = Grammar::new();
+        let root_path = grammar.lexicon.empty_path();
         KnowledgeBase {
+            grammar,
             facts: FactSet::new(),
-            rules: Box::new(RSNode::new()),
+            rules: Box::new(RSNode::new(root_path)),
             queue: Box::new(VecDeque::new()),
             known: Box::new(HashSet::new()),
             stats: KStat {rules: 0, rules_known: 0, facts: 0, facts_known: 0},
         }
     }
 
-    pub fn tell(mut self, knowledge: &str) -> KnowledgeBase {
-        let result = parse_text(knowledge);
+    pub fn tell(mut self, knowledge: &'a str) -> KnowledgeBase<'a> {
+        let result = self.grammar.parse_text(knowledge);
         if result.is_err() {
             panic!("Parsing problem! {}", result.err().unwrap());
         }
@@ -100,8 +104,8 @@ impl KnowledgeBase {
         }
         self
     }
-    pub fn ask(&self, knowledge: &str) -> bool {
-        let ParseResult { rules: _, mut facts } = parse_text(knowledge).ok().unwrap();
+    pub fn ask(&'a self, knowledge: &'a str) -> bool {
+        let ParseResult { mut facts, .. } = self.grammar.parse_text(knowledge).ok().unwrap();
         let fact = facts.pop().unwrap();
         let resps = self.facts.ask_fact(&fact);
         resps.len() > 0
@@ -153,13 +157,13 @@ impl KnowledgeBase {
         }
         self
     }
-    fn process_rule(mut self, mut rule: Rule) -> Self {
+    fn process_rule(mut self, mut rule: Rule<'a>) -> Self {
         
         // println!("ADDING RULE: {}", rule);
         let n_ants = rule.antecedents.len();
         for n in 0..n_ants {
             let mut new_ants = vec![];
-            let mut new_ant: Option<Fact> = None;
+            let mut new_ant: Option<&Fact> = None;
             let Rule {
                 antecedents,
                 more_antecedents,
@@ -179,7 +183,7 @@ impl KnowledgeBase {
                 more_antecedents: new_more_ants,
                 consequents: new_conseqs
             };
-            let (varmap, normal_ant) = new_ant.unwrap().normalize();
+            let (varmap, normal_ant) = self.grammar.normalize_fact(&new_ant.unwrap());
             let rule_ref = RuleRef {
                 rule: new_rule,
                 varmap,
@@ -194,7 +198,7 @@ impl KnowledgeBase {
         }
         self
     }
-    fn process_fact(mut self, fact: Fact, query_rules: bool) -> Self {
+    fn process_fact(mut self, fact: &'a Fact<'a>, query_rules: bool) -> Self {
         
         // println!("ADDING FACT: {}", fact);
         
@@ -207,12 +211,12 @@ impl KnowledgeBase {
                 self.queue.push_back(Activation::from_matching(rule.clone(), real_matching, query_rules));
             }
         }
-        self.facts = self.facts.add_fact(fact);
+        self.facts.add_fact(&fact);
         self
     }
-    fn process_match(&mut self, rule: Rule, matching: SynMatching, mut query_rules: bool) {
+    fn process_match(&'a mut self, rule: Rule<'a>, matching: SynMatching<'a>, mut query_rules: bool) {
         let old_len = rule.more_antecedents.len();
-        let (mut rule, new) = self.preprocess_matched_rule(&matching, rule);
+        let (mut rule, new) = self.preprocess_matched_rule(matching, rule);
 
         if new {
             if rule.more_antecedents.len() < old_len {
@@ -224,12 +228,12 @@ impl KnowledgeBase {
             self.queue.push_back(Activation::from_rule(rule, query_rules));
         } else {
            for consequent in rule.consequents{
-               let new_consequent = consequent.substitute(&matching);
+               let new_consequent = self.grammar.substitute_fact(&consequent, matching);
                self.queue.push_back(Activation::from_fact(new_consequent, query_rules));
            }
         }
     }
-    fn query_rule(&mut self, rule: Rule, query_rules: bool) -> Rule {
+    fn query_rule(&'a mut self, rule: Rule<'a>, query_rules: bool) -> Rule {
         for i in 0..rule.antecedents.len() {
             let mut new_ants = rule.antecedents.clone();
             let ant = new_ants.remove(i);
@@ -245,7 +249,7 @@ impl KnowledgeBase {
         }
         rule
     }
-    fn preprocess_matched_rule(&self, matching: &SynMatching, rule: Rule) -> (Rule, bool) {
+    fn preprocess_matched_rule(&'a self, matching: SynMatching<'a>, rule: Rule<'a>) -> (Rule<'a>, bool) {
         let Rule {
             mut antecedents,
             mut more_antecedents,
@@ -259,17 +263,17 @@ impl KnowledgeBase {
             }
         }
         let new_antecedents = antecedents.iter()
-                                         .map(|antecedent| antecedent.substitute(&matching))
+                                         .map(|antecedent| self.grammar.substitute_fact(antecedent, matching))
                                          .collect();
         let mut new_more_antecedents = VecDeque::new();
         while more_antecedents.len() > 0 {
             let more_ants = more_antecedents.pop_front().unwrap(); 
             new_more_antecedents.push_back(more_ants.iter()
-                                                    .map(|antecedent| antecedent.substitute(&matching))
+                                                    .map(|antecedent| self.grammar.substitute_fact(antecedent, matching))
                                                     .collect());
         }
         let new_consequents = consequents.iter()
-                                         .map(|consequent| consequent.substitute(&matching))
+                                         .map(|consequent| self.grammar.substitute_fact(consequent, matching))
                                          .collect();
         (Rule {
             antecedents: new_antecedents,

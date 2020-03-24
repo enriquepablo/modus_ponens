@@ -14,6 +14,7 @@ mod facttree;
 mod factset;
 mod ruletree;
 mod knowledge;
+mod lexicon;
 
 fn main() {
     println!("Hello, world!");

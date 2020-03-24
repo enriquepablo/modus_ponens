@@ -5,22 +5,21 @@ use crate::fact::Fact;
 use crate::facttree::FSNode;
 
 
-pub struct FactSet {
-    pub root: Box<FSNode>,
+pub struct FactSet<'a> {
+    pub root: Box<FSNode<'a>>,
 }
 
 
-impl<'a> FactSet {
-    pub fn new () -> FactSet {
+impl<'a> FactSet<'a> {
+    pub fn new () -> FactSet<'a> {
         FactSet { root: Box::new(FSNode::new()) }
     }
-    pub fn add_fact (self, fact: Fact) -> FactSet {
-        let FactSet { mut root } = self;
-        let mut zipper = root.zipper();
+    pub fn add_fact (mut self, fact: &'a Fact<'a>) -> FactSet<'a> {
+        let mut zipper = self.root.zipper();
         let paths = fact.get_all_paths();
         zipper = zipper.follow_and_create_paths(&paths);
-        root = zipper.finish();
-        FactSet { root }
+        self.root = zipper.finish();
+        self
     }
     pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching> {
         let mut response: Box<Vec<SynMatching>> = Box::new(vec![]);
@@ -37,32 +36,39 @@ impl<'a> FactSet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::parse_text;
 
-    pub struct Knowledge {
-        pub factset: FactSet,
+    use crate::parser::Grammar;
+
+    pub struct Knowledge<'a> {
+        pub grammar: Grammar<'a>,
+        pub factset: FactSet<'a>,
     }
 
 
-    impl<'a> Knowledge {
-        pub fn new () -> Knowledge {
-            Knowledge { factset: FactSet::new() }
+    impl<'a> Knowledge<'a> {
+        pub fn new () -> Knowledge<'a> {
+            Knowledge {
+                grammar: Grammar::new(),
+                factset: FactSet::new(),
+            }
         }
-        fn tell(self, k: &str) -> Knowledge {
+        fn tell(self, k: &'a str) -> Knowledge<'a> {
             let Knowledge {
-                mut factset
+                grammar,
+                mut factset,
             } = self;
-            let parsed = parse_text(k);
+            let parsed = grammar.parse_text(k);
             let facts = parsed.ok().unwrap().facts;
             for fact in facts {
-                factset = factset.add_fact(fact);
+                factset = factset.add_fact(&fact);
             }
             Knowledge {
+                grammar,
                 factset
             }
         }
-        fn ask(&'a self, q: &str) -> bool {
-            let parsed = parse_text(q);
+        fn ask(&'a self, q: &'a str) -> bool {
+            let parsed = self.grammar.parse_text(q);
             let mut facts = parsed.ok().unwrap().facts;
             let fact = facts.pop().unwrap();
             let response = self.factset.ask_fact(&fact);

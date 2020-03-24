@@ -10,13 +10,13 @@ use crate::fact::Fact;
 
 
 #[derive(Debug, Clone)]
-pub struct Rule {
-    pub antecedents: Vec<Fact>,
-    pub more_antecedents: VecDeque<Vec<Fact>>,
-    pub consequents: Vec<Fact>,
+pub struct Rule<'a> {
+    pub antecedents: Vec<&'a Fact<'a>>,
+    pub more_antecedents: VecDeque<Vec<&'a Fact<'a>>>,
+    pub consequents: Vec<&'a Fact<'a>>,
 }
 
-impl fmt::Display for Rule {
+impl<'a> fmt::Display for Rule<'a> {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let more = &self.more_antecedents.iter()
@@ -39,19 +39,19 @@ impl fmt::Display for Rule {
 }
 
 #[derive(Debug, Clone)]
-pub struct RuleRef {
-    pub rule: Rule,
-    pub varmap: SynMatching,
+pub struct RuleRef<'a> {
+    pub rule: Rule<'a>,
+    pub varmap: SynMatching<'a>,
 }
 
 
 #[derive(Debug)]
-pub struct RSNode {
-    path: SynPath,
-    var_child : Option<Box<RSNode>>,
-    var_children: HashMap<SynPath, RSNode>,
-    children: HashMap<SynPath, RSNode>,
-    rule_refs: Vec<RuleRef>,
+pub struct RSNode<'a> {
+    path: SynPath<'a>,
+    var_child : Option<Box<RSNode<'a>>>,
+    var_children: HashMap<SynPath<'a>, RSNode<'a>>,
+    children: HashMap<SynPath<'a>, RSNode<'a>>,
+    rule_refs: Vec<RuleRef<'a>>,
     end_node: bool,
 }
 
@@ -66,21 +66,21 @@ pub enum ChildType {
 
 
 #[derive(Debug)]
-pub struct RSZipper {
-    parent: Option<Box<RSZipper>>,
+pub struct RSZipper<'a> {
+    parent: Option<Box<RSZipper<'a>>>,
     child_type: ChildType,
-    path: SynPath,
-    var_child : Option<Box<RSNode>>,
-    var_children: HashMap<SynPath, RSNode>,
-    children: HashMap<SynPath, RSNode>,
-    rule_refs: Vec<RuleRef>,
-    rule_ref: Option<RuleRef>,
+    path: SynPath<'a>,
+    var_child : Option<Box<RSNode<'a>>>,
+    var_children: HashMap<SynPath<'a>, RSNode<'a>>,
+    children: HashMap<SynPath<'a>, RSNode<'a>>,
+    rule_refs: Vec<RuleRef<'a>>,
+    rule_ref: Option<RuleRef<'a>>,
     end_node: bool,
 }
 
-impl<'a> RSZipper {
+impl<'a> RSZipper<'a> {
 
-    pub fn follow_and_create_paths(self, paths: &[&SynPath]) -> Box<RSNode> {
+    pub fn follow_and_create_paths(self, paths: &'a [&SynPath]) -> Box<RSNode<'a>> {
         let mut zipper: RSZipper = self; 
         let mut node: Option<RSNode>; 
         let mut visited_vars: Vec<SynSegment> = vec![];
@@ -200,7 +200,7 @@ impl<'a> RSZipper {
         zipper.finish()
     }
 
-    fn create_paths(self, paths: &[&SynPath], mut visited: Vec<SynSegment>) -> RSZipper {
+    fn create_paths(self, paths: &'a [&SynPath], mut visited: Vec<SynSegment>) -> RSZipper<'a> {
         let mut zipper: RSZipper = self; 
         for &new_path in paths {
             let RSZipper {
@@ -247,7 +247,7 @@ impl<'a> RSZipper {
         zipper
     }
     
-    fn get_parent(self) -> Option<RSZipper> {
+    fn get_parent(self) -> Option<RSZipper<'a>> {
         // Destructure this NodeZipper
         let RSZipper {
             parent, child_type,
@@ -306,7 +306,7 @@ impl<'a> RSZipper {
         }
     }
 
-    pub fn finish(mut self) -> Box<RSNode> {
+    pub fn finish(mut self) -> Box<RSNode<'a>> {
         while let Some(_) = self.parent {
             self = self.get_parent().expect("parent node");
         }
@@ -329,8 +329,8 @@ impl<'a> RSZipper {
 
 
 
-impl<'a> RSNode {
-    pub fn zipper(self, rule_ref: Option<RuleRef>) -> RSZipper {
+impl<'a> RSNode<'a> {
+    pub fn zipper(self, rule_ref: Option<RuleRef<'a>>) -> RSZipper<'a> {
         let RSNode {
             path, var_child,
             var_children, children,
@@ -348,9 +348,9 @@ impl<'a> RSNode {
             end_node,
         }
     }
-    pub fn new() -> RSNode {
+    pub fn new(root_path: SynPath<'a>) -> RSNode<'a> {
         RSNode {
-            path: SynPath::empty_root(),
+            path: root_path,
             var_child: None,
             children: HashMap::new(),
             var_children: HashMap::new(),
@@ -361,7 +361,7 @@ impl<'a> RSNode {
 }
 
 
-type Response<'a> = Box<Vec<(&'a Vec<RuleRef>, SynMatching)>>;
+type Response<'a> = Box<Vec<(&'a Vec<RuleRef<'a>>, SynMatching<'a>)>>;
 
 pub fn new_response<'a>() -> Response<'a> {
     Box::new(
@@ -371,19 +371,19 @@ pub fn new_response<'a>() -> Response<'a> {
 
 #[derive(Debug)]
 pub struct IRSZipper<'a> {
-    path: &'a SynPath,
-    var_child: Option<&'a Box<RSNode>>,
-    var_children: &'a HashMap<SynPath, RSNode>,
-    children: &'a HashMap<SynPath, RSNode>,
-    rule_refs: &'a Vec<RuleRef>,
-    matched: SynMatching,
+    path: &'a SynPath<'a>,
+    var_child: Option<&'a Box<RSNode<'a>>>,
+    var_children: &'a HashMap<SynPath<'a>, RSNode<'a>>,
+    children: &'a HashMap<SynPath<'a>, RSNode<'a>>,
+    rule_refs: &'a Vec<RuleRef<'a>>,
+    matched: SynMatching<'a>,
     response: Response<'a>,
     end_node: bool,
 }
 
 impl<'a> IRSZipper<'a> {
 
-    pub fn climb(self, paths: &'a [&SynPath]) -> IRSZipper<'a> {
+    pub fn climb(self, paths: &'a [&'a SynPath<'a>]) -> IRSZipper<'a> {
         let IRSZipper {
             path: parent_path,
             var_child: mut parent_var_child,
@@ -427,7 +427,7 @@ impl<'a> IRSZipper<'a> {
                 let old_value = parent_matched.get(&vpath.value);
                 if old_value.is_some() {
                     if &new_path.value == old_value.unwrap() {
-                        let new_paths = new_path.paths_after(rest_paths, false);
+                        let new_paths = new_path.clone().paths_after_owning(rest_paths, false);
                         let vchild = match &varchild.var_child {
                             None => None,
                             Some(node) => Some(node),
@@ -456,9 +456,9 @@ impl<'a> IRSZipper<'a> {
             if parent_var_child.is_some() {
                 let var_child = parent_var_child.unwrap();
                 let new_path = path.sub_path(var_child.path.len());
-                let new_paths = new_path.paths_after(rest_paths, false);
+                let new_paths = new_path.clone().paths_after_owning(rest_paths, false);
                 let mut new_matched = parent_matched.clone();
-                new_matched.insert(var_child.path.value.clone(), new_path.value.clone());
+                new_matched.insert(var_child.path.value, new_path.value);
                 let vchild = match &var_child.var_child {
                     None => None,
                     Some(node) => Some(node),
@@ -507,7 +507,7 @@ impl<'a> IRSZipper<'a> {
     }
 }
 
-impl<'a> RSNode {
+impl<'a> RSNode<'a> {
     pub fn izipper(&'a self) -> IRSZipper<'a> {
         
         let response = new_response();
@@ -535,19 +535,19 @@ impl<'a> RSNode {
 mod tests {
     use super::*;
     use crate::fact::Fact;
-    use crate::parser::parse_text;
+    use crate::parser::Grammar;
 
 
-    pub struct PremSet {
-        pub root: Box<RSNode>,
+    pub struct PremSet<'a> {
+        pub root: Box<RSNode<'a>>,
     }
 
 
-    impl<'a> PremSet {
-        fn new () -> PremSet {
-            PremSet { root: Box::new(RSNode::new()) }
+    impl<'a> PremSet<'a> {
+        fn new (root_path: SynPath<'a>) -> PremSet<'a> {
+            PremSet { root: Box::new(RSNode::new(root_path)) }
         }
-        fn add_fact (self, fact: Fact) -> PremSet {
+        fn add_fact (self, fact: &'a Fact<'a>) -> PremSet {
             let PremSet { mut root } = self;
             let zipper = root.zipper(None);
             let paths = fact.get_leaf_paths();
@@ -564,30 +564,38 @@ mod tests {
     }
 
 
-    pub struct Fakeledge {
-        pub factset: PremSet,
+    pub struct Fakeledge<'a> {
+        pub factset: PremSet<'a>,
+        grammar: Grammar<'a>,
     }
 
 
-    impl<'a> Fakeledge {
-        pub fn new () -> Fakeledge {
-            Fakeledge { factset: PremSet::new() }
+    impl<'a> Fakeledge<'a> {
+        pub fn new () -> Fakeledge<'a> {
+            let grammar = Grammar::new();
+            let root_path = grammar.lexicon.empty_path();
+            Fakeledge {
+                grammar: grammar,
+                factset: PremSet::new(root_path),
+            }
         }
-        fn tell(self, k: &str) -> Fakeledge {
+        fn tell(self, k: &'a str) -> Fakeledge<'a> {
             let Fakeledge {
-                mut factset
+                mut factset,
+                grammar,
             } = self;
-            let parsed = parse_text(k);
+            let parsed = grammar.parse_text(k);
             let facts = parsed.ok().unwrap().facts;
             for fact in facts {
                 factset = factset.add_fact(fact);
             }
             Fakeledge {
-                factset
+                grammar,
+                factset,
             }
         }
-        fn ask(&'a self, q: &str) -> usize {
-            let parsed = parse_text(q);
+        fn ask(&'a self, q: &'a str) -> usize {
+            let parsed = self.grammar.parse_text(q);
             let mut facts = parsed.ok().unwrap().facts;
             let fact = facts.pop().unwrap();
             self.factset.ask_fact(&fact)

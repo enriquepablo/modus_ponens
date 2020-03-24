@@ -1,35 +1,129 @@
+use std::collections::HashMap;
+use std::collections::VecDeque;
+
 use pest::error::Error;
 use crate::pest::Parser;
 use crate::pest::iterators::Pair;
-use std::collections::VecDeque;
 
 use crate::constants;
 use crate::segment::SynSegment;
+use crate::lexicon::Lexicon;
 use crate::path::SynPath;
-use crate::fact::Fact;
+use crate::fact::{ Fact, FLexicon };
 use crate::ruletree::Rule as SynRule;
+use crate::matching::{ SynMatching, invert_owning };
 
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
 struct SynParser;
 
+pub struct ParseResult<'a> {
+    pub facts: Vec<&'a Fact<'a>>,
+    pub rules: Vec<SynRule<'a>>,
+}
 
 #[derive(Debug)]
 struct FactBuilder<'a> {
     parse_tree: Pair<'a, Rule>,
-    root_segments: &'a Vec<SynSegment>,
-    all_paths: Box<Vec<SynPath>>,
+    root_segments: Vec<&'a SynSegment>,
+    all_paths: Box<Vec<SynPath<'a>>>,
     index: usize,
 }
 
-impl<'a> FactBuilder<'a> {
+pub struct Grammar<'a> {
+    pub lexicon: Lexicon,
+    pub flexicon: FLexicon<'a>,
+}
 
-    fn visit_parse_node(self) -> Box<Vec<SynPath>> {
+impl<'a> Grammar<'a> {
+
+    pub fn new() -> Grammar<'a> {
+        Grammar {
+            lexicon: Lexicon::new(),
+            flexicon: FLexicon::new(),
+        }
+    }
+
+    pub fn parse_text(&'a self, text: &'a str) -> Result<ParseResult<'a>, Error<Rule>> {
+        let parse_tree = SynParser::parse(Rule::knowledge, text)?.next().unwrap();
+        let mut facts: Vec<&Fact> = vec![];
+        let mut rules: Vec<SynRule> = vec![];
+        for pair in parse_tree.into_inner() {
+            match pair.as_rule() {
+                Rule::fact => {
+                    let fact = self.build_fact(pair);
+                    facts.push(fact);
+                },
+                Rule::rule => {
+                    let mut more_antecedents = VecDeque::new();
+                    let mut consequents = vec![];
+                    for pairset in pair.into_inner() {
+                        match pairset.as_rule() {
+                            Rule::antecedents => {
+                                let mut ants = vec![];
+                                for factpair in pairset.into_inner() {
+                                    match factpair.as_rule() {
+                                        Rule::fact => {
+                                            let antecedent = self.build_fact(factpair);
+                                            ants.push(antecedent);
+                                        },
+                                        _ => {}
+                                    }
+                                }
+                                more_antecedents.push_back(ants);
+                            },
+                            Rule::consequents => {
+                                for factpair in pairset.into_inner() {
+                                    match factpair.as_rule() {
+                                        Rule::fact => {
+                                            let consequent = self.build_fact(factpair);
+                                            consequents.push(consequent);
+                                        },
+                                        _ => {}
+                                    }
+                                }
+                            },
+                            _ => {}
+                        }
+                    }
+                    let antecedents = more_antecedents.pop_front();
+                    let rule = SynRule {
+                        antecedents: antecedents.unwrap(),
+                        more_antecedents,
+                        consequents
+                    };
+                    rules.push(rule);
+                },
+                _ => {}
+            }
+        }
+        Ok(ParseResult { facts, rules })
+    }
+
+    pub fn parse_fact(&'a self, text: &'a str) -> &Fact<'a> {
+        let parse_tree = SynParser::parse(Rule::fact, text).ok().unwrap().next().unwrap();
+        self.build_fact(parse_tree)
+    }
+    
+    pub fn build_fact(&'a self, parse_tree: Pair<'a, Rule>) -> &Fact<'a> {
+        let all_paths = Box::new(vec![]);
+        let builder = FactBuilder {
+            parse_tree,
+            root_segments: vec![],
+            all_paths,
+            index: 0,
+        };
+        let all_paths = self.visit_parse_node(builder);
+
+        self.flexicon.from_paths(*all_paths)
+    }
+
+    fn visit_parse_node(&'a self, builder: FactBuilder<'a>) -> Box<Vec<SynPath>> {
         let FactBuilder {
             parse_tree, root_segments,
             mut all_paths, index,
-        } = self;
+        } = builder;
         let rule = parse_tree.as_rule();
         let name = format!("{:?}", rule);
         let mut text = String::from(parse_tree.as_str());
@@ -39,8 +133,8 @@ impl<'a> FactBuilder<'a> {
         if !can_be_var && !is_leaf {
             text = format!("{:?}", index);
         }
-        let segment = SynSegment::new(&name, &text, is_leaf);
-        let mut new_root_segments = root_segments.clone();
+        let segment = self.lexicon.intern(&name, &text, is_leaf);
+        let mut new_root_segments = root_segments.to_vec();
         new_root_segments.push(segment);
         if can_be_var || is_leaf {
             let segments = new_root_segments.clone();
@@ -51,100 +145,57 @@ impl<'a> FactBuilder<'a> {
         for child in children {
             let builder = FactBuilder {
                 parse_tree: child,
-                root_segments: &new_root_segments,
+                root_segments: new_root_segments.clone(),
                 all_paths, index: new_index,
             };
             new_index += 1;
-            all_paths = builder.visit_parse_node();
+            all_paths = self.visit_parse_node(builder);
         }
         all_paths
     }
-}
+    pub fn substitute_fact(&'a self, fact: &'a Fact<'a>, matching: SynMatching<'a>) -> &'a Fact<'a> {
+        let new_paths = SynPath::substitute_paths(&fact.paths, &matching);
+        let text = new_paths.iter()
+                            .filter(|path| path.is_leaf())
+                            .map(|path| path.value.text.as_str())
+                            .collect::<Vec<&str>>()
+                            .concat();
 
-pub fn build_fact(parse_tree: Pair<Rule>) -> Fact {
-    let root_segments = vec![];
-    let fact_str = String::from(parse_tree.as_str());
-    let mut all_paths = Box::new(vec![]);
-    let builder = FactBuilder {
-        parse_tree,
-        root_segments: &root_segments,
-        all_paths,
-        index: 0,
-    };
-    all_paths = builder.visit_parse_node();
-    Fact {
-        text: fact_str,
-        paths: *all_paths,
+        let parse_tree = SynParser::parse(Rule::fact, text.as_str()).ok().unwrap().next().unwrap();
+        let all_paths = Box::new(vec![]);
+        let builder = FactBuilder {
+            parse_tree,
+            root_segments: vec![],
+            all_paths,
+            index: 0,
+        };
+        let all_paths = self.visit_parse_node(builder);
+        let new_fact = Fact::initialize(text);
+
+        self.flexicon.complete_fact(new_fact, *all_paths)
     }
-}
-
-
-pub struct ParseResult {
-    pub facts: Vec<Fact>,
-    pub rules: Vec<SynRule>,
-}
-
-
-pub fn parse_text(text: &str) -> Result<ParseResult, Error<Rule>> {
-    let parse_tree = SynParser::parse(Rule::knowledge, text)?.next().unwrap();
-    let mut facts: Vec<Fact> = vec![];
-    let mut rules: Vec<SynRule> = vec![];
-    for pair in parse_tree.into_inner() {
-        match pair.as_rule() {
-            Rule::fact => {
-                let fact = build_fact(pair);
-                facts.push(fact);
-            },
-            Rule::rule => {
-                let mut more_antecedents = VecDeque::new();
-                let mut consequents = vec![];
-                for pairset in pair.into_inner() {
-                    match pairset.as_rule() {
-                        Rule::antecedents => {
-                            let mut ants = vec![];
-                            for factpair in pairset.into_inner() {
-                                match factpair.as_rule() {
-                                    Rule::fact => {
-                                        let antecedent = build_fact(factpair);
-                                        ants.push(antecedent);
-                                    },
-                                    _ => {}
-                                }
-                            }
-                            more_antecedents.push_back(ants);
-                        },
-                        Rule::consequents => {
-                            for factpair in pairset.into_inner() {
-                                match factpair.as_rule() {
-                                    Rule::fact => {
-                                        let consequent = build_fact(factpair);
-                                        consequents.push(consequent);
-                                    },
-                                    _ => {}
-                                }
-                            }
-                        },
-                        _ => {}
-                    }
+    pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: SynMatching<'a>) -> &Fact<'a> {
+        let new_paths = SynPath::substitute_paths_owning(&fact.paths, matching);
+        self.flexicon.from_paths(new_paths)
+    }
+    pub fn normalize_fact (&'a self, fact: &'a Fact<'a>) -> (SynMatching<'a>, &Fact<'a>) {
+        let mut varmap: SynMatching<'a> = HashMap::new();
+        let mut counter = 1;
+        let leaves = fact.get_leaf_paths();
+        for path in leaves {
+            if path.is_var() {
+                let old_var = varmap.get(&path.value);
+                if old_var.is_none() {
+                    let new_var = self.lexicon.make_var(counter);
+                    counter += 1;
+                    varmap.insert(path.value, new_var);
                 }
-                let antecedents = more_antecedents.pop_front();
-                let rule = SynRule {
-                    antecedents: antecedents.unwrap(),
-                    more_antecedents,
-                    consequents
-                };
-                rules.push(rule);
-            },
-            _ => {}
+            }
         }
+        let invarmap = invert_owning(varmap.clone());
+        let new_fact = self.substitute_fact_fast(fact, varmap);
+        (invarmap, new_fact)
     }
-    Ok(ParseResult { facts, rules })
-}
-
-
-pub fn parse_fact(text: &str) -> Fact {
-    let parse_tree = SynParser::parse(Rule::fact, text).ok().unwrap().next().unwrap();
-    build_fact(parse_tree)
 }
 
 
@@ -154,7 +205,8 @@ mod tests {
 
     #[test]
     fn fact_1() {
-        let f1 = parse_text("susan ISA person.");
+        let grammar = Grammar::new();
+        let f1 = grammar.parse_text("susan ISA person.");
         let facts = f1.ok().unwrap().facts;
         let fact = facts.first().unwrap();
         let Fact {
@@ -168,7 +220,8 @@ mod tests {
 
     #[test]
     fn rule_1() {
-        let f1 = parse_text("susan ISA person -> susan ISA monkey.");
+        let grammar = Grammar::new();
+        let f1 = grammar.parse_text("susan ISA person -> susan ISA monkey.");
         let rules = f1.ok().unwrap().rules;
         let rule = rules.first().unwrap();
         let SynRule {
