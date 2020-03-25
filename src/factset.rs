@@ -52,19 +52,11 @@ mod tests {
                 factset: FactSet::new(),
             }
         }
-        fn tell(self, k: &'a str) -> Knowledge<'a> {
-            let Knowledge {
-                grammar,
-                mut factset,
-            } = self;
-            let parsed = grammar.parse_text(k);
+        fn tell(&'a self, k: &'a str) {
+            let parsed = self.grammar.parse_text(k);
             let facts = parsed.ok().unwrap().facts;
             for fact in facts {
-                factset = factset.add_fact(&fact);
-            }
-            Knowledge {
-                grammar,
-                factset
+                self.factset = self.factset.add_fact(&fact);
             }
         }
         fn ask(&'a self, q: &'a str) -> bool {
@@ -78,8 +70,8 @@ mod tests {
 
     #[test]
     fn test_1() {
-        let mut kb = Knowledge::new();
-        kb = kb.tell("susan ISA person. john ISA person.");
+        let kb = Knowledge::new();
+        kb.tell("susan ISA person. john ISA person.");
         let resp1 = kb.ask("susan ISA person.");
         assert_eq!(resp1, true);
         let resp2 = kb.ask("pepe ISA person.");
@@ -93,8 +85,8 @@ mod tests {
     }
     #[test]
     fn test_2() {
-        let mut kb = Knowledge::new();
-        kb = kb.tell("\
+        let kb = Knowledge::new();
+        kb.tell("\
             susan ISA person.\
             john ISA person.\
             person IS animal.\
@@ -144,8 +136,8 @@ mod tests {
     }
     #[test]
     fn test_3() {
-        let mut kb = Knowledge::new();
-        kb = kb.tell("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let kb = Knowledge::new();
+        kb.tell("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
         let resp1 = kb.ask("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
         assert!(resp1);
         let resp2 = kb.ask("(p1: (s: <X0>), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
@@ -155,17 +147,17 @@ mod tests {
     }
     #[test]
     fn test_fs_4() {
-        let mut kb = Knowledge::new();
-        kb = kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
-        kb = kb.tell("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let kb = Knowledge::new();
+        kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        kb.tell("(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
         let resp2 = kb.ask("(p1: <X0>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
         assert!(resp2);
     }
     #[test]
     fn test_fs_5() {
-        let mut kb = Knowledge::new();
-        kb = kb.tell("(p1: (s: 0), p2: john) ISA fact.");
-        kb = kb.tell("(p1: (s: (s: 0)), p2: susan) ISA fact.");
+        let kb = Knowledge::new();
+        kb.tell("(p1: (s: 0), p2: john) ISA fact.");
+        kb.tell("(p1: (s: (s: 0)), p2: susan) ISA fact.");
         let resp2 = kb.ask("(p1: <X0>, p2: susan) ISA fact.");
         assert!(resp2);
     }

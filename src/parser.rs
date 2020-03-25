@@ -161,7 +161,10 @@ impl<'a> Grammar<'a> {
                             .collect::<Vec<&str>>()
                             .concat();
 
-        let parse_tree = SynParser::parse(Rule::fact, text.as_str()).ok().unwrap().next().unwrap();
+        // XXX LEAK!
+        let stext = Box::leak(text.into_boxed_str());
+        
+        let parse_tree = SynParser::parse(Rule::fact, stext).ok().unwrap().next().unwrap();
         let all_paths = Box::new(vec![]);
         let builder = FactBuilder {
             parse_tree,
@@ -170,9 +173,8 @@ impl<'a> Grammar<'a> {
             index: 0,
         };
         let all_paths = self.visit_parse_node(builder);
-        let new_fact = Fact::initialize(text);
 
-        self.flexicon.complete_fact(new_fact, *all_paths)
+        self.flexicon.from_paths_and_boxed_string(&stext, *all_paths)
     }
     pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: SynMatching<'a>) -> &Fact<'a> {
         let new_paths = SynPath::substitute_paths_owning(&fact.paths, matching);

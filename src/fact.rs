@@ -121,16 +121,34 @@ impl<'a> FLexicon<'a> {
         // from Stack Overflow without reading it
         unsafe { mem::transmute(&interned) }
     }
-
-    pub fn complete_fact(&'a self, mut fact: Fact<'a>, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
+    pub fn from_paths_and_boxed_string(&'a self, text: &str, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
         let mut set = self.0.borrow_mut();
         
+        let fact = Fact::new(String::from(text), paths);
+
         if !set.contains(&fact) {
-            fact.paths = paths;
             set.insert(fact.clone());
         }
 
         let interned = set.get(&fact).unwrap();
+
+        // TODO: Document the pre- and post-conditions that the code must
+        // uphold to make this unsafe code valid instead of copying this
+        // from Stack Overflow without reading it
+        unsafe { mem::transmute(&interned) }
+    }
+
+    pub fn complete_fact(&'a self, mut fact: Box<Fact<'a>>, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
+        let mut set = self.0.borrow_mut();
+
+        let cloned = fact.clone();
+        
+        if !set.contains(&fact) {
+            fact.paths = paths;
+            set.insert(*fact);
+        }
+
+        let interned = set.get(&cloned).unwrap();
 
         // TODO: Document the pre- and post-conditions that the code must
         // uphold to make this unsafe code valid instead of copying this
