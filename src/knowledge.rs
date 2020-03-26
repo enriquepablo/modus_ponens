@@ -200,7 +200,7 @@ impl<'a> KnowledgeBase<'a> {
     }
     fn process_fact(mut self, fact: &'a Fact<'a>, query_rules: bool) -> Self {
         
-        // println!("ADDING FACT: {}", fact);
+        println!("ADDING FACT: {}", fact);
         
         let izipper = self.rules.izipper();
         let paths = fact.get_leaf_paths();
