@@ -153,8 +153,8 @@ impl<'a> Grammar<'a> {
         }
         all_paths
     }
-    pub fn substitute_fact(&'a self, fact: &'a Fact<'a>, matching: SynMatching<'a>) -> &'a Fact<'a> {
-        let new_paths = SynPath::substitute_paths(&fact.paths, &matching);
+    pub fn substitute_fact(&'a self, fact: &'a Fact<'a>, matching: &SynMatching<'a>) -> &'a Fact<'a> {
+        let new_paths = SynPath::substitute_paths(&fact.paths, matching);
         let text = new_paths.iter()
                             .filter(|path| path.is_leaf())
                             .map(|path| path.value.text.as_str())

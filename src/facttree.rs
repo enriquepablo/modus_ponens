@@ -281,29 +281,13 @@ impl<'a> NodeZipper<'a> {
 pub struct INodeZipper<'a> {
     children: &'a HashMap<SynPath<'a>, FSNode<'a>>,
     lchildren: &'a HashMap<SynPath<'a>, FSNode<'a>>,
-    response: Box<Vec<SynMatching<'a>>>,
+    response: &'a mut [SynMatching<'a>],
 }
 
 impl<'a> INodeZipper<'a> {
     
-    fn add_response(self, matching: SynMatching<'a>) -> INodeZipper<'a> {
-        // Destructure this NodeZipper
-        let INodeZipper {
-            children,
-            lchildren,
-            mut response,
-        } = self;
-        response.push(matching);
-        INodeZipper {
-            children,
-            lchildren,
-            response,
-        }
-    }
-    
-    #[allow(dead_code)]
     pub fn query_paths(self,
-                   all_paths: Vec<&'a SynPath>,
+                   all_paths: &'a [&'a SynPath],
                    matching: SynMatching<'a>,
                    ) -> INodeZipper<'a> {
 
@@ -327,7 +311,7 @@ impl<'a> INodeZipper<'a> {
                         };
                         let mut new_matching = matching.clone();
                         new_matching.insert(path.value, child_path.value);
-                        child = child.query_paths(paths.to_vec(), new_matching);
+                        child = child.query_paths(paths, new_matching);
                         let INodeZipper {
                             response: new_response, ..
                         } = child;
@@ -364,14 +348,14 @@ impl<'a> INodeZipper<'a> {
                     lchildren: &next_node.expect("node").lchildren,
                     response: resp,
                 };
-                next_child = next_child.query_paths(paths.to_vec(), matching.clone());
+                next_child = next_child.query_paths(paths, matching.clone());
                 let INodeZipper {
                     response: new_response, ..
                 } = next_child;
                 resp = new_response;
             }
         } else {
-            resp.push(matching.clone());
+            resp[resp.len()] = matching;
         }
         INodeZipper {
             children: parent_children,
@@ -380,7 +364,7 @@ impl<'a> INodeZipper<'a> {
         }
     }
 
-    pub fn finish(self) -> Box<Vec<SynMatching<'a>>> {
+    pub fn finish(self) -> &'a mut [SynMatching<'a>] {
         
         let INodeZipper {
             response, ..
@@ -406,7 +390,7 @@ impl<'a> FSNode<'a> {
         }
     }
 
-    pub fn qzipper(&'a self, response: Box<Vec<SynMatching<'a>>>) -> INodeZipper<'a> {
+    pub fn qzipper(&'a self, response: &'a mut [SynMatching<'a>]) -> INodeZipper<'a> {
         INodeZipper {
             children: &self.children,
             lchildren: &self.lchildren,

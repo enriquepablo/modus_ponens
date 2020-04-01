@@ -50,11 +50,11 @@ impl<'a> Fact<'a> {
         }
         paths
     }
-    pub fn get_leaf_paths(&self) -> Vec<&SynPath> {
-        let mut paths = Vec::new();
-        for path in self.paths.iter() {
+    pub fn get_leaf_paths(&self) -> &'a [&'a SynPath] {
+        let paths = &mut [];
+        for (i, path) in self.paths.iter().enumerate() {
             if path.is_leaf() && !path.value.text.trim().is_empty() {
-                paths.push(path);
+                paths[i] = path;
             }
         }
         paths
