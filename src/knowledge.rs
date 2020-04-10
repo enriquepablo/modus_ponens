@@ -116,11 +116,12 @@ impl<'a> KnowledgeBase<'a> {
         }
         kdb
     }
-    pub fn ask(&'a self, kdb: &KDB, knowledge: &'a str) -> bool {
+    pub fn ask(&'a self, mut kdb: KDB<'a>, knowledge: &'a str) -> (KDB<'a>, bool) {
         let ParseResult { mut facts, .. } = self.grammar.parse_text(knowledge).ok().unwrap();
         let fact = facts.pop().unwrap();
-        let resps = kdb.facts.ask_fact(&fact);
-        resps.len() > 0
+        let (factset, resps) = kdb.facts.ask_fact(&fact);
+        kdb.facts = factset;
+        (kdb, resps.len() > 0)
     }
     fn process_activations(&'a self, mut kdb: KDB<'a>) -> KDB<'a> {
         let mut queue = kdb.queue;
@@ -190,7 +191,7 @@ impl<'a> KnowledgeBase<'a> {
             };
             let zipper = rules.zipper(Some(rule_ref));
             let normal_leaf_paths = normal_ant.get_leaf_paths();
-            rules = *zipper.follow_and_create_paths(&normal_leaf_paths);
+            rules = *zipper.follow_and_create_paths(normal_leaf_paths);
             rule = Rule {
                 antecedents,
                 more_antecedents,
@@ -202,17 +203,18 @@ impl<'a> KnowledgeBase<'a> {
     fn process_fact(&'a self, fact: &'a Fact<'a>, query_rules: bool, kdb: KDB<'a>) -> KDB<'a> {
         
         println!("ADDING FACT: {}", fact);
-        let KDB { facts, rules, mut queue, } = kdb;
+        let KDB { mut facts, mut rules, mut queue, } = kdb;
         let izipper = rules.izipper();
         let paths = fact.get_leaf_paths();
-        let response = izipper.climb(paths).finish();
+        let (root, response) = izipper.climb(paths).finish();
+        rules = *root;
         for (rule_refs, matching) in *response {
             for RuleRef { rule, varmap } in rule_refs {
                 let real_matching = get_real_matching_owning(matching.clone(), varmap); 
-                queue.push_back(Activation::from_matching(rule.clone(), real_matching, query_rules));
+                queue.push_back(Activation::from_matching(rule, real_matching, query_rules));
             }
         }
-        facts.add_fact(&fact);
+        facts = facts.add_fact(&fact);
         KDB { rules, facts, queue, }
     }
     fn process_match(&'a self,
@@ -251,7 +253,8 @@ impl<'a> KnowledgeBase<'a> {
         for i in 0..rule.antecedents.len() {
             let mut new_ants = rule.antecedents.clone();
             let ant = new_ants.remove(i);
-            let resps = kdb.facts.ask_fact(ant);
+            let (factset, resps) = kdb.facts.ask_fact(ant);
+            kdb.facts = factset;
             for resp in resps {
                 let new_rule = Rule {
                     antecedents: new_ants.clone(),
@@ -311,7 +314,7 @@ mod tests {
         let mut kdb = KDB::new(&grammar);
         let kb = KnowledgeBase::new(&grammar);
         kdb = kb.tell(kdb, "susan ISA person.");
-        let resp = kb.ask(&kdb, "susan ISA person.");
+        let (_, resp) = kb.ask(kdb, "susan ISA person.");
         assert!(resp);
     }
 //    #[test]

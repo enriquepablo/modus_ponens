@@ -62,7 +62,7 @@ pub fn get_real_matching<'a>(matching: &'a SynMatching, varmap: &'a SynMatching)
     }
     real_matching
 }
-pub fn get_real_matching_owning<'a>(matching: SynMatching<'a>, varmap: &'a SynMatching<'a>) -> SynMatching<'a> {
+pub fn get_real_matching_owning<'a>(matching: SynMatching<'a>, varmap: SynMatching<'a>) -> SynMatching<'a> {
     let mut real_matching: SynMatching = HashMap::new();
     for (key, value) in matching {
         let mut new_key = key;

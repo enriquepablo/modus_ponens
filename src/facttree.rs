@@ -279,8 +279,8 @@ impl<'a> NodeZipper<'a> {
 
 #[derive(Debug)]
 pub struct INodeZipper<'a> {
-    children: &'a HashMap<SynPath<'a>, FSNode<'a>>,
-    lchildren: &'a HashMap<SynPath<'a>, FSNode<'a>>,
+    children: HashMap<SynPath<'a>, FSNode<'a>>,
+    lchildren: HashMap<SynPath<'a>, FSNode<'a>>,
     response: &'a mut [SynMatching<'a>],
 }
 
@@ -292,30 +292,37 @@ impl<'a> INodeZipper<'a> {
                    ) -> INodeZipper<'a> {
 
         let INodeZipper {
-            children: parent_children,
-            lchildren: parent_lchildren,
+            children: mut parent_children,
+            lchildren: mut parent_lchildren,
             response: mut resp,
         } = self;
         let split_paths = all_paths.split_first();
         if split_paths.is_some() {
             let mut subs_path: Option<SynPath> = None;
-            let (path, paths) = split_paths.unwrap();
+            let (&path, paths) = split_paths.unwrap();
             if path.value.is_var {
                 if !matching.contains_key(&path.value) {
                     let mut child: INodeZipper;
-                    for (child_path, child_node) in parent_lchildren.iter() {
+                    let lchildren_keys = parent_lchildren.keys().cloned().collect::<Vec<SynPath>>();
+                    for lkey in lchildren_keys  {
+                        let (child_path, mut child_node) = parent_lchildren.remove_entry(&lkey).unwrap();
                         child = INodeZipper {
-                            children: &child_node.children,
-                            lchildren: &child_node.lchildren,
+                            children: child_node.children,
+                            lchildren: child_node.lchildren,
                             response: resp,
                         };
                         let mut new_matching = matching.clone();
                         new_matching.insert(path.value, child_path.value);
                         child = child.query_paths(paths, new_matching);
                         let INodeZipper {
-                            response: new_response, ..
+                            children: child_node_children,
+                            lchildren: child_node_lchildren,
+                            response: new_response,
                         } = child;
                         resp = new_response;
+                        child_node.children = child_node_children;
+                        child_node.lchildren = child_node_lchildren;
+                        parent_lchildren.insert(child_path, child_node);
                     }
                     return INodeZipper {
                         children: parent_children,
@@ -327,32 +334,44 @@ impl<'a> INodeZipper<'a> {
                     subs_path = Some(new_path);
                 }
             }
-            let next_node: Option<&FSNode>;
+            let next: Option<(SynPath, FSNode)>;
+            let logic: bool;
+            let new_path: SynPath;
             if subs_path.is_some() {
-                let new_path = &subs_path.unwrap();
-                if new_path.in_var_range() {
-                    next_node = parent_lchildren.get(new_path);
-                } else {
-                    next_node = parent_children.get(new_path);
-                }
+                new_path = subs_path.unwrap();
             } else {
-                if path.in_var_range() {
-                    next_node = parent_lchildren.get(&path);
-                } else {
-                    next_node = parent_children.get(&path);
-                }
+                new_path = path.clone();
             }
-            if next_node.is_some() {
+            if path.in_var_range() {
+                next = parent_lchildren.remove_entry(&new_path);
+                logic = true;
+            } else {
+                next = parent_children.remove_entry(&new_path);
+                logic = false;
+            }
+            if next.is_some() {
+                let (next_path, next_node) = next.unwrap();
                 let mut next_child = INodeZipper {
-                    children: &next_node.expect("node").children,
-                    lchildren: &next_node.expect("node").lchildren,
+                    children: next_node.children,
+                    lchildren: next_node.lchildren,
                     response: resp,
                 };
                 next_child = next_child.query_paths(paths, matching.clone());
                 let INodeZipper {
-                    response: new_response, ..
+                    children: next_node_children,
+                    lchildren: next_node_lchildren,
+                    response: new_response,
                 } = next_child;
+                let next_node = FSNode {
+                    children: next_node_children,
+                    lchildren: next_node_lchildren,
+                };
                 resp = new_response;
+                if logic {
+                    parent_lchildren.insert(next_path, next_node);
+                } else {
+                    parent_children.insert(next_path, next_node);
+                }
             }
         } else {
             resp[resp.len()] = matching;
@@ -364,12 +383,18 @@ impl<'a> INodeZipper<'a> {
         }
     }
 
-    pub fn finish(self) -> &'a mut [SynMatching<'a>] {
+    pub fn finish(self) -> (FSNode<'a>, &'a mut [SynMatching<'a>]) {
         
         let INodeZipper {
-            response, ..
+            children,
+            lchildren,
+            response,
         } = self;
-        response
+        let node =  FSNode {
+            children,
+            lchildren,
+        };
+        (node, response)
     }
 }
 
@@ -390,10 +415,14 @@ impl<'a> FSNode<'a> {
         }
     }
 
-    pub fn qzipper(&'a self, response: &'a mut [SynMatching<'a>]) -> INodeZipper<'a> {
+    pub fn qzipper(self, response: &'a mut [SynMatching<'a>]) -> INodeZipper<'a> {
+        let FSNode {
+            children: child_children,
+            lchildren: child_lchildren,
+        } = self;
         INodeZipper {
-            children: &self.children,
-            lchildren: &self.lchildren,
+            children: child_children,
+            lchildren: child_lchildren,
             response,
         }
     }

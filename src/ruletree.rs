@@ -361,7 +361,7 @@ impl<'a> RSNode<'a> {
 }
 
 
-type Response<'a> = Box<Vec<(&'a Vec<RuleRef<'a>>, SynMatching<'a>)>>;
+type Response<'a> = Box<Vec<(Vec<RuleRef<'a>>, SynMatching<'a>)>>;
 
 pub fn new_response<'a>() -> Response<'a> {
     Box::new(
@@ -448,12 +448,13 @@ impl<'a> IRSZipper<'a> {
                 };
                 parent_children.insert(chpath, child);
             }
-            for rpath in parent_var_children.keys() {
+            let rpaths = parent_var_children.keys().cloned().collect::<Vec<SynPath>>();
+            for rpath in rpaths {
                 let new_path = path.sub_path(rpath.len());
                 let old_value = parent_matched.get(rpath.value);
                 if old_value.is_some() {
                     if &new_path.value == old_value.unwrap() {
-                        let (vpath, varchild) = parent_var_children.remove_entry(rpath).unwrap();
+                        let (vpath, varchild) = parent_var_children.remove_entry(&rpath).unwrap();
                         let RSNode {
                             path: varchild_path,
                             var_child: varchild_var_child,
@@ -549,7 +550,7 @@ impl<'a> IRSZipper<'a> {
         }
         if parent_end_node {
             // println!("Found rules: {}", parent_rule_refs.len());
-            response.push(( &parent_rule_refs.clone(), parent_matched.clone() ));
+            response.push(( parent_rule_refs.clone(), parent_matched.clone() ));
         }
         IRSZipper {
             path: parent_path,
@@ -564,12 +565,24 @@ impl<'a> IRSZipper<'a> {
         }
     }
 
-    pub fn finish(self) -> Response<'a> {
+    pub fn finish(self) -> (Box<RSNode<'a>>, Response<'a>) {
         
         let IRSZipper {
-            response, ..
+            path, var_child, matched,
+            child_type, children, var_children,
+            rule_refs,
+            response,
+            end_node,
         } = self;
-        response
+        let root = Box::new(RSNode {
+            path,
+            var_child,
+            var_children,
+            children,
+            rule_refs,
+            end_node,
+        });
+        (root, response)
     }
 }
 
