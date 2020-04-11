@@ -32,16 +32,16 @@ struct FactBuilder<'a> {
 }
 
 pub struct Grammar<'a> {
-    pub lexicon: Lexicon,
-    pub flexicon: FLexicon<'a>,
+    pub lexicon: Box<Lexicon>,
+    pub flexicon: Box<FLexicon<'a>>,
 }
 
 impl<'a> Grammar<'a> {
 
     pub fn new() -> Grammar<'a> {
         Grammar {
-            lexicon: Lexicon::new(),
-            flexicon: FLexicon::new(),
+            lexicon: Box::new(Lexicon::new()),
+            flexicon: Box::new(FLexicon::new()),
         }
     }
 
@@ -212,7 +212,7 @@ mod tests {
         let facts = f1.ok().unwrap().facts;
         let fact = facts.first().unwrap();
         let Fact {
-            text, paths
+            text, paths, ..
         } = fact;
         let first = paths.get(0);
         assert!(text == "susan ISA person");
@@ -233,7 +233,7 @@ mod tests {
         {
             let fact = antecedents.get(0).unwrap();
             let Fact {
-                text, paths
+                text, paths, ..
             } = fact;
             let first = paths.get(0);
             assert!(text == "susan ISA person");
@@ -242,7 +242,7 @@ mod tests {
         {
             let fact = consequents.get(0).unwrap();
             let Fact {
-                text, paths
+                text, paths, ..
             } = fact;
             let first = paths.get(0);
             assert!(text == "susan ISA monkey");
