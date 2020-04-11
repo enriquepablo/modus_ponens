@@ -12,6 +12,8 @@ use crate::path::SynPath;
 pub struct Fact<'a> {
     pub text: String,
     pub paths: Vec<SynPath<'a>>,
+    pub all_paths: Vec<&'a SynPath<'a>>,
+    pub leaf_paths: Vec<&'a SynPath<'a>>,
 }
 
 impl<'a> fmt::Display for Fact<'a> {
@@ -22,42 +24,52 @@ impl<'a> fmt::Display for Fact<'a> {
 }
 
 impl<'a> Fact<'a> {
-    fn new(text: String, paths: Vec<SynPath>) -> Fact {
-        Fact { text, paths, }
+    fn new(text: String, mut paths: Vec<SynPath>) -> Fact {
+        let mut new_paths = vec![];
+        let mut all_paths = vec![];
+        let mut leaf_paths = vec![];
+        while paths.len() > 0 {
+            let path = paths.pop().unwrap();
+            let is_empty = path.value.text.trim().is_empty();
+            let is_leaf = path.is_leaf();
+            new_paths.push(path);
+            let path_ref = new_paths.last().unwrap() as *const SynPath;
+            if !is_empty {
+                let new_path_ref = unsafe { &*path_ref };
+                all_paths.push(new_path_ref);
+                if is_leaf {
+                    let new_path_ref = unsafe { &*path_ref };
+                    leaf_paths.push(new_path_ref);
+                }
+            }
+        }
+        Fact { text, paths: new_paths, all_paths, leaf_paths }
     }
     pub fn initialize(text: String) -> Fact<'a> {
         Fact {
             text,
             paths: Vec::new(),
+            all_paths: Vec::new(),
+            leaf_paths: Vec::new(),
         }
     }
     pub fn initialize_str(text: &str) -> Fact<'a> {
         Fact {
             text: String::from(text),
             paths: Vec::new(),
+            all_paths: Vec::new(),
+            leaf_paths: Vec::new(),
         }
     }
     pub fn from_paths(paths: Vec<SynPath>) -> Fact {
         let text = paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
-        Fact { text, paths, }
+        Fact::new(text, paths)
     }
     pub fn get_all_paths(&'a self) -> &'a [&'a SynPath] {
-        let paths = &mut [];
-        for (i, path) in self.paths.iter().enumerate() {
-            if !path.value.text.trim().is_empty() {
-                paths[i] = path;
-            }
-        }
-        paths
+        &self.all_paths
     }
     pub fn get_leaf_paths(&self) -> &'a [&'a SynPath] {
-        let paths = &mut [];
-        for (i, path) in self.paths.iter().enumerate() {
-            if path.is_leaf() && !path.value.text.trim().is_empty() {
-                paths[i] = path;
-            }
-        }
-        paths
+        &self.leaf_paths
     }
 }
 
