@@ -88,31 +88,14 @@ impl<'a> Hash for Fact<'a> {
     }
 }
 
-pub struct FLexicon<'a>(RefCell<HashSet<Fact<'a>>>);
+pub struct FLexicon<'a>(RefCell<HashSet<Box<Fact<'a>>>>);
 
 impl<'a> FLexicon<'a> {
     pub fn new() -> Self {
         FLexicon(RefCell::new(HashSet::new()))
     }
 
-    pub fn intern(&self, text: &'a str, paths: Vec<SynPath<'a>>) -> &Fact {
-        let mut set = self.0.borrow_mut();
-        
-        let otext = String::from(text);
-        let fact = Fact::new(otext, paths);
-
-        if !set.contains(&fact) {
-            set.insert(fact.clone());
-        }
-
-        let interned = set.get(&fact).unwrap();
-
-        // TODO: Document the pre- and post-conditions that the code must
-        // uphold to make this unsafe code valid instead of copying this
-        // from Stack Overflow without reading it
-        unsafe { mem::transmute(&interned) }
-    }
-    pub fn from_paths(&'a self, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
+    pub fn from_paths(&'a self, paths: Vec<SynPath<'a>>) -> &'a Box<Fact<'a>> {
         let mut set = self.0.borrow_mut();
         
         let text = paths.iter()
@@ -120,69 +103,36 @@ impl<'a> FLexicon<'a> {
                         .map(|path| path.value.text.as_str())
                         .collect::<Vec<&str>>()
                         .join("");
-        let fact = Fact::new(text, paths);
+        let fact2 = Fact::new(text.clone(), paths.clone());
+        let fact = Box::new(Fact::new(text, paths));
 
         if !set.contains(&fact) {
-            set.insert(fact.clone());
+            set.insert(fact);
         }
 
-        let interned = set.get(&fact).unwrap();
+        let interned = set.get(&fact2).unwrap();
 
         // TODO: Document the pre- and post-conditions that the code must
         // uphold to make this unsafe code valid instead of copying this
         // from Stack Overflow without reading it
-        unsafe { mem::transmute(&interned) }
+        unsafe { mem::transmute(interned) }
     }
-    pub fn from_paths_and_boxed_string(&'a self, text: &str, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
+    pub fn from_paths_and_boxed_string(&'a self, text: &str, paths: Vec<SynPath<'a>>) -> &'a Box<Fact<'a>> {
         let mut set = self.0.borrow_mut();
         
-        let fact = Fact::new(String::from(text), paths);
+        let fact2 = Fact::new(String::from(text), paths.clone());
+        let fact = Box::new(Fact::new(String::from(text), paths));
 
         if !set.contains(&fact) {
-            set.insert(fact.clone());
+            set.insert(fact);
         }
 
-        let interned = set.get(&fact).unwrap();
+        let interned = set.get(&fact2).unwrap();
 
         // TODO: Document the pre- and post-conditions that the code must
         // uphold to make this unsafe code valid instead of copying this
         // from Stack Overflow without reading it
-        unsafe { mem::transmute(&interned) }
-    }
-
-    pub fn complete_fact(&'a self, mut fact: Box<Fact<'a>>, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
-        let mut set = self.0.borrow_mut();
-
-        let cloned = fact.clone();
-        
-        if !set.contains(&fact) {
-            fact.paths = paths;
-            set.insert(*fact);
-        }
-
-        let interned = set.get(&cloned).unwrap();
-
-        // TODO: Document the pre- and post-conditions that the code must
-        // uphold to make this unsafe code valid instead of copying this
-        // from Stack Overflow without reading it
-        unsafe { mem::transmute(&interned) }
-    }
-    pub fn intern_string(&self, text: String, paths: Vec<SynPath<'a>>) -> &Fact {
-        let mut set = self.0.borrow_mut();
-        
-        let otext = String::from(text);
-        let fact = Fact::new(otext, paths);
-
-        if !set.contains(&fact) {
-            set.insert(fact.clone());
-        }
-
-        let interned = set.get(&fact).unwrap();
-
-        // TODO: Document the pre- and post-conditions that the code must
-        // uphold to make this unsafe code valid instead of copying this
-        // from Stack Overflow without reading it
-        unsafe { mem::transmute(&interned) }
+        unsafe { mem::transmute(interned) }
     }
 }
 
