@@ -24,7 +24,7 @@ impl<'a> fmt::Display for Fact<'a> {
 }
 
 impl<'a> Fact<'a> {
-    fn new(text: String, mut paths: Vec<SynPath>) -> Fact {
+    fn new_boxed(text: String, mut paths: Vec<SynPath>) -> Box<Fact> {
         let mut new_paths = vec![];
         let mut all_paths = vec![];
         let mut leaf_paths = vec![];
@@ -43,7 +43,7 @@ impl<'a> Fact<'a> {
                 }
             }
         }
-        Fact { text, paths: new_paths, all_paths, leaf_paths }
+        Box::new(Fact { text, paths: new_paths, all_paths, leaf_paths })
     }
     pub fn initialize(text: String) -> Fact<'a> {
         Fact {
@@ -61,9 +61,9 @@ impl<'a> Fact<'a> {
             leaf_paths: Vec::new(),
         }
     }
-    pub fn from_paths(paths: Vec<SynPath>) -> Fact {
+    pub fn from_paths(paths: Vec<SynPath>) -> Box<Fact> {
         let text = paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
-        Fact::new(text, paths)
+        Fact::new_boxed(text, paths)
     }
     pub fn get_all_paths(&'a self) -> &'a [&'a SynPath] {
         &self.all_paths
@@ -103,8 +103,8 @@ impl<'a> FLexicon<'a> {
                         .map(|path| path.value.text.as_str())
                         .collect::<Vec<&str>>()
                         .join("");
-        let fact2 = Fact::new(text.clone(), paths.clone());
-        let fact = Box::new(Fact::new(text, paths));
+        let fact2 = Fact::new_boxed(text.clone(), paths.clone());
+        let fact = Fact::new_boxed(text, paths);
 
         if !set.contains(&fact) {
             set.insert(fact);
@@ -120,8 +120,8 @@ impl<'a> FLexicon<'a> {
     pub fn from_paths_and_boxed_string(&'a self, text: &str, paths: Vec<SynPath<'a>>) -> &'a Box<Fact<'a>> {
         let mut set = self.0.borrow_mut();
         
-        let fact2 = Fact::new(String::from(text), paths.clone());
-        let fact = Box::new(Fact::new(String::from(text), paths));
+        let fact2 = Fact::new_boxed(String::from(text), paths.clone());
+        let fact = Fact::new_boxed(String::from(text), paths);
 
         if !set.contains(&fact) {
             set.insert(fact);
