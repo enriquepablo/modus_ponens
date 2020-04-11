@@ -37,9 +37,18 @@ impl<'a> SynPath<'a> {
         let lpath = path.len();
         lself >= lpath && &self.segments[0..lpath] == &path.segments[0..lpath]
     }
+    pub fn starts_with_slice(&self, path_slice: &'a [&'a SynSegment]) -> bool {
+        let lself = self.len();
+        let lpath = path_slice.len();
+        lself >= lpath && self.segments[0..lpath] == path_slice[0..lpath]
+    }
     pub fn sub_path(&'a self, lpath: usize) -> SynPath<'a> {
         let new_segments = &self.segments[0..lpath];
         SynPath::new(new_segments.to_vec())
+    }
+    pub fn sub_slice(&'a self, lpath: usize) -> (&'a [&'a SynSegment], &'a SynSegment) {
+        let segments = &self.segments[0..lpath];
+        (segments, segments.last().expect("no empty paths"))
     }
     pub fn paths_after(&'a self, paths: &'a [&'a SynPath], try_to_see: bool) -> &'a [&'a SynPath] {
         let mut seen = false;
@@ -54,6 +63,26 @@ impl<'a> SynPath<'a> {
             if try_to_see && !seen && path_starts_with_self {
                 seen = true;
             } else if (!try_to_see || seen) && (!path_starts_with_self || path.len() == self.len()) {
+                after = i;
+                break;
+            }
+            i += 1;
+        }
+        &paths[after..]
+    }
+    pub fn paths_after_slice(path_slice: &'a [&'a SynSegment], paths: &'a [&'a SynPath<'a>], try_to_see: bool) -> &'a [&'a SynPath<'a>] {
+        let mut seen = false;
+        let mut path_starts_with_self: bool;
+        let mut i = 0;
+        let mut after = 0;
+        for path in paths {
+            path_starts_with_self = path.starts_with_slice(path_slice);
+            if path_starts_with_self {
+                after = i;
+            }
+            if try_to_see && !seen && path_starts_with_self {
+                seen = true;
+            } else if (!try_to_see || seen) && (!path_starts_with_self || path.len() == path_slice.len()) {
                 after = i;
                 break;
             }

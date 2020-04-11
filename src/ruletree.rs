@@ -450,10 +450,10 @@ impl<'a> IRSZipper<'a> {
             }
             let rpaths = parent_var_children.keys().cloned().collect::<Vec<SynPath>>();
             for rpath in rpaths {
-                let new_path = path.sub_path(rpath.len());
+                let (new_path_slice, new_value) = path.sub_slice(rpath.len());
                 let old_value = parent_matched.get(rpath.value);
                 if old_value.is_some() {
-                    if &new_path.value == old_value.unwrap() {
+                    if &new_value == old_value.unwrap() {
                         let (vpath, varchild) = parent_var_children.remove_entry(&rpath).unwrap();
                         let RSNode {
                             path: varchild_path,
@@ -463,7 +463,7 @@ impl<'a> IRSZipper<'a> {
                             rule_refs: varchild_rule_refs,
                             end_node: varchild_end_node,
                         } = varchild;
-                        let new_paths = new_path.clone().paths_after_owning(rest_paths, false);
+                        let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths, false);
                         let mut zipper = IRSZipper {
                             path: varchild_path,
                             matched: parent_matched,
@@ -503,10 +503,10 @@ impl<'a> IRSZipper<'a> {
             }
             if parent_var_child.is_some() {
                 let var_child = parent_var_child.unwrap();
-                let new_path = path.sub_path(var_child.path.len());
-                let new_paths = new_path.clone().paths_after_owning(rest_paths, false);
+                let (new_path_slice, new_value) = path.sub_slice(var_child.path.len());
+                let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths, false);
                 let mut new_matched = parent_matched.clone();
-                new_matched.insert(var_child.path.value, new_path.value);
+                new_matched.insert(var_child.path.value, new_value);
                 let RSNode {
                     path: varchild_path,
                     var_child: varchild_var_child,
