@@ -12,8 +12,6 @@ use crate::path::SynPath;
 pub struct Fact<'a> {
     pub text: String,
     pub paths: Vec<SynPath<'a>>,
-    pub all_paths: Vec<&'a SynPath<'a>>,
-    pub leaf_paths: Vec<&'a SynPath<'a>>,
 }
 
 impl<'a> fmt::Display for Fact<'a> {
@@ -24,50 +22,24 @@ impl<'a> fmt::Display for Fact<'a> {
 }
 
 impl<'a> Fact<'a> {
-    fn new_boxed(text: String, mut paths: Vec<SynPath>) -> Box<Fact> {
-        let mut new_paths = vec![];
-        let mut all_paths = vec![];
-        let mut leaf_paths = vec![];
-        while paths.len() > 0 {
-            let path = paths.pop().unwrap();
-            let is_empty = path.value.text.trim().is_empty();
-            let is_leaf = path.is_leaf();
-            new_paths.push(path);
-            if !is_empty {
-                let new_path_ref = unsafe { mem::transmute(new_paths.last().unwrap()) };
-                all_paths.push(new_path_ref);
-                if is_leaf {
-                    leaf_paths.push(new_path_ref);
-                }
-            }
-        }
-        Box::new(Fact { text, paths: new_paths, all_paths, leaf_paths })
+    fn new_boxed(text: String, paths: Vec<SynPath>) -> Box<Fact> {
+        Box::new(Fact { text, paths })
     }
     pub fn initialize(text: String) -> Fact<'a> {
         Fact {
             text,
             paths: Vec::new(),
-            all_paths: Vec::new(),
-            leaf_paths: Vec::new(),
         }
     }
     pub fn initialize_str(text: &str) -> Fact<'a> {
         Fact {
             text: String::from(text),
             paths: Vec::new(),
-            all_paths: Vec::new(),
-            leaf_paths: Vec::new(),
         }
     }
     pub fn from_paths(paths: Vec<SynPath>) -> Box<Fact> {
         let text = paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
         Fact::new_boxed(text, paths)
-    }
-    pub fn get_all_paths(&'a self) -> &'a [&'a SynPath] {
-        &self.all_paths
-    }
-    pub fn get_leaf_paths(&self) -> &'a [&'a SynPath] {
-        &self.leaf_paths
     }
 }
 
@@ -163,8 +135,8 @@ mod tests {
         let paths = vec![path1, path2, path3, path4];
         let fact = Fact::from_paths(paths);
 
-        assert_eq!(fact.get_all_paths().len(), 4);
-        assert_eq!(fact.get_leaf_paths().len(), 3);
+//        assert_eq!(fact.get_all_paths().len(), 4);
+//        assert_eq!(fact.get_leaf_paths().len(), 3);
     }
 
     #[test]
@@ -196,7 +168,7 @@ mod tests {
         let paths = vec![path1, path2, path3, path4, path5];
         let fact = Fact::from_paths(paths);
 
-        assert_eq!(fact.get_all_paths().len(), 4);
-        assert_eq!(fact.get_leaf_paths().len(), 3);
+//        assert_eq!(fact.get_all_paths().len(), 4);
+//        assert_eq!(fact.get_leaf_paths().len(), 3);
     }
 }

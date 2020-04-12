@@ -190,7 +190,7 @@ impl<'a> KnowledgeBase<'a> {
                 varmap,
             };
             let zipper = rules.zipper(Some(rule_ref));
-            let normal_leaf_paths = normal_ant.get_leaf_paths();
+            let normal_leaf_paths = normal_ant.paths.as_slice();
             rules = *zipper.follow_and_create_paths(normal_leaf_paths);
             rule = Rule {
                 antecedents,
@@ -205,7 +205,7 @@ impl<'a> KnowledgeBase<'a> {
         println!("ADDING FACT: {}", fact);
         let KDB { mut facts, mut rules, mut queue, } = kdb;
         let izipper = rules.izipper();
-        let paths = fact.get_leaf_paths();
+        let paths = fact.paths.as_slice();
         let (root, response) = izipper.climb(paths).finish();
         rules = *root;
         for (rule_refs, matching) in *response {

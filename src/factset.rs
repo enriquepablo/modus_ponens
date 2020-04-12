@@ -16,7 +16,7 @@ impl<'a> FactSet<'a> {
     }
     pub fn add_fact (mut self, fact: &'a Fact<'a>) -> FactSet<'a> {
         let mut zipper = self.root.zipper();
-        let paths = fact.get_all_paths();
+        let paths = fact.paths.as_slice();
         zipper = zipper.follow_and_create_paths(paths);
         self.root = zipper.finish();
         self
@@ -24,7 +24,7 @@ impl<'a> FactSet<'a> {
     pub fn ask_fact (self, fact: &'a Fact) -> (Self, &'a [SynMatching<'a>]) {
         let response: &'a mut [SynMatching<'a>] = &mut [];
         let mut qzipper = self.root.qzipper(response);
-        let paths = fact.get_leaf_paths();
+        let paths = fact.paths.as_slice();
         let matching: SynMatching = HashMap::new();
         qzipper = qzipper.query_paths(paths, matching);
         let (root, resp) = qzipper.finish();

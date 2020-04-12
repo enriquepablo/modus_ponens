@@ -80,11 +80,14 @@ pub struct RSZipper<'a> {
 
 impl<'a> RSZipper<'a> {
 
-    pub fn follow_and_create_paths(self, paths: &'a [&SynPath]) -> Box<RSNode<'a>> {
+    pub fn follow_and_create_paths(self, paths: &'a [SynPath]) -> Box<RSNode<'a>> {
         let mut zipper: RSZipper = self; 
         let mut node: Option<RSNode>; 
         let mut visited_vars: Vec<&SynSegment> = vec![];
-        for (i, &new_path) in paths.iter().enumerate() {
+        for (i, new_path) in paths.iter().enumerate() {
+            if new_path.value.text.trim().is_empty() || !new_path.is_leaf() {
+                continue;
+            }
             let RSZipper {
                 parent, child_type,
                 path, mut var_child,
@@ -200,9 +203,12 @@ impl<'a> RSZipper<'a> {
         zipper.finish()
     }
 
-    fn create_paths(self, paths: &'a [&SynPath], mut visited: Vec<&'a SynSegment>) -> RSZipper<'a> {
+    fn create_paths(self, paths: &'a [SynPath], mut visited: Vec<&'a SynSegment>) -> RSZipper<'a> {
         let mut zipper: RSZipper = self; 
-        for &new_path in paths {
+        for new_path in paths {
+            if new_path.value.text.trim().is_empty() || !new_path.is_leaf() {
+                continue;
+            }
             let RSZipper {
                 parent: pre_parent, child_type: pre_child_type,
                 path: pre_path, var_child: pre_var_child,
@@ -388,7 +394,7 @@ pub struct IRSZipper<'a> {
 
 impl<'a> IRSZipper<'a> {
 
-    pub fn climb(self, paths: &'a [&'a SynPath<'a>]) -> IRSZipper<'a> {
+    pub fn climb(self, paths: &'a [SynPath<'a>]) -> IRSZipper<'a> {
         let IRSZipper {
             path: parent_path,
             child_type: parent_child_type,
@@ -400,9 +406,27 @@ impl<'a> IRSZipper<'a> {
             mut response,
             end_node: parent_end_node,
         } = self;
-        let split_paths = paths.split_first();
-        if split_paths.is_some() {
-            let (&path, rest_paths) = split_paths.unwrap();
+        let mut finished = false;
+        let mut next_path: Option<&SynPath> = None;
+        let mut next_paths: Option<&'a [SynPath]> = None;
+        while !finished {
+            let split_paths = paths.split_first();
+            if split_paths.is_some() {
+                let (path, paths) = split_paths.unwrap();
+                if !path.value.text.trim().is_empty() && path.is_leaf() {
+                    finished = true;
+                    next_path = Some(path);
+                    next_paths = Some(paths);
+                }
+            } else {
+                finished = true;
+            }
+            
+        }
+        if next_path.is_some(){
+            let mut subs_path: Option<SynPath> = None;
+            let path = next_path.unwrap();
+            let rest_paths = next_paths.unwrap();
             let pchild = parent_children.remove_entry(path);
             if pchild.is_some() {
                 let (chpath, child) = pchild.unwrap();

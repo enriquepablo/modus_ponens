@@ -183,8 +183,11 @@ impl<'a> Grammar<'a> {
     pub fn normalize_fact (&'a self, fact: &'a Fact<'a>) -> (SynMatching<'a>, &'a Box<Fact<'a>>) {
         let mut varmap: SynMatching<'a> = HashMap::new();
         let mut counter = 1;
-        let leaves = fact.get_leaf_paths();
+        let leaves = fact.paths.as_slice();
         for path in leaves {
+            if path.value.text.trim().is_empty() || !path.is_leaf() {
+                continue;
+            }
             if path.is_var() {
                 let old_var = varmap.get(&path.value);
                 if old_var.is_none() {

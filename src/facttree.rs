@@ -204,14 +204,17 @@ impl<'a> NodeZipper<'a> {
         }
     }
 
-    pub fn follow_and_create_paths(self, paths: &'a [&SynPath]) -> NodeZipper<'a> {
+    pub fn follow_and_create_paths(self, paths: &'a [SynPath]) -> NodeZipper<'a> {
         let mut parent = self;
         let mut child: NodeZipper;
         let mut child_index = 0;
         for (path_index, path) in paths.iter().enumerate() {
+            if path.value.text.trim().is_empty() {
+                continue;
+            }
             if path.in_var_range() {
                 let (opt_child, opt_node) = parent.get_child(path, true);
-                let new_paths = path.paths_after(&paths, true);
+                let new_paths = path.paths_after(paths, true);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
                     if !path.is_leaf() {
@@ -252,11 +255,14 @@ impl<'a> NodeZipper<'a> {
         parent.ancestor(child_index)
     }
 
-    fn create_paths(self, paths: &'a [&SynPath]) -> NodeZipper<'a> {
+    fn create_paths(self, paths: &'a [SynPath]) -> NodeZipper<'a> {
         let mut parent = self;
         let mut child: NodeZipper;
         let mut child_index = 0;
         for path in paths {
+            if path.value.text.trim().is_empty() {
+                continue;
+            }
             child = NodeZipper {
                 parent: Some(Box::new(parent)),
                 path_in_parent: Some(path),
@@ -287,7 +293,7 @@ pub struct INodeZipper<'a> {
 impl<'a> INodeZipper<'a> {
     
     pub fn query_paths(self,
-                   all_paths: &'a [&'a SynPath],
+                   all_paths: &'a [SynPath],
                    matching: SynMatching<'a>,
                    ) -> INodeZipper<'a> {
 
@@ -296,10 +302,27 @@ impl<'a> INodeZipper<'a> {
             lchildren: mut parent_lchildren,
             response: mut resp,
         } = self;
-        let split_paths = all_paths.split_first();
-        if split_paths.is_some() {
+        let mut finished = false;
+        let mut next_path: Option<&SynPath> = None;
+        let mut next_paths: Option<&'a [SynPath]> = None;
+        while !finished {
+            let split_paths = all_paths.split_first();
+            if split_paths.is_some() {
+                let (path, paths) = split_paths.unwrap();
+                if !path.value.text.trim().is_empty() && path.is_leaf() {
+                    finished = true;
+                    next_path = Some(path);
+                    next_paths = Some(paths);
+                }
+            } else {
+                finished = true;
+            }
+
+        }
+        if next_path.is_some(){
             let mut subs_path: Option<SynPath> = None;
-            let (&path, paths) = split_paths.unwrap();
+            let path = next_path.unwrap();
+            let paths = next_paths.unwrap();
             if path.value.is_var {
                 if !matching.contains_key(&path.value) {
                     let mut child: INodeZipper;
