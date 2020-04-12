@@ -293,7 +293,7 @@ pub struct INodeZipper<'a> {
 impl<'a> INodeZipper<'a> {
     
     pub fn query_paths(self,
-                   all_paths: &'a [SynPath],
+                   mut all_paths: &'a [SynPath],
                    matching: SynMatching<'a>,
                    ) -> INodeZipper<'a> {
 
@@ -313,6 +313,8 @@ impl<'a> INodeZipper<'a> {
                     finished = true;
                     next_path = Some(path);
                     next_paths = Some(paths);
+                } else {
+                    all_paths = paths;
                 }
             } else {
                 finished = true;
