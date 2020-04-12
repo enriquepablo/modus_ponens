@@ -79,6 +79,25 @@
             },
             "args": ["test_fs_5"],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug test_factset_grammar_2",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=syntree",
+                    "--package=syntree"
+                ],
+                "filter": {
+                    "name": "syntree",
+                    "kind": "bin"
+                }
+            },
+            "args": ["test_factset_grammar_2"],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

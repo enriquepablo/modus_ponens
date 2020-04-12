@@ -424,7 +424,6 @@ impl<'a> IRSZipper<'a> {
             
         }
         if next_path.is_some(){
-            let mut subs_path: Option<SynPath> = None;
             let path = next_path.unwrap();
             let rest_paths = next_paths.unwrap();
             let pchild = parent_children.remove_entry(path);

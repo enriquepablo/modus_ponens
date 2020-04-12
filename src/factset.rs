@@ -84,7 +84,7 @@ mod tests {
         assert_eq!(resp5, false);
     }
     #[test]
-    fn test_2() {
+    fn test_factset_grammar_2() {
         let mut kb = Knowledge::new();
         let grammar = parser::Grammar::new();
         kb = kb.tell(&grammar, "\
