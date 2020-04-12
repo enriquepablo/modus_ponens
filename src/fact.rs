@@ -33,12 +33,10 @@ impl<'a> Fact<'a> {
             let is_empty = path.value.text.trim().is_empty();
             let is_leaf = path.is_leaf();
             new_paths.push(path);
-            let path_ref = new_paths.last().unwrap() as *const SynPath;
             if !is_empty {
-                let new_path_ref = unsafe { &*path_ref };
+                let new_path_ref = unsafe { mem::transmute(new_paths.last().unwrap()) };
                 all_paths.push(new_path_ref);
                 if is_leaf {
-                    let new_path_ref = unsafe { &*path_ref };
                     leaf_paths.push(new_path_ref);
                 }
             }
