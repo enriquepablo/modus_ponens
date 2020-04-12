@@ -287,7 +287,7 @@ impl<'a> NodeZipper<'a> {
 pub struct INodeZipper<'a> {
     children: HashMap<SynPath<'a>, FSNode<'a>>,
     lchildren: HashMap<SynPath<'a>, FSNode<'a>>,
-    response: &'a mut [SynMatching<'a>],
+    response: Vec<SynMatching<'a>>,
 }
 
 impl<'a> INodeZipper<'a> {
@@ -399,7 +399,7 @@ impl<'a> INodeZipper<'a> {
                 }
             }
         } else {
-            resp[resp.len()] = matching;
+            resp.push(matching);
         }
         INodeZipper {
             children: parent_children,
@@ -408,7 +408,7 @@ impl<'a> INodeZipper<'a> {
         }
     }
 
-    pub fn finish(self) -> (FSNode<'a>, &'a mut [SynMatching<'a>]) {
+    pub fn finish(self) -> (FSNode<'a>, Vec<SynMatching<'a>>) {
         
         let INodeZipper {
             children,
@@ -440,7 +440,7 @@ impl<'a> FSNode<'a> {
         }
     }
 
-    pub fn qzipper(self, response: &'a mut [SynMatching<'a>]) -> INodeZipper<'a> {
+    pub fn qzipper(self, response: Vec<SynMatching<'a>>) -> INodeZipper<'a> {
         let FSNode {
             children: child_children,
             lchildren: child_lchildren,

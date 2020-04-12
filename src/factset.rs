@@ -21,8 +21,8 @@ impl<'a> FactSet<'a> {
         self.root = zipper.finish();
         self
     }
-    pub fn ask_fact (self, fact: &'a Fact) -> (Self, &'a [SynMatching<'a>]) {
-        let response: &'a mut [SynMatching<'a>] = &mut [];
+    pub fn ask_fact (self, fact: &'a Fact) -> (Self, Vec<SynMatching<'a>>) {
+        let response: Vec<SynMatching<'a>> = vec![];
         let mut qzipper = self.root.qzipper(response);
         let paths = fact.paths.as_slice();
         let matching: SynMatching = HashMap::new();
