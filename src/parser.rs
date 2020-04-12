@@ -19,7 +19,7 @@ use crate::matching::{ SynMatching, invert_owning };
 struct SynParser;
 
 pub struct ParseResult<'a> {
-    pub facts: Vec<&'a Box<Fact<'a>>>,
+    pub facts: Vec<&'a Fact<'a>>,
     pub rules: Vec<SynRule<'a>>,
 }
 
@@ -47,7 +47,7 @@ impl<'a> Grammar<'a> {
 
     pub fn parse_text(&'a self, text: &'a str) -> Result<ParseResult<'a>, Error<Rule>> {
         let parse_tree = SynParser::parse(Rule::knowledge, text)?.next().unwrap();
-        let mut facts: Vec<&'a Box<Fact>> = vec![];
+        let mut facts: Vec<&'a Fact> = vec![];
         let mut rules: Vec<SynRule> = vec![];
         for pair in parse_tree.into_inner() {
             match pair.as_rule() {
@@ -101,12 +101,12 @@ impl<'a> Grammar<'a> {
         Ok(ParseResult { facts, rules })
     }
 
-    pub fn parse_fact(&'a self, text: &'a str) -> &'a Box<Fact<'a>> {
+    pub fn parse_fact(&'a self, text: &'a str) -> &'a Fact<'a> {
         let parse_tree = SynParser::parse(Rule::fact, text).ok().unwrap().next().unwrap();
         self.build_fact(parse_tree)
     }
     
-    pub fn build_fact(&'a self, parse_tree: Pair<'a, Rule>) -> &'a Box<Fact<'a>> {
+    pub fn build_fact(&'a self, parse_tree: Pair<'a, Rule>) -> &'a Fact<'a> {
         let all_paths = Box::new(vec![]);
         let builder = FactBuilder {
             parse_tree,
@@ -153,7 +153,7 @@ impl<'a> Grammar<'a> {
         }
         all_paths
     }
-    pub fn substitute_fact(&'a self, fact: &'a Fact<'a>, matching: &SynMatching<'a>) -> &'a Box<Fact<'a>> {
+    pub fn substitute_fact(&'a self, fact: &'a Fact<'a>, matching: &SynMatching<'a>) -> &'a Fact<'a> {
         let new_paths = SynPath::substitute_paths(&fact.paths, matching);
         let text = new_paths.iter()
                             .filter(|path| path.is_leaf())
@@ -176,11 +176,11 @@ impl<'a> Grammar<'a> {
 
         self.flexicon.from_paths_and_boxed_string(&stext, *all_paths)
     }
-    pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: SynMatching<'a>) -> &'a Box<Fact<'a>> {
+    pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: SynMatching<'a>) -> &'a Fact<'a> {
         let new_paths = SynPath::substitute_paths_owning(&fact.paths, matching);
         self.flexicon.from_paths(new_paths)
     }
-    pub fn normalize_fact (&'a self, fact: &'a Fact<'a>) -> (SynMatching<'a>, &'a Box<Fact<'a>>) {
+    pub fn normalize_fact (&'a self, fact: &'a Fact<'a>) -> (SynMatching<'a>, &'a Fact<'a>) {
         let mut varmap: SynMatching<'a> = HashMap::new();
         let mut counter = 1;
         let leaves = fact.paths.as_slice();

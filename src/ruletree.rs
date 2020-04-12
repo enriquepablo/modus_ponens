@@ -11,9 +11,9 @@ use crate::fact::Fact;
 
 #[derive(Debug, Clone)]
 pub struct Rule<'a> {
-    pub antecedents: Vec<&'a Box<Fact<'a>>>,
-    pub more_antecedents: VecDeque<Vec<&'a Box<Fact<'a>>>>,
-    pub consequents: Vec<&'a Box<Fact<'a>>>,
+    pub antecedents: Vec<&'a Fact<'a>>,
+    pub more_antecedents: VecDeque<Vec<&'a Fact<'a>>>,
+    pub consequents: Vec<&'a Fact<'a>>,
 }
 
 impl<'a> fmt::Display for Rule<'a> {

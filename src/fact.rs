@@ -22,8 +22,8 @@ impl<'a> fmt::Display for Fact<'a> {
 }
 
 impl<'a> Fact<'a> {
-    fn new_boxed(text: String, paths: Vec<SynPath>) -> Box<Fact> {
-        Box::new(Fact { text, paths })
+    fn new(text: String, paths: Vec<SynPath>) -> Fact {
+        Fact { text, paths }
     }
     pub fn initialize(text: String) -> Fact<'a> {
         Fact {
@@ -37,9 +37,9 @@ impl<'a> Fact<'a> {
             paths: Vec::new(),
         }
     }
-    pub fn from_paths(paths: Vec<SynPath>) -> Box<Fact> {
+    pub fn from_paths(paths: Vec<SynPath>) -> Fact {
         let text = paths.iter().map(|path| path.value.text.clone()).collect::<Vec<String>>().join("");
-        Fact::new_boxed(text, paths)
+        Fact::new(text, paths)
     }
 }
 
@@ -65,7 +65,7 @@ impl<'a> FLexicon<'a> {
         FLexicon(RefCell::new(HashSet::new()))
     }
 
-    pub fn from_paths(&'a self, paths: Vec<SynPath<'a>>) -> &'a Box<Fact<'a>> {
+    pub fn from_paths(&'a self, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
         let mut set = self.0.borrow_mut();
         
         let text = paths.iter()
@@ -73,31 +73,31 @@ impl<'a> FLexicon<'a> {
                         .map(|path| path.value.text.as_str())
                         .collect::<Vec<&str>>()
                         .join("");
-        let fact2 = Fact::new_boxed(text.clone(), paths.clone());
-        let fact = Fact::new_boxed(text, paths);
+        let fact2 = Fact::new(text.clone(), paths.clone());
+        let fact = Box::new(Fact::new(text, paths));
 
         if !set.contains(&fact) {
             set.insert(fact);
         }
 
-        let interned = set.get(&fact2).unwrap();
+        let interned = &**set.get(&fact2).unwrap();
 
         // TODO: Document the pre- and post-conditions that the code must
         // uphold to make this unsafe code valid instead of copying this
         // from Stack Overflow without reading it
         unsafe { mem::transmute(interned) }
     }
-    pub fn from_paths_and_boxed_string(&'a self, text: &str, paths: Vec<SynPath<'a>>) -> &'a Box<Fact<'a>> {
+    pub fn from_paths_and_boxed_string(&'a self, text: &str, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
         let mut set = self.0.borrow_mut();
         
-        let fact2 = Fact::new_boxed(String::from(text), paths.clone());
-        let fact = Fact::new_boxed(String::from(text), paths);
+        let fact2 = Fact::new(String::from(text), paths.clone());
+        let fact = Box::new(Fact::new(String::from(text), paths));
 
         if !set.contains(&fact) {
             set.insert(fact);
         }
 
-        let interned = set.get(&fact2).unwrap();
+        let interned = &**set.get(&fact2).unwrap();
 
         // TODO: Document the pre- and post-conditions that the code must
         // uphold to make this unsafe code valid instead of copying this

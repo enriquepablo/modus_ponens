@@ -5,7 +5,7 @@ use crate::path::SynPath;
 
 
 
-pub struct Lexicon(RefCell<HashSet<SynSegment>>);
+pub struct Lexicon(RefCell<HashSet<Box<SynSegment>>>);
 
 impl Lexicon {
     pub fn new() -> Self {
@@ -17,10 +17,10 @@ impl Lexicon {
         let value = SynSegment::new(name.to_string(), text.to_string(), is_leaf);
 
         if !set.contains(&value) {
-            set.insert(value.clone());
+            set.insert(Box::new(value.clone()));
         }
 
-        let interned = set.get(&value).unwrap();
+        let interned = &**set.get(&value).unwrap();
 
         // TODO: Document the pre- and post-conditions that the code must
         // uphold to make this unsafe code valid instead of copying this
