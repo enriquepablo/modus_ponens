@@ -367,7 +367,7 @@ impl<'a> INodeZipper<'a> {
             } else {
                 new_path = path.clone();
             }
-            if path.in_var_range() {
+            if new_path.in_var_range() {
                 next = parent_lchildren.remove_entry(&new_path);
                 logic = true;
             } else {

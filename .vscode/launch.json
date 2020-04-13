@@ -83,7 +83,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug test_factset_grammar_2",
+            "name": "test_factset_grammar_1",
             "cargo": {
                 "args": [
                     "test",
@@ -96,7 +96,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["test_factset_grammar_2"],
+            "args": ["test_factset_grammar_1"],
             "cwd": "${workspaceFolder}"
         }
     ]

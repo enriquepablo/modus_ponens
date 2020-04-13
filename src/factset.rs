@@ -84,7 +84,7 @@ mod tests {
         assert_eq!(resp5, false);
     }
     #[test]
-    fn test_factset_grammar_2() {
+    fn test_factset_grammar_1() {
         let mut kb = Knowledge::new();
         let grammar = parser::Grammar::new();
         kb = kb.tell(&grammar, "\
@@ -136,6 +136,20 @@ mod tests {
         assert_eq!(resp, true);
     }
     #[test]
+    fn test_factset_grammar_2() {
+        let mut kb = Knowledge::new();
+        let grammar = parser::Grammar::new();
+        kb = kb.tell(&grammar, "\
+            susan ISA person.\
+            john ISA person.\
+            person IS animal.\
+            (say: susan, what: (want: susan, what: (love: john, who: susan))) ISA fact.\
+            (want: john, what: (love: john, who: susan)) ISA fact.\
+            (love: susan, who: john) ISA fact.");
+        let (kb, resp) = kb.ask(&grammar, "(say: <X1>, what: (want: <X1>, what: (love: john, who: <X1>))) ISA fact.");
+        assert_eq!(resp, true);
+    }
+    #[test]
     fn test_3() {
         let mut kb = Knowledge::new();
         let grammar = parser::Grammar::new();
@@ -166,174 +180,3 @@ mod tests {
         assert!(resp2);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
