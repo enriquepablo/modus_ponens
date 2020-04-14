@@ -383,7 +383,7 @@ impl<'a> INodeZipper<'a> {
                     lchildren: next_node.lchildren,
                     response: resp,
                 };
-                next_child = next_child.query_paths(paths, matching.clone());
+                next_child = next_child.query_paths(paths, matching);
                 let INodeZipper {
                     children: next_node_children,
                     lchildren: next_node_lchildren,
