@@ -37,7 +37,7 @@ impl<'a> FSNode<'a> {
 #[derive(Debug)]
 pub struct NodeZipper<'a> {
     parent: Option<Box<NodeZipper<'a>>>,
-    path_in_parent: Option<&'a SynPath<'a>>,
+    path_in_parent: Option<SynPath<'a>>,
     logic_node: bool,
     children: HashMap<SynPath<'a>, FSNode<'a>>,
     lchildren: HashMap<SynPath<'a>, FSNode<'a>>,
@@ -55,19 +55,20 @@ impl<'a> NodeZipper<'a> {
             mut lchildren,
         } = self;
 
-        let mut child = children.remove(path);
+        let mut child_entry = children.remove_entry(path);
 
-        if child.is_none() {
-            child = lchildren.remove(path);
+        if child_entry.is_none() {
+            child_entry = lchildren.remove_entry(path);
         }
         // Return a new NodeZipper focused on the specified child.
-        if child.is_none() {
+        if child_entry.is_none() {
             None
         } else {
+            let (child_path, child) = child_entry.unwrap();
             let FSNode {
                 children: child_children,
                 lchildren: child_lchildren,
-            } = child.unwrap();
+            } = child;
             self = NodeZipper {
                 parent,
                 path_in_parent,
@@ -77,7 +78,7 @@ impl<'a> NodeZipper<'a> {
             };
             Some(NodeZipper {
                 parent: Some(Box::new(self)),
-                path_in_parent: Some(path),
+                path_in_parent: Some(child_path),
                 logic_node: false,
                 children: child_children,
                 lchildren: child_lchildren,
@@ -120,7 +121,7 @@ impl<'a> NodeZipper<'a> {
 
             // Insert the node of this NodeZipper back in its parent.
             let node = FSNode {children, lchildren};
-            let ppc = path_in_parent.expect("path").clone();    
+            let ppc = path_in_parent.expect("path");    
             if logic_node {
                 parent_lchildren.insert(ppc, node);
             } else {
@@ -178,25 +179,26 @@ impl<'a> NodeZipper<'a> {
         // since we mutate the parents
         // to move the focused nodes out of their list of children.
         // We use swap_remove() for efficiency.
-        let child: Option<FSNode>;
+        let child_entry: Option<(SynPath, FSNode)>;
         if logic {
-            child = self.lchildren.remove(path);
+            child_entry = self.lchildren.remove_entry(path);
         } else {
-            child = self.children.remove(path);
+            child_entry = self.children.remove_entry(path);
         }
 
         // Return a new NodeZipper focused on the specified child.
-        if child.is_none() {
+        if child_entry.is_none() {
             (None, Some(self))
         } else {
+            let (child_path, child) = child_entry.unwrap();
             let FSNode {
                 children: child_children,
                 lchildren: child_lchildren,
-            } = child.unwrap();
+            } = child;
 
             (Some(NodeZipper {
                 parent: Some(Box::new(self)),
-                path_in_parent: Some(path),
+                path_in_parent: Some(child_path),
                 logic_node: logic,
                 children: child_children,
                 lchildren: child_lchildren,
@@ -229,7 +231,7 @@ impl<'a> NodeZipper<'a> {
                     parent = opt_node.expect("node");
                     child = NodeZipper {
                         parent: Some(Box::new(parent)),
-                        path_in_parent: Some(path),
+                        path_in_parent: Some(path.clone()),
                         logic_node: path.in_var_range(),
                         children: HashMap::new(),
                         lchildren: HashMap::new(),
@@ -265,7 +267,7 @@ impl<'a> NodeZipper<'a> {
             }
             child = NodeZipper {
                 parent: Some(Box::new(parent)),
-                path_in_parent: Some(path),
+                path_in_parent: Some(path.clone()),
                 logic_node: path.in_var_range(),
                 children: HashMap::new(),
                 lchildren: HashMap::new(),
