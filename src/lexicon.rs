@@ -30,7 +30,7 @@ impl Lexicon {
 
     pub fn make_var(&self, n: usize) -> &SynSegment {
         let text = format!("<__X{}>", &n);
-        self.intern(&text, "var", true)
+        self.intern("var", &text, true)
     }
     pub fn empty_path(&self) -> SynPath {
         let root = self.intern("root", "empty", false);

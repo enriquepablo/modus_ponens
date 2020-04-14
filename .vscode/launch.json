@@ -64,7 +64,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug ONE unit test in 'syntree'",
+            "name": "kb",
             "cargo": {
                 "args": [
                     "test",
@@ -77,7 +77,26 @@
                     "kind": "bin"
                 }
             },
-            "args": ["test_fs_5"],
+            "args": ["test_kb_"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "ONE test in 'syntree'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=syntree",
+                    "--package=syntree"
+                ],
+                "filter": {
+                    "name": "syntree",
+                    "kind": "bin"
+                }
+            },
+            "args": ["kb_6"],
             "cwd": "${workspaceFolder}"
         },
         {

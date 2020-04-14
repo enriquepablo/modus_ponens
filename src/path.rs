@@ -217,8 +217,8 @@ impl<'a> SynPath<'a> {
                 let (new_path, old_path) = path.substitute(&matching);
                 if old_path.is_some() {
                     old_paths.push(old_path.unwrap());
-                }
-                if new_path.is_leaf() {
+                    new_paths.push(new_path);
+                } else if new_path.is_leaf() {
                     new_paths.push(new_path);
                 }
             }
@@ -241,8 +241,8 @@ impl<'a> SynPath<'a> {
                 let (new_path, old_path) = path.substitute_owning(matching.clone());
                 if old_path.is_some() {
                     old_paths.push(old_path.unwrap());
-                }
-                if new_path.is_leaf() {
+                    new_paths.push(new_path);
+                } else if new_path.is_leaf() {
                     new_paths.push(new_path);
                 }
             }
@@ -265,8 +265,8 @@ impl<'a> SynPath<'a> {
                 let (new_path, old_path) = path.substitute_owning_both(matching.clone());
                 if old_path.is_some() {
                     old_paths.push(old_path.unwrap());
-                }
-                if new_path.is_leaf() {
+                    new_paths.push(new_path);
+                } else if new_path.is_leaf() {
                     new_paths.push(new_path);
                 }
             }

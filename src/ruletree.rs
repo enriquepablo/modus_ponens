@@ -394,7 +394,7 @@ pub struct IRSZipper<'a> {
 
 impl<'a> IRSZipper<'a> {
 
-    pub fn climb(self, paths: &'a [SynPath<'a>]) -> IRSZipper<'a> {
+    pub fn climb(self, mut paths: &'a [SynPath<'a>]) -> IRSZipper<'a> {
         let IRSZipper {
             path: parent_path,
             child_type: parent_child_type,
@@ -412,11 +412,13 @@ impl<'a> IRSZipper<'a> {
         while !finished {
             let split_paths = paths.split_first();
             if split_paths.is_some() {
-                let (path, paths) = split_paths.unwrap();
+                let (path, less_paths) = split_paths.unwrap();
                 if !path.value.text.trim().is_empty() && path.is_leaf() {
                     finished = true;
                     next_path = Some(path);
-                    next_paths = Some(paths);
+                    next_paths = Some(less_paths);
+                } else {
+                    paths = less_paths;
                 }
             } else {
                 finished = true;
