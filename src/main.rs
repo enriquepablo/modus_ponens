@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use std::collections::VecDeque;
-
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
@@ -70,7 +68,7 @@ fn main() {
                       bob ISA (fn: pr, on: people).\
                       isa ISA (fn: pr, on: people).\
                       peter ISA (fn: pr, on: people).");
-        kdb = kb.tell(kdb, "(fn: (fn: pr, on: s2), on: john) EQ susan.\
+        kb.tell(kdb, "(fn: (fn: pr, on: s2), on: john) EQ susan.\
                      (fn: (fn: pr, on: s2), on: susan) EQ sue1.\
                      (fn: (fn: pr, on: s2), on: sue1) EQ sue2.\
                      (fn: (fn: pr, on: s2), on: sue2) EQ sue3.\

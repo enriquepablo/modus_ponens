@@ -80,7 +80,7 @@ mod tests {
         assert_eq!(resp3, true);
         let (kb, resp4) = kb.ask(&grammar, "<X0> ISA person.");
         assert_eq!(resp4, true);
-        let (kb, resp5) = kb.ask(&grammar, "<X0> ISA animal.");
+        let (_, resp5) = kb.ask(&grammar, "<X0> ISA animal.");
         assert_eq!(resp5, false);
     }
     #[test]
@@ -132,7 +132,7 @@ mod tests {
         assert_eq!(resp, true);
         let (kb, resp) = kb.ask(&grammar, "(love: john, who: susan) ISA fact.");
         assert_eq!(resp, false);
-        let (kb, resp) = kb.ask(&grammar, "(love: susan, who: john) ISA fact.");
+        let (_, resp) = kb.ask(&grammar, "(love: susan, who: john) ISA fact.");
         assert_eq!(resp, true);
     }
     #[test]
@@ -146,7 +146,7 @@ mod tests {
             (say: susan, what: (want: susan, what: (love: john, who: susan))) ISA fact.\
             (want: john, what: (love: john, who: susan)) ISA fact.\
             (love: susan, who: john) ISA fact.");
-        let (kb, resp) = kb.ask(&grammar, "(say: <X1>, what: (want: <X1>, what: (love: john, who: <X1>))) ISA fact.");
+        let (_, resp) = kb.ask(&grammar, "(say: <X1>, what: (want: <X1>, what: (love: john, who: <X1>))) ISA fact.");
         assert_eq!(resp, true);
     }
     #[test]
@@ -158,7 +158,7 @@ mod tests {
         assert!(resp1);
         let (kb, resp2) = kb.ask(&grammar, "(p1: (s: <X0>), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
         assert!(resp2);
-        let (kb, resp3) = kb.ask(&grammar, "(p1: <X0>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let (_, resp3) = kb.ask(&grammar, "(p1: <X0>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
         assert!(resp3);
     }
     #[test]
@@ -167,7 +167,7 @@ mod tests {
         let grammar = parser::Grammar::new();
         kb = kb.tell(&grammar, "(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
         kb = kb.tell(&grammar, "(p1: (s: (s: 0)), p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
-        let (kb, resp2) = kb.ask(&grammar, "(p1: <X0>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
+        let (_, resp2) = kb.ask(&grammar, "(p1: <X0>, p2: susan) ISA (fn: pr, on: (p1: nat, p2: people)).");
         assert!(resp2);
     }
     #[test]
@@ -176,7 +176,7 @@ mod tests {
         let grammar = parser::Grammar::new();
         kb = kb.tell(&grammar, "(p1: (s: 0), p2: john) ISA fact.");
         kb = kb.tell(&grammar, "(p1: (s: (s: 0)), p2: susan) ISA fact.");
-        let (kb, resp2) = kb.ask(&grammar, "(p1: <X0>, p2: susan) ISA fact.");
+        let (_, resp2) = kb.ask(&grammar, "(p1: <X0>, p2: susan) ISA fact.");
         assert!(resp2);
     }
 }

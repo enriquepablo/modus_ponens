@@ -173,7 +173,7 @@ impl<'a> Grammar<'a> {
         };
         let all_paths = self.visit_parse_node(builder);
 
-        self.flexicon.from_paths_and_boxed_string(&stext, *all_paths)
+        self.flexicon.from_paths_and_string(stext, *all_paths)
     }
     pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: SynMatching<'a>) -> &'a Fact<'a> {
         let new_paths = SynPath::substitute_paths_owning(&fact.paths, matching);

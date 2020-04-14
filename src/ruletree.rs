@@ -593,11 +593,11 @@ impl<'a> IRSZipper<'a> {
     pub fn finish(self) -> (Box<RSNode<'a>>, Response<'a>) {
         
         let IRSZipper {
-            path, var_child, matched,
-            child_type, children, var_children,
+            path, var_child,
+            children, var_children,
             rule_refs,
             response,
-            end_node,
+            end_node, ..
         } = self;
         let root = Box::new(RSNode {
             path,
