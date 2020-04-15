@@ -9,19 +9,20 @@ pub struct SynSegment {
     pub name: String,
     pub is_leaf: bool,
     pub is_var: bool,
+    pub in_var_range: bool,
+    pub is_empty: bool,
 }
 
 impl SynSegment {
     pub fn new(name: String, text: String, is_leaf: bool) -> SynSegment {
         let is_var = name == constants::VAR_RULE_NAME;
+        let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
+        let is_empty = text.trim().is_empty();
         SynSegment {
             name, text,
             is_leaf, is_var,
+            in_var_range, is_empty,
         }
-    }
-
-    pub fn in_var_range(&self) -> bool {
-        self.name.starts_with(constants::VAR_RANGE_PREFIX)
     }
 }
 
@@ -128,7 +129,7 @@ mod tests {
         let name = "v_rule-name".to_string();
         let text = "some text".to_string();
         let segm = SynSegment::new(name, text, true);
-        assert!(segm.in_var_range());
+        assert!(segm.in_var_range);
     }
 
     #[test]
@@ -136,6 +137,6 @@ mod tests {
         let name = "rule-name".to_string();
         let text = "some text".to_string();
         let segm = SynSegment::new(name, text, true);
-        assert!(!segm.in_var_range());
+        assert!(!segm.in_var_range);
     }
 }

@@ -184,10 +184,10 @@ impl<'a> Grammar<'a> {
         let mut counter = 1;
         let leaves = fact.paths.as_slice();
         for path in leaves {
-            if path.value.text.trim().is_empty() || !path.is_leaf() {
+            if path.value.is_empty || !path.value.is_leaf {
                 continue;
             }
-            if path.is_var() {
+            if path.value.is_var {
                 let old_var = varmap.get(&path.value);
                 if old_var.is_none() {
                     let new_var = self.lexicon.make_var(counter);

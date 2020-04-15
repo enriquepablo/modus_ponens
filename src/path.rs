@@ -26,12 +26,6 @@ impl<'a> SynPath<'a> {
     pub fn len(&self) -> usize {
         self.segments.len()
     }
-    pub fn is_var(&self) -> bool {
-        self.value.is_var
-    }
-    pub fn is_leaf(&self) -> bool {
-        self.value.is_leaf
-    }
     pub fn starts_with(&self, path: &SynPath) -> bool {
         let lself = self.len();
         let lpath = path.len();
@@ -56,7 +50,7 @@ impl<'a> SynPath<'a> {
         let mut i = 0;
         let mut after = 0;
         for path in paths {
-            if path.value.text.trim().is_empty() {
+            if path.value.is_empty {
                 i += 1;
                 continue;
             }
@@ -80,7 +74,7 @@ impl<'a> SynPath<'a> {
         let mut i = 0;
         let mut after = 0;
         for path in paths {
-            if path.value.text.trim().is_empty() || !path.is_leaf() {
+            if path.value.is_empty || !path.value.is_leaf {
                 i += 1;
                 continue;
             }
@@ -118,10 +112,6 @@ impl<'a> SynPath<'a> {
         }
         &paths[after..]
     }
-    pub fn in_var_range(&self) -> bool {
-        self.value.in_var_range()
-    }
-
     pub fn substitute2(&self, matching: &'a SynMatching) -> SynPath {
         let mut segments = self.segments.clone();
         let var = segments.pop().unwrap();
@@ -218,7 +208,7 @@ impl<'a> SynPath<'a> {
                 if old_path.is_some() {
                     old_paths.push(old_path.unwrap());
                     new_paths.push(new_path);
-                } else if new_path.is_leaf() {
+                } else if new_path.value.is_leaf {
                     new_paths.push(new_path);
                 }
             }
@@ -242,7 +232,7 @@ impl<'a> SynPath<'a> {
                 if old_path.is_some() {
                     old_paths.push(old_path.unwrap());
                     new_paths.push(new_path);
-                } else if new_path.is_leaf() {
+                } else if new_path.value.is_leaf {
                     new_paths.push(new_path);
                 }
             }
@@ -266,7 +256,7 @@ impl<'a> SynPath<'a> {
                 if old_path.is_some() {
                     old_paths.push(old_path.unwrap());
                     new_paths.push(new_path);
-                } else if new_path.is_leaf() {
+                } else if new_path.value.is_leaf {
                     new_paths.push(new_path);
                 }
             }
@@ -323,8 +313,8 @@ mod tests {
         assert_eq!(path.segments[0].name, "rule-name".to_string());
         assert_eq!(path.segments[0].text, "some text".to_string());
         assert_eq!(path.len(), 1);
-        assert_eq!(path.is_var(), false);
-        assert_eq!(path.is_leaf(), true);
+        assert_eq!(path.value.is_var, false);
+        assert_eq!(path.value.is_leaf, true);
     }
 
     #[test]
@@ -336,8 +326,8 @@ mod tests {
         assert_eq!(path.identity[0], constants::VAR_RULE_NAME);
         assert_eq!(path.identity[1], "<__X0>");
         assert_eq!(path.len(), 1);
-        assert_eq!(path.is_var(), true);
-        assert_eq!(path.is_leaf(), true);
+        assert_eq!(path.value.is_var, true);
+        assert_eq!(path.value.is_leaf, true);
     }
 
     #[test]
@@ -527,7 +517,7 @@ mod tests {
         let segm12 = SynSegment::new("v_rule-name2".to_string(), "some text2".to_string(), true);
         let segms1 = vec![&segm11, &segm12];
         let path1 = SynPath::new(segms1);
-        assert!(path1.in_var_range());
+        assert!(path1.value.in_var_range);
     }
 
     #[test]
@@ -536,7 +526,7 @@ mod tests {
         let segm12 = SynSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
         let segms1 = vec![&segm11, &segm12];
         let path1 = SynPath::new(segms1);
-        assert!(!path1.in_var_range());
+        assert!(!path1.value.in_var_range);
     }
     
     #[test]

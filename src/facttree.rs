@@ -211,20 +211,20 @@ impl<'a> NodeZipper<'a> {
         let mut child: NodeZipper;
         let mut child_index = 0;
         for (path_index, path) in paths.iter().enumerate() {
-            if path.value.text.trim().is_empty() {
+            if path.value.is_empty {
                 continue;
             }
-            if path.in_var_range() {
+            if path.value.in_var_range {
                 let (opt_child, opt_node) = parent.get_child(path, true);
                 let new_paths = path.paths_after(paths, true);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
-                    if !path.is_leaf() {
+                    if !path.value.is_leaf {
                         child = child.follow_and_create_paths(new_paths);
                         parent = child.get_parent().expect("we set the parent");
                         continue;
                     }
-                } else if path.is_leaf() {
+                } else if path.value.is_leaf {
                     parent = opt_node.expect("node").create_paths(&paths[path_index..]);
                     return parent.ancestor(child_index);
                 } else {
@@ -232,7 +232,7 @@ impl<'a> NodeZipper<'a> {
                     child = NodeZipper {
                         parent: Some(Box::new(parent)),
                         path_in_parent: Some(path.clone()),
-                        logic_node: path.in_var_range(),
+                        logic_node: path.value.in_var_range,
                         children: HashMap::new(),
                         lchildren: HashMap::new(),
                     };
@@ -262,17 +262,17 @@ impl<'a> NodeZipper<'a> {
         let mut child: NodeZipper;
         let mut child_index = 0;
         for path in paths {
-            if path.value.text.trim().is_empty() {
+            if path.value.is_empty {
                 continue;
             }
             child = NodeZipper {
                 parent: Some(Box::new(parent)),
                 path_in_parent: Some(path.clone()),
-                logic_node: path.in_var_range(),
+                logic_node: path.value.in_var_range,
                 children: HashMap::new(),
                 lchildren: HashMap::new(),
             };
-            if path.in_var_range() && !path.is_leaf() {
+            if path.value.in_var_range && !path.value.is_leaf {
                 let new_paths = path.paths_after(&paths, true);
                 child = child.create_paths(new_paths);
                 parent = child.get_parent().expect("we set the parent");
@@ -311,7 +311,7 @@ impl<'a> INodeZipper<'a> {
             let split_paths = all_paths.split_first();
             if split_paths.is_some() {
                 let (path, paths) = split_paths.unwrap();
-                if !path.value.text.trim().is_empty() && path.is_leaf() {
+                if !path.value.is_empty && path.value.is_leaf {
                     finished = true;
                     next_path = Some(path);
                     next_paths = Some(paths);
@@ -369,7 +369,7 @@ impl<'a> INodeZipper<'a> {
             } else {
                 new_path = path.clone();
             }
-            if new_path.in_var_range() {
+            if new_path.value.in_var_range {
                 next = parent_lchildren.remove_entry(&new_path);
                 logic = true;
             } else {

@@ -85,7 +85,7 @@ impl<'a> RSZipper<'a> {
         let mut node: Option<RSNode>; 
         let mut visited_vars: Vec<&SynSegment> = vec![];
         for (i, new_path) in paths.iter().enumerate() {
-            if new_path.value.text.trim().is_empty() || !new_path.is_leaf() {
+            if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
             let RSZipper {
@@ -206,7 +206,7 @@ impl<'a> RSZipper<'a> {
     fn create_paths(self, paths: &'a [SynPath], mut visited: Vec<&'a SynSegment>) -> RSZipper<'a> {
         let mut zipper: RSZipper = self; 
         for new_path in paths {
-            if new_path.value.text.trim().is_empty() || !new_path.is_leaf() {
+            if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
             let RSZipper {
@@ -226,7 +226,7 @@ impl<'a> RSZipper<'a> {
                 end_node: pre_end_node,
             };
             let child_type: ChildType;
-            if new_path.is_var() {
+            if new_path.value.is_var {
                 if visited.contains(&new_path.value) {
                     child_type = ChildType::Var;
                 } else {
@@ -413,7 +413,7 @@ impl<'a> IRSZipper<'a> {
             let split_paths = paths.split_first();
             if split_paths.is_some() {
                 let (path, less_paths) = split_paths.unwrap();
-                if !path.value.text.trim().is_empty() && path.is_leaf() {
+                if !path.value.is_empty && path.value.is_leaf {
                     finished = true;
                     next_path = Some(path);
                     next_paths = Some(less_paths);

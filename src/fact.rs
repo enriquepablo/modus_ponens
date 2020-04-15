@@ -53,7 +53,7 @@ impl<'a> FLexicon<'a> {
         let mut map = self.0.borrow_mut();
         
         let text = paths.iter()
-                        .filter(|path| path.is_leaf())
+                        .filter(|path| path.value.is_leaf)
                         .map(|path| path.value.text.as_str())
                         .collect::<Vec<&str>>()
                         .join("");
