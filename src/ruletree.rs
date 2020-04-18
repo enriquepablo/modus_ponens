@@ -2,6 +2,7 @@ use std::clone::Clone;
 use std::collections::HashMap;
 use std::fmt;
 use std::collections::VecDeque;
+use std::cell::RefCell;
 
 use crate::path::SynPath;
 use crate::segment::SynSegment;
@@ -48,10 +49,10 @@ pub struct RuleRef<'a> {
 #[derive(Debug)]
 pub struct RSNode<'a> {
     path: SynPath<'a>,
-    var_child : Option<Box<RSNode<'a>>>,
-    var_children: HashMap<SynPath<'a>, RSNode<'a>>,
-    children: HashMap<SynPath<'a>, RSNode<'a>>,
-    rule_refs: Vec<RuleRef<'a>>,
+    var_child : Option<RefCell<Box<RSNode<'a>>>>,
+    var_children: RefCell<HashMap<SynPath<'a>, RSNode<'a>>>,
+    children: RefCell<HashMap<SynPath<'a>, RSNode<'a>>>,
+    rule_refs: RefCell<Vec<RuleRef<'a>>>,
     end_node: bool,
 }
 
@@ -67,164 +68,93 @@ pub enum ChildType {
 
 #[derive(Debug)]
 pub struct RSZipper<'a> {
-    parent: Option<Box<RSZipper<'a>>>,
+    parent: Option<RefCell<Box<&'a RSZipper<'a>>>>,
     child_type: ChildType,
-    path: SynPath<'a>,
-    var_child : Option<Box<RSNode<'a>>>,
-    var_children: HashMap<SynPath<'a>, RSNode<'a>>,
-    children: HashMap<SynPath<'a>, RSNode<'a>>,
-    rule_refs: Vec<RuleRef<'a>>,
+    path: &'a SynPath<'a>,
+    var_child : Option<&'a RefCell<Box<RSNode<'a>>>>,
+    var_children: &'a RefCell<HashMap<SynPath<'a>, RSNode<'a>>>,
+    children: &'a RefCell<HashMap<SynPath<'a>, RSNode<'a>>>,
+    rule_refs: &'a RefCell<Vec<RuleRef<'a>>>,
     rule_ref: Option<RuleRef<'a>>,
     end_node: bool,
 }
 
 impl<'a> RSZipper<'a> {
 
-    pub fn follow_and_create_paths(self, paths: &'a [SynPath]) -> Box<RSNode<'a>> {
-        let mut zipper: RSZipper = self; 
-        let mut node: Option<RSNode>; 
+    pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath]) {
+        let mut zipper: &RSZipper = self; 
+        let mut node: Option<&RSNode>; 
         let mut visited_vars: Vec<&SynSegment> = vec![];
         for (i, new_path) in paths.iter().enumerate() {
+            let RSZipper {
+                parent, child_type,
+                path, var_child,
+                var_children, children,
+                rule_refs, rule_ref,
+                end_node,
+            } = zipper;
+            let var_children_borrowed = var_children.borrow();
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
-            let RSZipper {
-                parent, child_type,
-                path, mut var_child,
-                mut var_children,
-                mut children,
-                rule_refs,
-                rule_ref,
-                end_node,
-            } = zipper;
             let mut new_child_type = ChildType::Absurd;
             let mut found = true;
             if new_path.value.is_var {
-                node = var_children.remove(new_path);
+                node = var_children_borrowed.get(new_path);
                 if node.is_some() {
                     new_child_type = ChildType::Var;
                 } else if var_child.is_some() {
-                    let RSNode {
-                        path: vpath, var_child: vvar_child,
-                        var_children: vvar_children, children: vchildren,
-                        rule_refs: vrule_refs, end_node: vend_node,
-                    } = *var_child.unwrap();
-                    if &vpath == new_path {
+                    if &var_child.unwrap().borrow().path == new_path {
                         visited_vars.push(new_path.value);
-                        node = Some(RSNode{
-                            path: vpath, var_child: vvar_child,
-                            var_children: vvar_children, children: vchildren,
-                            rule_refs: vrule_refs, end_node: vend_node,
-                        });
                         new_child_type = ChildType::Uvar;
-                        var_child = None;
+                        node = Some(&*zipper.var_child.unwrap().borrow());
                     } else {
                         found = false;
-                        var_child = Some( Box::new( RSNode {
-                            path: vpath, var_child: vvar_child,
-                            var_children: vvar_children, children: vchildren,
-                            rule_refs: vrule_refs, end_node: vend_node,
-                        }));
                     }
                 } else {
                     found = false;
                 }
             } else {
-                node = children.remove(new_path);
+                node = zipper.children.borrow().get(new_path);
                 new_child_type = ChildType::Value;
                 if node.is_none() {
                    found = false;
                 }
             }
             if found {
-                let parent_zipper = RSZipper {
-                    parent, child_type,
-                    path, var_child,
-                    var_children,
-                    children,
-                    rule_refs,
-                    rule_ref: None,
-                    end_node,
+                let child_node = node.unwrap();
+                let chvar_child = match child_node.var_child {
+                    Some(chnode) => Some(&chnode),
+                    None => None
                 };
-                let RSNode {
-                    path: child_path,
-                    var_child: child_var_child,
-                    var_children: child_var_children,
-                    children: child_children,
-                    rule_refs: child_rule_refs,
-                    end_node: child_end_node,
-                } = node.unwrap();
-                zipper = RSZipper {
-                    parent: Some(Box::new(parent_zipper)),
+                zipper = &RSZipper {
+                    parent: Some(RefCell::new(Box::new(zipper))),
                     child_type: new_child_type,
-                    path: child_path,
-                    var_child: child_var_child,
-                    var_children: child_var_children,
-                    children: child_children,
-                    rule_refs: child_rule_refs,
-                    rule_ref: rule_ref,
-                    end_node: child_end_node,
+                    path: &child_node.path,
+                    var_child: chvar_child,
+                    var_children: &child_node.var_children,
+                    children: &child_node.children,
+                    rule_refs: &child_node.rule_refs,
+                    rule_ref: zipper.rule_ref,
+                    end_node: child_node.end_node,
                 };
             } else {
-                let parent_zipper = RSZipper {
-                    parent, child_type,
-                    path, var_child,
-                    var_children,
-                    children,
-                    rule_refs,
-                    rule_ref,
-                    end_node,
-                };
-                zipper = parent_zipper.create_paths(&paths[i..], visited_vars);
+                zipper = zipper.create_paths(&paths[i..], visited_vars);
                 break;
             }
         }
-        let RSZipper {
-            parent, child_type,
-            path, var_child,
-            var_children, children,
-            mut rule_refs,
-            rule_ref,
-            end_node,
-        } = zipper;
 
-        if rule_ref.is_some() {
-            rule_refs.push(rule_ref.unwrap());
+        if zipper.rule_ref.is_some() {
+            zipper.rule_refs.borrow_mut().push(zipper.rule_ref.unwrap());
         }
-
-        zipper = RSZipper {
-            parent, child_type,
-            path, var_child,
-            var_children, children,
-            rule_refs,
-            rule_ref: None,
-            end_node,
-        };
-        zipper.finish()
     }
 
-    fn create_paths(self, paths: &'a [SynPath], mut visited: Vec<&'a SynSegment>) -> RSZipper<'a> {
-        let mut zipper: RSZipper = self; 
+    fn create_paths(&'a self, paths: &'a [SynPath], mut visited: Vec<&'a SynSegment>) -> &'a RSZipper<'a> {
+        let mut zipper: &RSZipper = self; 
         for new_path in paths {
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
-            let RSZipper {
-                parent: pre_parent, child_type: pre_child_type,
-                path: pre_path, var_child: pre_var_child,
-                var_children: pre_var_children, children: pre_children,
-                rule_refs: pre_rule_refs,
-                rule_ref,
-                end_node: pre_end_node,
-            } = zipper;
-            zipper = RSZipper {
-                parent: pre_parent, child_type: pre_child_type,
-                path: pre_path, var_child: pre_var_child,
-                var_children: pre_var_children, children: pre_children,
-                rule_refs: pre_rule_refs,
-                rule_ref: None,
-                end_node: pre_end_node,
-            };
             let child_type: ChildType;
             if new_path.value.is_var {
                 if visited.contains(&new_path.value) {
@@ -236,99 +166,29 @@ impl<'a> RSZipper<'a> {
             } else {
                 child_type = ChildType::Value;
             }
-            let new_zipper = RSZipper {
-                parent: Some(Box::new(zipper)),
-                child_type,
+            let new_node = RSNode {
                 path: new_path.clone(),
-                var_child: None,
-                var_children: HashMap::new(),
-                children: HashMap::new(),
-                rule_refs: vec![], 
-                rule_ref,
+                var_child : None,
+                var_children: RefCell::new(HashMap::new()),
+                children: RefCell::new(HashMap::new()),
+                rule_refs: RefCell::new(Vec::new()),
                 end_node: false,
             };
-            zipper = new_zipper;
+            let new_zipper = RSZipper {
+                parent: Some(RefCell::new(Box::new(zipper))),
+                child_type,
+                path: &new_node.path,
+                var_child: None,
+                var_children: &new_node.var_children,
+                children: &new_node.children,
+                rule_refs: &new_node.rule_refs, 
+                rule_ref: zipper.rule_ref,
+                end_node: new_node.end_node,
+            };
+            zipper = &new_zipper;
         }
         zipper.end_node = true;
         zipper
-    }
-    
-    fn get_parent(self) -> Option<RSZipper<'a>> {
-        // Destructure this NodeZipper
-        let RSZipper {
-            parent, child_type,
-            path, var_child,
-            var_children,
-            children,
-            rule_refs,
-            end_node, ..
-        } = self;
-
-        // Insert the node of this NodeZipper back in its parent.
-        if child_type == ChildType::Root {
-            None
-        } else {
-
-            // Destructure the parent NodeZipper
-            let RSZipper {
-                parent: parent_parent,
-                child_type: parent_child_type,
-                path: parent_path,
-                var_child: mut parent_var_child,
-                var_children: mut parent_var_children,
-                children: mut parent_children,
-                rule_refs: parent_rule_refs,
-                rule_ref: parent_rule_ref,
-                end_node: parent_end_node,
-            } = *parent.unwrap();
-            let ppc = path.clone();    
-            let node = RSNode {
-                path,
-                var_child,
-                var_children,
-                children,
-                rule_refs,
-                end_node,
-            };
-            if child_type == ChildType::Value {
-                parent_children.insert(ppc, node);
-            } else if child_type == ChildType::Var {
-                parent_var_children.insert(ppc, node);
-            } else if child_type == ChildType::Uvar {
-                parent_var_child = Some(Box::new(node));
-            }
-            // Return a new NodeZipper focused on the parent.
-            Some(RSZipper {
-                parent: parent_parent,
-                path: parent_path,
-                child_type: parent_child_type,
-                var_child: parent_var_child,
-                var_children: parent_var_children,
-                children: parent_children,
-                rule_refs: parent_rule_refs,
-                rule_ref: parent_rule_ref,
-                end_node: parent_end_node,
-            })
-        }
-    }
-
-    pub fn finish(mut self) -> Box<RSNode<'a>> {
-        while let Some(_) = self.parent {
-            self = self.get_parent().expect("parent node");
-        }
-        let RSZipper {
-            path, var_child,
-            var_children, children,
-            rule_refs, end_node, ..
-        } = self;
-
-        Box::new(RSNode {
-            path, var_child,
-            var_children,
-            children,
-            rule_refs,
-            end_node,
-        })
     }
 }
 
@@ -336,31 +196,30 @@ impl<'a> RSZipper<'a> {
 
 
 impl<'a> RSNode<'a> {
-    pub fn zipper(self, rule_ref: Option<RuleRef<'a>>) -> RSZipper<'a> {
-        let RSNode {
-            path, var_child,
-            var_children, children,
-            rule_refs,
-            end_node,
-        } = self;
-          
+    pub fn zipper(&'a self, rule_ref: Option<RuleRef<'a>>) -> RSZipper<'a> {
+        let chvar_child = match self.var_child {
+            Some(chnode) => Some(&chnode),
+            None => None
+        };
         RSZipper {
             parent: None,
             child_type: ChildType::Root,
-            path, var_child,
-            var_children, children,
-            rule_refs,
+            path: &self.path,
+            var_child: chvar_child,
+            var_children: &self.var_children,
+            children: &self.children,
+            rule_refs: &self.rule_refs,
             rule_ref,
-            end_node,
+            end_node: self.end_node,
         }
     }
     pub fn new(root_path: SynPath<'a>) -> RSNode<'a> {
         RSNode {
             path: root_path,
             var_child: None,
-            children: HashMap::new(),
-            var_children: HashMap::new(),
-            rule_refs: vec![],
+            children: RefCell::new(HashMap::new()),
+            var_children: RefCell::new(HashMap::new()),
+            rule_refs: RefCell::new(vec![]),
             end_node: false,
         }
     }
@@ -381,12 +240,12 @@ pub fn new_response<'a>() -> Response<'a> {
 
 #[derive(Debug)]
 pub struct IRSZipper<'a> {
-    path: SynPath<'a>,
+    path: &'a SynPath<'a>,
     child_type: ChildType,
-    var_child: Option<Box<RSNode<'a>>>,
-    var_children: HashMap<SynPath<'a>, RSNode<'a>>,
-    children: HashMap<SynPath<'a>, RSNode<'a>>,
-    rule_refs: Vec<RuleRef<'a>>,
+    var_child : &'a Option<RefCell<Box<RSNode<'a>>>>,
+    var_children: &'a RefCell<HashMap<SynPath<'a>, RSNode<'a>>>,
+    children: &'a RefCell<HashMap<SynPath<'a>, RSNode<'a>>>,
+    rule_refs: &'a RefCell<Vec<RuleRef<'a>>>,
     matched: SynMatching<'a>,
     response: Response<'a>,
     end_node: bool,
@@ -428,98 +287,50 @@ impl<'a> IRSZipper<'a> {
         if next_path.is_some(){
             let path = next_path.unwrap();
             let rest_paths = next_paths.unwrap();
-            let pchild = parent_children.remove_entry(path);
+            let pchild = parent_children.borrow().get_key_value(path);
             if pchild.is_some() {
                 let (chpath, child) = pchild.unwrap();
-                let RSNode {
-                    path: child_path,
-                    var_child: child_var_child,
-                    var_children: child_var_children,
-                    children: child_children,
-                    rule_refs: child_rule_refs,
-                    end_node: child_end_node,
-                } = child;
                 let mut zipper = IRSZipper {
-                    path: child_path,
+                    path: &child.path,
                     matched: parent_matched,
                     child_type: ChildType::Value,
-                    var_child: child_var_child,
-                    var_children: child_var_children,
-                    children: child_children,
-                    rule_refs: child_rule_refs,
+                    var_child: &child.var_child,
+                    var_children: &child.var_children,
+                    children: &child.children,
+                    rule_refs: &child.rule_refs,
                     response,
-                    end_node: child_end_node,
+                    end_node: child.end_node,
                 };
                 zipper = zipper.climb(rest_paths);
                 let IRSZipper {
-                    path: child_path,
-                    var_child: child_var_child,
-                    var_children: child_var_children,
-                    children: child_children,
-                    rule_refs: child_rule_refs,
                     matched: old_parent_matched,
-                    end_node: child_end_node,
                     response: new_response, ..
                 } = zipper;
                 response = new_response;
                 parent_matched = old_parent_matched;
-                let child = RSNode {
-                    path: child_path,
-                    var_child: child_var_child,
-                    var_children: child_var_children,
-                    children: child_children,
-                    rule_refs: child_rule_refs,
-                    end_node: child_end_node,
-                };
-                parent_children.insert(chpath, child);
             }
-            let rpaths = parent_var_children.keys().cloned().collect::<Vec<SynPath>>();
-            for rpath in rpaths {
-                let (new_path_slice, new_value) = path.sub_slice(rpath.len());
-                let old_value = parent_matched.get(rpath.value);
+            for (vpath, varchild) in parent_var_children.borrow().iter() {
+                let (new_path_slice, new_value) = path.sub_slice(vpath.len());
+                let old_value = parent_matched.get(vpath.value);
                 if old_value.is_some() {
                     if &new_value == old_value.unwrap() {
-                        let (vpath, varchild) = parent_var_children.remove_entry(&rpath).unwrap();
-                        let RSNode {
-                            path: varchild_path,
-                            var_child: varchild_var_child,
-                            var_children: varchild_var_children,
-                            children: varchild_children,
-                            rule_refs: varchild_rule_refs,
-                            end_node: varchild_end_node,
-                        } = varchild;
                         let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths, false);
                         let mut zipper = IRSZipper {
-                            path: varchild_path,
+                            path: &varchild.path,
                             matched: parent_matched,
                             child_type: ChildType::Var,
-                            var_child: varchild_var_child,
-                            var_children: varchild_var_children,
-                            children: varchild_children,
-                            rule_refs: varchild_rule_refs,
+                            var_child: &varchild.var_child,
+                            var_children: &varchild.var_children,
+                            children: &varchild.children,
+                            rule_refs: &varchild.rule_refs,
                             response,
-                            end_node: varchild_end_node,
+                            end_node: varchild.end_node,
                         };
                         zipper = zipper.climb(new_paths);
                         let IRSZipper {
-                            path: varchild_path,
                             matched: old_parent_matched,
-                            var_child: varchild_var_child,
-                            var_children: varchild_var_children,
-                            children: varchild_children,
-                            rule_refs: varchild_rule_refs,
-                            response: new_response,
-                            end_node: varchild_end_node, ..
+                            response: new_response, ..
                         } = zipper;
-                        let varchild = RSNode {
-                            path: varchild_path,
-                            var_child: varchild_var_child,
-                            var_children: varchild_var_children,
-                            children: varchild_children,
-                            rule_refs: varchild_rule_refs,
-                            end_node: varchild_end_node,
-                        };
-                        parent_var_children.insert(vpath, varchild);
                         response = new_response;
                         parent_matched = old_parent_matched;
                         break;
@@ -527,55 +338,32 @@ impl<'a> IRSZipper<'a> {
                 }
             }
             if parent_var_child.is_some() {
-                let var_child = parent_var_child.unwrap();
+                let var_child = parent_var_child.as_ref().unwrap().borrow();
                 let (new_path_slice, new_value) = path.sub_slice(var_child.path.len());
                 let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths, false);
                 let mut new_matched = parent_matched.clone();
                 new_matched.insert(var_child.path.value, new_value);
-                let RSNode {
-                    path: varchild_path,
-                    var_child: varchild_var_child,
-                    var_children: varchild_var_children,
-                    children: varchild_children,
-                    rule_refs: varchild_rule_refs,
-                    end_node: varchild_end_node,
-                } = *var_child;
                 let mut zipper = IRSZipper {
-                    path: varchild_path,
+                    path: &var_child.path,
                     matched: new_matched,
                     child_type: ChildType::Uvar,
-                    var_child: varchild_var_child,
-                    var_children: varchild_var_children,
-                    children: varchild_children,
-                    rule_refs: varchild_rule_refs,
+                    var_child: &var_child.var_child,
+                    var_children: &var_child.var_children,
+                    children: &var_child.children,
+                    rule_refs: &var_child.rule_refs,
                     response,
-                    end_node: varchild_end_node,
+                    end_node: var_child.end_node,
                 };
                 zipper = zipper.climb(new_paths);
                 let IRSZipper {
-                    path: varchild_path,
-                    var_child: varchild_var_child,
-                    var_children: varchild_var_children,
-                    children: varchild_children,
-                    rule_refs: varchild_rule_refs,
-                    response: new_response,
-                    end_node: varchild_end_node, ..
+                    response: new_response, ..
                 } = zipper;
-                let var_child = Box::new(RSNode {
-                    path: varchild_path,
-                    var_child: varchild_var_child,
-                    var_children: varchild_var_children,
-                    children: varchild_children,
-                    rule_refs: varchild_rule_refs,
-                    end_node: varchild_end_node,
-                });
-                parent_var_child = Some(var_child);
                 response = new_response;
             }
         }
         if parent_end_node {
             // println!("Found rules: {}", parent_rule_refs.len());
-            response.push(( parent_rule_refs.clone(), parent_matched.clone() ));
+            response.push(( parent_rule_refs.borrow().to_vec(), parent_matched.clone() ));
         }
         IRSZipper {
             path: parent_path,
@@ -590,40 +378,28 @@ impl<'a> IRSZipper<'a> {
         }
     }
 
-    pub fn finish(self) -> (Box<RSNode<'a>>, Response<'a>) {
+    pub fn finish(self) -> Response<'a> {
         
         let IRSZipper {
-            path, var_child,
-            children, var_children,
-            rule_refs,
-            response,
-            end_node, ..
+            response, ..
         } = self;
-        let root = Box::new(RSNode {
-            path,
-            var_child,
-            var_children,
-            children,
-            rule_refs,
-            end_node,
-        });
-        (root, response)
+        response
     }
 }
 
 impl<'a> RSNode<'a> {
-    pub fn izipper(self) -> IRSZipper<'a> {
+    pub fn izipper(&'a self) -> IRSZipper<'a> {
         
         let response = new_response();
         let matching: SynMatching = HashMap::new();
 
         IRSZipper {
-            path: self.path,
+            path: &self.path,
             child_type: ChildType::Root,
-            var_child: self.var_child,
-            var_children: self.var_children,
-            children: self.children,
-            rule_refs: self.rule_refs,
+            var_child: &self.var_child,
+            var_children: &self.var_children,
+            children: &self.children,
+            rule_refs: &self.rule_refs,
             matched: matching,
             response,
             end_node: self.end_node,
