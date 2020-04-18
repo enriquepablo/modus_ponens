@@ -46,7 +46,7 @@ pub struct FLexicon<'a>(RefCell<HashMap<&'a str, Box<Fact<'a>>>>);
 
 impl<'a> FLexicon<'a> {
     pub fn new() -> Self {
-        FLexicon(RefCell::new(HashMap::new()))
+        FLexicon(RefCell::new(HashMap::with_capacity(20)))
     }
 
     pub fn from_paths(&'a self, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {

@@ -6,7 +6,7 @@ use crate::matching::SynMatching;
 
 #[derive(Debug, PartialEq)]
 pub struct FSNode<'a> {
-    children: HashMap<SynPath<'a>, FSNode<'a>>,
+    children: HashMap<SynPath<'a>, FSNode<'a>>,  // XXX try putting keys and vals in boxes
     lchildren: HashMap<SynPath<'a>, FSNode<'a>>,
 }
 

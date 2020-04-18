@@ -13,8 +13,9 @@ pub struct SynPath<'a> {
 
 impl<'a> SynPath<'a> {
     pub fn new(segments: Vec<&'a SynSegment>) -> SynPath {
-        let mut identity = Vec::new();
-        let mut new_segments = Vec::new();
+        let len = segments.len();
+        let mut identity = Vec::with_capacity(len + 1);
+        let mut new_segments = Vec::with_capacity(len);
         for segment in segments {
             identity.push(segment.name.clone());
             new_segments.push(segment);

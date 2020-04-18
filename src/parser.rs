@@ -164,7 +164,7 @@ impl<'a> Grammar<'a> {
         let stext = Box::leak(text.into_boxed_str());
         
         let parse_tree = SynParser::parse(Rule::fact, stext).ok().unwrap().next().unwrap();
-        let all_paths = Box::new(vec![]);
+        let all_paths = Box::new(Vec::with_capacity(fact.paths.len()));
         let builder = FactBuilder {
             parse_tree,
             root_segments: vec![],

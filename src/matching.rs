@@ -5,7 +5,7 @@ use crate::segment::SynSegment;
 pub type SynMatching<'a> = HashMap<&'a SynSegment, &'a SynSegment>;
 
 pub fn invert<'a>(matching: &'a SynMatching) -> SynMatching<'a> {
-    let mut inverted: SynMatching = HashMap::new();
+    let mut inverted: SynMatching = HashMap::with_capacity(matching.capacity());
     for (key, value) in matching {
         inverted.insert(value, key);
     }
@@ -13,7 +13,7 @@ pub fn invert<'a>(matching: &'a SynMatching) -> SynMatching<'a> {
 }
 
 pub fn invert_owning<'a>(matching: SynMatching<'a>) -> SynMatching<'a> {
-    let mut inverted: SynMatching = HashMap::new();
+    let mut inverted: SynMatching = HashMap::with_capacity(matching.capacity());
     for (key, value) in matching {
         inverted.insert(value, key);
     }
@@ -51,7 +51,7 @@ pub fn get_or_key_owning<'a>(matching: SynMatching<'a>, key: &'a SynSegment) -> 
 * which are keyed by the normalized variables
  */
 pub fn get_real_matching<'a>(matching: &'a SynMatching, varmap: &'a SynMatching) -> SynMatching<'a> {
-    let mut real_matching: SynMatching = HashMap::new();
+    let mut real_matching: SynMatching = HashMap::with_capacity(matching.capacity());
     for (key, value) in matching {
         let mut new_key = key;
         let maybe_key = varmap.get(key);
@@ -63,7 +63,7 @@ pub fn get_real_matching<'a>(matching: &'a SynMatching, varmap: &'a SynMatching)
     real_matching
 }
 pub fn get_real_matching_owning<'a>(matching: SynMatching<'a>, varmap: SynMatching<'a>) -> SynMatching<'a> {
-    let mut real_matching: SynMatching = HashMap::new();
+    let mut real_matching: SynMatching = HashMap::with_capacity(matching.capacity());
     for (key, value) in matching {
         let mut new_key = key;
         let maybe_key = varmap.get(key);
