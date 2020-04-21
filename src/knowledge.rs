@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::cell::RefCell;
 
 use crate::matching::{ SynMatching, get_real_matching_owning };
 use crate::fact::Fact;
@@ -71,7 +72,7 @@ impl KStat {
 pub struct KDB<'a> {
     facts: FactSet<'a>,
     rules: RSNode<'a>,
-    queue:  VecDeque<Activation<'a>>,
+    queue: RefCell<VecDeque<Activation<'a>>>,
 }
 
 impl<'a> KDB<'a> {
@@ -81,7 +82,7 @@ impl<'a> KDB<'a> {
         KDB {
             facts: FactSet::new(),
             rules: RSNode::new(root_path),
-            queue: VecDeque::new(),
+            queue: RefCell::new(VecDeque::new()),
         }
     }
 }
@@ -106,12 +107,12 @@ impl<'a> KnowledgeBase<'a> {
         let ParseResult { rules, facts } = result.ok().unwrap();
         for rule in rules {
             let act = Activation::from_rule(rule, true);
-            kdb.queue.push_back(act);
+            kdb.queue.borrow_mut().push_back(act);
             kdb = self.process_activations(kdb);
         }
         for fact in facts {
             let act = Activation::from_fact(fact, false);
-            kdb.queue.push_back(act);
+            kdb.queue.borrow_mut().push_back(act);
             kdb = self.process_activations(kdb);
         }
         kdb
@@ -125,8 +126,8 @@ impl<'a> KnowledgeBase<'a> {
     }
     fn process_activations(&'a self, mut kdb: KDB<'a>) -> KDB<'a> {
         let mut queue = kdb.queue;
-        while !queue.is_empty() {
-            let next = queue.pop_front().unwrap();
+        while !queue.borrow().is_empty() {
+            let next = queue.borrow_mut().pop_front().unwrap();
             kdb.queue = queue;
             match next {
                 Activation {
@@ -191,7 +192,7 @@ impl<'a> KnowledgeBase<'a> {
             };
             let zipper = rules.zipper(Some(rule_ref));
             let normal_leaf_paths = normal_ant.paths.as_slice();
-            rules = *zipper.follow_and_create_paths(normal_leaf_paths);
+            zipper.follow_and_create_paths(normal_leaf_paths);
             rule = Rule {
                 antecedents,
                 more_antecedents,
@@ -200,18 +201,20 @@ impl<'a> KnowledgeBase<'a> {
         }
         KDB { rules, facts, queue, }
     }
-    fn process_fact(&'a self, fact: &'a Fact<'a>, query_rules: bool, kdb: KDB<'a>) -> KDB<'a> {
+    fn process_fact(&'a self,
+                    fact: &'a Fact<'a>,
+                    query_rules: bool,
+                    kdb: KDB<'a>) -> KDB<'a> {
         
         // println!("ADDING FACT: {}", fact);
         let KDB { mut facts, mut rules, mut queue, } = kdb;
         let izipper = rules.izipper();
         let paths = fact.paths.as_slice();
-        let (root, response) = izipper.climb(paths).finish();
-        rules = *root;
+        let response = izipper.climb(paths).finish();
         for (rule_refs, matching) in *response {
             for RuleRef { rule, varmap } in rule_refs {
                 let real_matching = get_real_matching_owning(matching.clone(), varmap); 
-                queue.push_back(Activation::from_matching(rule, real_matching, query_rules));
+                queue.borrow_mut().push_back(Activation::from_matching(rule, real_matching, query_rules));
             }
         }
         facts = facts.add_fact(&fact);
@@ -236,11 +239,11 @@ impl<'a> KnowledgeBase<'a> {
                 kdb = nkdb;
                 rule = nrule;
             }
-            kdb.queue.push_back(Activation::from_rule(rule, query_rules));
+            kdb.queue.borrow_mut().push_back(Activation::from_rule(rule, query_rules));
         } else {
            for consequent in rule.consequents{
                let new_consequent = self.grammar.substitute_fact(&consequent, matching);
-               kdb.queue.push_back(Activation::from_fact(new_consequent, query_rules));
+               kdb.queue.borrow_mut().push_back(Activation::from_fact(new_consequent, query_rules));
            }
         }
         kdb
