@@ -93,21 +93,22 @@ impl<'a> RSZipper<'a> {
                 rule_refs, rule_ref,
                 end_node,
             } = zipper;
-            let var_children_borrowed = var_children.borrow();
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
             let mut new_child_type = ChildType::Absurd;
             let mut found = true;
             if new_path.value.is_var {
+                let var_children_borrowed = var_children.borrow();
                 node = var_children_borrowed.get(new_path);
                 if node.is_some() {
                     new_child_type = ChildType::Var;
                 } else if var_child.is_some() {
-                    if &var_child.unwrap().borrow().path == new_path {
+                    let var_child_borrowed = var_child.unwrap().borrow();
+                    if &var_child_borrowed.path == new_path {
                         visited_vars.push(new_path.value);
                         new_child_type = ChildType::Uvar;
-                        node = Some(&*zipper.var_child.unwrap().borrow());
+                        node = Some(&*var_child_borrowed);
                     } else {
                         found = false;
                     }
@@ -115,7 +116,8 @@ impl<'a> RSZipper<'a> {
                     found = false;
                 }
             } else {
-                node = zipper.children.borrow().get(new_path);
+                let children_borrowed = children.borrow();
+                node = children_borrowed.get(new_path);
                 new_child_type = ChildType::Value;
                 if node.is_none() {
                    found = false;
