@@ -120,8 +120,7 @@ impl<'a> KnowledgeBase<'a> {
     pub fn ask(&'a self, mut kdb: KDB<'a>, knowledge: &'a str) -> (KDB<'a>, bool) {
         let ParseResult { mut facts, .. } = self.grammar.parse_text(knowledge).ok().unwrap();
         let fact = facts.pop().unwrap();
-        let (factset, resps) = kdb.facts.ask_fact(&fact);
-        kdb.facts = factset;
+        let resps = kdb.facts.ask_fact(&fact);
         (kdb, resps.len() > 0)
     }
     fn process_activations(&'a self, mut kdb: KDB<'a>) -> KDB<'a> {
@@ -217,7 +216,7 @@ impl<'a> KnowledgeBase<'a> {
                 queue.borrow_mut().push_back(Activation::from_matching(rule, real_matching, query_rules));
             }
         }
-        facts = facts.add_fact(&fact);
+        facts.add_fact(&fact);
         KDB { rules, facts, queue, }
     }
     fn process_match(&'a self,
@@ -256,8 +255,7 @@ impl<'a> KnowledgeBase<'a> {
         for i in 0..rule.antecedents.len() {
             let mut new_ants = rule.antecedents.clone();
             let ant = new_ants.remove(i);
-            let (factset, resps) = kdb.facts.ask_fact(ant);
-            kdb.facts = factset;
+            let resps = kdb.facts.ask_fact(ant);
             for resp in resps {
                 let new_rule = Rule {
                     antecedents: new_ants.clone(),

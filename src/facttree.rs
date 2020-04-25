@@ -19,138 +19,75 @@ impl<'a> FSNode<'a> {
         }
     }
 }
-
-#[derive(Debug)]
-pub struct NodeZipper<'a> {
-    parent: Option<Box<NodeZipper<'a>>>,
-    path_in_parent: Option<&'a SynPath<'a>>,
-    logic_node: bool,
-    children: &'a RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,
-    lchildren: &'a RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,
-}
-
-impl<'a> NodeZipper<'a> {
+impl<'a> FSNode<'a> {
     
 
-    fn get_parent(self) -> Option<NodeZipper<'a>> {
-        // Destructure this NodeZipper
-        let NodeZipper {
-            parent, ..
-        } = self;
-
-        if parent.is_none() {
-            None
-        } else {
-            Some(*parent.unwrap())
-        }
-    }
-
-    fn ancestor(mut self, n: usize) -> NodeZipper<'a> {
-        for _ in 0..n {
-            self = self.get_parent().expect("parent node");
-        }
-        self
-    }
-    
-    fn get_child(mut self, path: &'a SynPath, logic: bool) -> (Option<NodeZipper<'a>>, Option<NodeZipper<'a>>) {
+    fn get_child(&'a self, path: &'a SynPath, logic: bool) -> Option<&'a FSNode<'a>> {
         // Remove the specified child from the node's children.
         // A NodeZipper shouldn't let its users inspect its parent,
         // since we mutate the parents
         // to move the focused nodes out of their list of children.
         // We use swap_remove() for efficiency.
-        let child_opt: Option<&FSNode>;
         if logic {
-            child_opt = self.lchildren.borrow().get(path);
+            self.lchildren.borrow().get(path)
         } else {
-            child_opt = self.children.borrow().get(path);
-        }
-
-        // Return a new NodeZipper focused on the specified child.
-        if child_opt.is_none() {
-            (None, Some(self))
-        } else {
-
-            let child = child_opt.unwrap();
-
-            (Some(NodeZipper {
-                parent: Some(Box::new(self)),
-                path_in_parent: Some(path),
-                logic_node: logic,
-                children: &child.children,
-                lchildren: &child.lchildren,
-            }), None)
+            self.children.borrow().get(path)
         }
     }
 
-    pub fn follow_and_create_paths(self, paths: &'a [SynPath]) -> NodeZipper<'a> {
+    pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath]) {
         let mut parent = self;
-        let mut child: NodeZipper;
-        let mut child_index = 0;
+        let mut child: &FSNode;
         for (path_index, path) in paths.iter().enumerate() {
             if path.value.is_empty {
                 continue;
             }
             if path.value.in_var_range {
-                let (opt_child, opt_zipper) = parent.get_child(path, true);
+                let opt_child = parent.get_child(path, true);
                 let new_paths = path.paths_after(paths, true);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
                     if !path.value.is_leaf {
-                        child = child.follow_and_create_paths(new_paths);
-                        parent = child.get_parent().expect("we set the parent");
+                        child.follow_and_create_paths(new_paths);
                         continue;
                     }
                 } else if path.value.is_leaf {
-                    parent = opt_zipper.expect("node").create_paths(&paths[path_index..]);
-                    return parent.ancestor(child_index);
+                    parent.create_paths(&paths[path_index..]);
+                    return;
                 } else {
-                    parent = opt_zipper.expect("node");
                     let child_node = FSNode {
                         children: RefCell::new(HashMap::new()),
                         lchildren: RefCell::new(HashMap::new()),
                     };
-                    let parent_col: RefMut<HashMap<SynPath<'a>, FSNode<'a>>>;
-                    let logic_node = path.value.in_var_range;
-                    if logic_node {
+                    let mut parent_col: RefMut<HashMap<SynPath<'a>, FSNode<'a>>>;
+                    if path.value.in_var_range {
                         parent_col = parent.lchildren.borrow_mut();
                     } else {
                         parent_col = parent.children.borrow_mut();
                     };
                     parent_col.insert(path.clone(), child_node);
-                    let child_node_ref = parent_col.get(path).unwrap();
-
-                    child = NodeZipper {
-                        parent: Some(Box::new(parent)),
-                        path_in_parent: Some(path),
-                        logic_node,
-                        children: &child_node_ref.children,
-                        lchildren: &child_node_ref.lchildren,
-                    };
+                    let child = parent_col.get(path).unwrap();
                     let renew_paths = path.paths_after(&new_paths, true);
-                    child = child.create_paths(&renew_paths);
-                    parent = child.get_parent().expect("we set the parent");
-                    parent = parent.create_paths(&new_paths);
+                    child.create_paths(&renew_paths);
+                    parent.create_paths(&new_paths);
                     continue;
                 }
             } else {
-                let (opt_child, opt_zipper) = parent.get_child(path, false);
+                let opt_child = parent.get_child(path, false);
                 if opt_child.is_none() {
-                    parent = opt_zipper.expect("node").create_paths(&paths[path_index..]);
-                    return parent.ancestor(child_index);
+                    parent.create_paths(&paths[path_index..]);
+                    return;
                 } else {
                     child = opt_child.expect("node");
                 }
             }
             parent = child;
-            child_index += 1;
         }
-        parent.ancestor(child_index)
     }
 
-    fn create_paths(self, paths: &'a [SynPath]) -> NodeZipper<'a> {
+    fn create_paths(&'a self, paths: &'a [SynPath]) {
         let mut parent = self;
-        let mut child: NodeZipper;
-        let mut child_index = 0;
+        let mut child: &FSNode;
         for path in paths {
             if path.value.is_empty {
                 continue;
@@ -167,24 +104,14 @@ impl<'a> NodeZipper<'a> {
                 parent_col = parent.children.borrow_mut();
             };
             parent_col.insert(path.clone(), child_node);
-            let child_node_ref = parent_col.get(path).unwrap();
-            child = NodeZipper {
-                parent: Some(Box::new(parent)),
-                path_in_parent: Some(path),
-                logic_node: path.value.in_var_range,
-                children: &child_node_ref.children,
-                lchildren: &child_node_ref.lchildren,
-            };
+            let child = parent_col.get(path).unwrap();
             if path.value.in_var_range && !path.value.is_leaf {
                 let new_paths = path.paths_after(&paths, true);
-                child = child.create_paths(new_paths);
-                parent = child.get_parent().expect("we set the parent");
+                child.create_paths(new_paths);
                 continue;
             }
             parent = child;
-            child_index += 1;
         }
-        parent.ancestor(child_index)
     }
 }
 
@@ -310,16 +237,6 @@ impl<'a> INodeZipper<'a> {
 
 
 impl<'a> FSNode<'a> {
-    pub fn zipper(&'a self) -> NodeZipper<'a> {
-          
-        NodeZipper {
-            parent: None,
-            path_in_parent: None,
-            logic_node: false,
-            children: &self.children,
-            lchildren: &self.lchildren,
-        }
-    }
 
     pub fn qzipper(&'a self, response: Vec<SynMatching<'a>>) -> INodeZipper<'a> {
         INodeZipper {

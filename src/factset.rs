@@ -15,9 +15,8 @@ impl<'a> FactSet<'a> {
         FactSet { root: Box::new(FSNode::new()) }
     }
     pub fn add_fact (&'a mut self, fact: &'a Fact<'a>) {
-        let mut zipper = self.root.zipper();
         let paths = fact.paths.as_slice();
-        zipper = zipper.follow_and_create_paths(paths);
+        self.root.follow_and_create_paths(paths);
     }
     pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching<'a>> {
         let response: Vec<SynMatching<'a>> = vec![];
