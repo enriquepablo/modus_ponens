@@ -1,49 +1,41 @@
 use std::clone::Clone;
 use std::collections::HashMap;
-use std::cell::{ RefCell, RefMut };
+use std::cell::{ RefCell, RefMut, Ref };
+use std::rc::Rc;
 
 use crate::path::SynPath;
 use crate::matching::SynMatching;
 
 #[derive(Debug, PartialEq)]
 pub struct FSNode<'a> {
-    children: RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,  // XXX try putting keys and vals in boxes
-    lchildren: RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,
+    children: Rc<RefCell<HashMap<SynPath<'a>, FSNode<'a>>>>,  // XXX try putting keys and vals in boxes
+    lchildren: Rc<RefCell<HashMap<SynPath<'a>, FSNode<'a>>>>,
 }
 
 impl<'a> FSNode<'a> {
     pub fn new() -> FSNode<'a> {
         FSNode { 
-            children: RefCell::new(HashMap::new()),
-            lchildren: RefCell::new(HashMap::new()),
+            children: Rc::new(RefCell::new(HashMap::new())),
+            lchildren: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 }
 impl<'a> FSNode<'a> {
     
 
-    fn get_child(&'a self, path: &'a SynPath, logic: bool) -> Option<&'a FSNode<'a>> {
-        // Remove the specified child from the node's children.
-        // A NodeZipper shouldn't let its users inspect its parent,
-        // since we mutate the parents
-        // to move the focused nodes out of their list of children.
-        // We use swap_remove() for efficiency.
-        if logic {
-            self.lchildren.borrow().get(path)
-        } else {
-            self.children.borrow().get(path)
-        }
-    }
-
     pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath]) {
         let mut parent = self;
         let mut child: &FSNode;
+        let mut children;
+        let mut lchildren;
         for (path_index, path) in paths.iter().enumerate() {
             if path.value.is_empty {
                 continue;
             }
+            children = parent.children;
+            lchildren = Rc::clone(&parent.lchildren);
             if path.value.in_var_range {
-                let opt_child = parent.get_child(path, true);
+                let opt_child = lchildren.borrow().get(path);
                 let new_paths = path.paths_after(paths, true);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
@@ -56,8 +48,8 @@ impl<'a> FSNode<'a> {
                     return;
                 } else {
                     let child_node = FSNode {
-                        children: RefCell::new(HashMap::new()),
-                        lchildren: RefCell::new(HashMap::new()),
+                        children: Rc::new(RefCell::new(HashMap::new())),
+                        lchildren: Rc::new(RefCell::new(HashMap::new())),
                     };
                     let mut parent_col: RefMut<HashMap<SynPath<'a>, FSNode<'a>>>;
                     if path.value.in_var_range {
@@ -73,7 +65,7 @@ impl<'a> FSNode<'a> {
                     continue;
                 }
             } else {
-                let opt_child = parent.get_child(path, false);
+                let opt_child = parent.children.borrow().get(path);
                 if opt_child.is_none() {
                     parent.create_paths(&paths[path_index..]);
                     return;
@@ -93,8 +85,8 @@ impl<'a> FSNode<'a> {
                 continue;
             }
             let child_node = FSNode {
-                children: RefCell::new(HashMap::new()),
-                lchildren: RefCell::new(HashMap::new()),
+                children: Rc::new(RefCell::new(HashMap::new())),
+                lchildren: Rc::new(RefCell::new(HashMap::new())),
             };
             let parent_col: RefMut<HashMap<SynPath<'a>, FSNode<'a>>>;
             let logic_node = path.value.in_var_range;
