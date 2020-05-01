@@ -14,17 +14,15 @@ impl<'a> FactSet<'a> {
     pub fn new () -> FactSet<'a> {
         FactSet { root: Box::new(FSNode::new()) }
     }
-    pub fn add_fact (&'a mut self, fact: &'a Fact<'a>) {
+    pub fn add_fact (&'a self, fact: &'a Fact<'a>) {
         let paths = fact.paths.as_slice();
         self.root.follow_and_create_paths(paths);
     }
     pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching<'a>> {
         let response: Vec<SynMatching<'a>> = vec![];
-        let mut qzipper = self.root.qzipper(response);
         let paths = fact.paths.as_slice();
         let matching: SynMatching = HashMap::new();
-        qzipper = qzipper.query_paths(paths, matching);
-        qzipper.finish()
+        self.root.query_paths(paths, matching, response)
     }
 }
 
@@ -46,7 +44,7 @@ mod tests {
                 factset: FactSet::new(),
             }
         }
-        fn tell(&'a mut self, grammar: &'a parser::Grammar<'a>, k: &'a str) {
+        fn tell(&'a self, grammar: &'a parser::Grammar<'a>, k: &'a str) {
             let parsed = grammar.parse_text(k);
             let facts = parsed.ok().unwrap().facts;
             for fact in facts {
@@ -64,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_1() {
-        let mut kb = Knowledge::new();
+        let kb = Knowledge::new();
         let grammar = parser::Grammar::new();
         kb.tell(&grammar, "susan ISA person. john ISA person.");
         let resp1 = kb.ask(&grammar, "susan ISA person.");

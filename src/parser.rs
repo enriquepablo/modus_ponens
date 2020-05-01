@@ -56,7 +56,7 @@ impl<'a> Grammar<'a> {
                     facts.push(fact);
                 },
                 Rule::rule => {
-                    let mut more_antecedents = VecDeque::new();
+                    let mut more_antecedents = Vec::new();
                     let mut consequents = vec![];
                     for pairset in pair.into_inner() {
                         match pairset.as_rule() {
@@ -71,7 +71,7 @@ impl<'a> Grammar<'a> {
                                         _ => {}
                                     }
                                 }
-                                more_antecedents.push_back(ants);
+                                more_antecedents.push(ants);
                             },
                             Rule::consequents => {
                                 for factpair in pairset.into_inner() {
@@ -87,9 +87,9 @@ impl<'a> Grammar<'a> {
                             _ => {}
                         }
                     }
-                    let antecedents = more_antecedents.pop_front();
+                    let antecedents = more_antecedents.remove(0);
                     let rule = SynRule {
-                        antecedents: antecedents.unwrap(),
+                        antecedents,
                         more_antecedents,
                         consequents
                     };

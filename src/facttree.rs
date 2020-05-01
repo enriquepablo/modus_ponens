@@ -1,41 +1,71 @@
+use std::mem;
 use std::clone::Clone;
 use std::collections::HashMap;
-use std::cell::{ RefCell, RefMut, Ref };
-use std::rc::Rc;
+use std::cell::{ RefCell };
 
 use crate::path::SynPath;
 use crate::matching::SynMatching;
 
 #[derive(Debug, PartialEq)]
 pub struct FSNode<'a> {
-    children: Rc<RefCell<HashMap<SynPath<'a>, FSNode<'a>>>>,  // XXX try putting keys and vals in boxes
-    lchildren: Rc<RefCell<HashMap<SynPath<'a>, FSNode<'a>>>>,
+    children: RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,  // XXX try putting keys and vals in boxes
+    lchildren: RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,
 }
 
 impl<'a> FSNode<'a> {
     pub fn new() -> FSNode<'a> {
         FSNode { 
-            children: Rc::new(RefCell::new(HashMap::new())),
-            lchildren: Rc::new(RefCell::new(HashMap::new())),
+            children: RefCell::new(HashMap::new()),
+            lchildren: RefCell::new(HashMap::new()),
         }
     }
-}
-impl<'a> FSNode<'a> {
-    
-
+    pub fn get_child(&'a self, path: &'a SynPath) -> Option<&'a Self> {
+        let children = self.children.borrow();
+        let child = children.get(path);
+        if child.is_none() {
+            None
+        } else {
+            unsafe { mem::transmute(child) }
+        }
+    }
+    pub fn intern_child(&'a self, path: &'a SynPath, node: Self) -> &'a Self {
+        let mut children = self.children.borrow_mut();
+        children.insert(path.clone(), node);
+        let child = children.get(path).unwrap();
+        unsafe { mem::transmute(child) }
+    }
+    pub fn get_lchild(&'a self, path: &'a SynPath) -> Option<&'a Self> {
+        let lchildren = self.lchildren.borrow();
+        let child = lchildren.get(path);
+        if child.is_none() {
+            None
+        } else {
+            unsafe { mem::transmute(child) }
+        }
+    }
+    pub fn get_lchildren(&'a self) -> &'a HashMap<SynPath<'a>, FSNode<'a>> {
+        let lchildren = self.lchildren.borrow();
+        unsafe { mem::transmute(&*lchildren) }
+    }
+    pub fn get_children(&'a self) -> &'a HashMap<SynPath<'a>, FSNode<'a>> {
+        let children = self.children.borrow();
+        unsafe { mem::transmute(&*children) }
+    }
+    pub fn intern_lchild(&'a self, path: &'a SynPath, node: Self) -> &'a Self {
+        let mut lchildren = self.lchildren.borrow_mut();
+        lchildren.insert(path.clone(), node);
+        let child = lchildren.get(path).unwrap();
+        unsafe { mem::transmute(child) }
+    }
     pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath]) {
         let mut parent = self;
         let mut child: &FSNode;
-        let mut children;
-        let mut lchildren;
         for (path_index, path) in paths.iter().enumerate() {
             if path.value.is_empty {
                 continue;
             }
-            children = parent.children;
-            lchildren = Rc::clone(&parent.lchildren);
             if path.value.in_var_range {
-                let opt_child = lchildren.borrow().get(path);
+                let opt_child = parent.get_lchild(path);
                 let new_paths = path.paths_after(paths, true);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
@@ -48,24 +78,21 @@ impl<'a> FSNode<'a> {
                     return;
                 } else {
                     let child_node = FSNode {
-                        children: Rc::new(RefCell::new(HashMap::new())),
-                        lchildren: Rc::new(RefCell::new(HashMap::new())),
+                        children: RefCell::new(HashMap::new()),
+                        lchildren: RefCell::new(HashMap::new()),
                     };
-                    let mut parent_col: RefMut<HashMap<SynPath<'a>, FSNode<'a>>>;
                     if path.value.in_var_range {
-                        parent_col = parent.lchildren.borrow_mut();
+                        child = parent.intern_lchild(path, child_node);
                     } else {
-                        parent_col = parent.children.borrow_mut();
+                        child = parent.intern_child(path, child_node);
                     };
-                    parent_col.insert(path.clone(), child_node);
-                    let child = parent_col.get(path).unwrap();
                     let renew_paths = path.paths_after(&new_paths, true);
                     child.create_paths(&renew_paths);
                     parent.create_paths(&new_paths);
                     continue;
                 }
             } else {
-                let opt_child = parent.children.borrow().get(path);
+                let opt_child = parent.get_child(path);
                 if opt_child.is_none() {
                     parent.create_paths(&paths[path_index..]);
                     return;
@@ -85,18 +112,15 @@ impl<'a> FSNode<'a> {
                 continue;
             }
             let child_node = FSNode {
-                children: Rc::new(RefCell::new(HashMap::new())),
-                lchildren: Rc::new(RefCell::new(HashMap::new())),
+                children: RefCell::new(HashMap::new()),
+                lchildren: RefCell::new(HashMap::new()),
             };
-            let parent_col: RefMut<HashMap<SynPath<'a>, FSNode<'a>>>;
             let logic_node = path.value.in_var_range;
             if logic_node {
-                parent_col = parent.lchildren.borrow_mut();
+                child = parent.intern_lchild(path, child_node);
             } else {
-                parent_col = parent.children.borrow_mut();
+                child = parent.intern_child(path, child_node);
             };
-            parent_col.insert(path.clone(), child_node);
-            let child = parent_col.get(path).unwrap();
             if path.value.in_var_range && !path.value.is_leaf {
                 let new_paths = path.paths_after(&paths, true);
                 child.create_paths(new_paths);
@@ -105,27 +129,12 @@ impl<'a> FSNode<'a> {
             parent = child;
         }
     }
-}
-
-#[derive(Debug)]
-pub struct INodeZipper<'a> {
-    children: &'a RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,
-    lchildren: &'a RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,
-    response: Vec<SynMatching<'a>>,
-}
-
-impl<'a> INodeZipper<'a> {
-    
-    pub fn query_paths(self,
+    pub fn query_paths(&'a self,
                    mut all_paths: &'a [SynPath],
                    matching: SynMatching<'a>,
-                   ) -> INodeZipper<'a> {
+                   mut resp: Vec<SynMatching<'a>>,
+                   ) -> Vec<SynMatching<'a>> {
 
-        let INodeZipper {
-            children: mut parent_children_cell,
-            lchildren: mut parent_lchildren_cell,
-            response: mut resp,
-        } = self;
         let mut finished = false;
         let mut next_path: Option<&SynPath> = None;
         let mut next_paths: Option<&'a [SynPath]> = None;
@@ -151,35 +160,19 @@ impl<'a> INodeZipper<'a> {
             let paths = next_paths.unwrap();
             if path.value.is_var {
                 if !matching.contains_key(&path.value) {
-                    let mut child: INodeZipper;
-                    let parent_lchildren = parent_lchildren_cell.borrow();
-                    for lchild_path in parent_lchildren.keys()  {
-                        let lchild_node = parent_lchildren.get(&lchild_path).unwrap();
-                        child = INodeZipper {
-                            children: &lchild_node.children,
-                            lchildren: &lchild_node.lchildren,
-                            response: resp,
-                        };
+                    let lchildren = self.get_lchildren();
+                    for (lchild_path, lchild_node) in lchildren.iter()  {
                         let mut new_matching = matching.clone();
                         new_matching.insert(path.value, lchild_path.value);
-                        child = child.query_paths(paths, new_matching);
-                        let INodeZipper {
-                            response: new_response, ..
-                        } = child;
-                        resp = new_response;
+                        resp = lchild_node.query_paths(paths, new_matching, resp);
                     }
-                    return INodeZipper {
-                        children: parent_children_cell,
-                        lchildren: parent_lchildren_cell,
-                        response: resp,
-                    };
+                    return resp;
                 } else {
                     let (new_path, _) = path.substitute_owning(matching.clone());
                     subs_path = Some(new_path);
                 }
             }
             let next: Option<&FSNode>;
-            let logic: bool;
             let new_path: SynPath;
             if subs_path.is_some() {
                 new_path = subs_path.unwrap();
@@ -187,55 +180,20 @@ impl<'a> INodeZipper<'a> {
                 new_path = path.clone();
             }
             if new_path.value.in_var_range {
-                let parent_lchildren = parent_lchildren_cell.borrow();
+                let parent_lchildren = self.get_lchildren();
                 next = parent_lchildren.get(&new_path);
-                logic = true;
             } else {
-                let parent_children = parent_children_cell.borrow();
+                let parent_children = self.get_children();
                 next = parent_children.get(&new_path);
-                logic = false;
             }
             if next.is_some() {
                 let next_node = next.unwrap();
-                let mut next_child = INodeZipper {
-                    children: &next_node.children,
-                    lchildren: &next_node.lchildren,
-                    response: resp,
-                };
-                next_child = next_child.query_paths(paths, matching);
-                let INodeZipper {
-                    response: new_response, ..
-                } = next_child;
-                resp = new_response;
+                resp = next_node.query_paths(paths, matching, resp);
             }
         } else {
             resp.push(matching);
         }
-        INodeZipper {
-            children: parent_children_cell,
-            lchildren: parent_lchildren_cell,
-            response: resp,
-        }
-    }
-
-    pub fn finish(self) -> Vec<SynMatching<'a>> {
-        
-        let INodeZipper {
-            response, ..
-        } = self;
-        response
-    }
-}
-
-
-impl<'a> FSNode<'a> {
-
-    pub fn qzipper(&'a self, response: Vec<SynMatching<'a>>) -> INodeZipper<'a> {
-        INodeZipper {
-            children: &self.children,
-            lchildren: &self.lchildren,
-            response,
-        }
+        resp
     }
 }
 
