@@ -2,7 +2,7 @@ use std::clone::Clone;
 use std::collections::HashMap;
 use std::cell::{ RefCell };
 
-use typed_arena::Arena;
+use bumpalo::{Bump};
 
 use crate::constants;
 use crate::fact::Fact;
@@ -17,8 +17,8 @@ pub struct FSNode<'a> {
 
 pub struct FactSet<'a> {
     pub root: Box<FSNode<'a>>,
-    nodes: Arena<FSNode<'a>>,
-    paths: Arena<SynPath<'a>>,
+    nodes: Bump,
+    paths: Bump,
 }
 
 
@@ -26,8 +26,8 @@ impl<'a> FactSet<'a> {
     pub fn new () -> FactSet<'a> {
         FactSet {
             root: Box::new(FSNode::new(1)),
-            nodes: Arena::new(),
-            paths: Arena::new(),
+            nodes: Bump::new(),
+            paths: Bump::new(),
          }
     }
     pub fn add_fact (&'a self, fact: &'a Fact<'a>) {
@@ -146,7 +146,7 @@ impl<'a> FSNode<'a> {
                    mut all_paths: &'a [SynPath],
                    matching: SynMatching<'a>,
                    mut resp: Vec<SynMatching<'a>>,
-                   arena: &'a Arena<SynPath<'a>>
+                   arena: &'a Bump
                    ) -> Vec<SynMatching<'a>> {
 
         let mut finished = false;

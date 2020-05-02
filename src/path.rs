@@ -50,6 +50,7 @@ impl<'a> SynPath<'a> {
         let mut path_starts_with_self: bool;
         let mut i = 0;
         let mut after = 0;
+        let self_len = self.len();
         for path in paths {
             if path.value.is_empty {
                 i += 1;
@@ -61,7 +62,7 @@ impl<'a> SynPath<'a> {
             }
             if try_to_see && !seen && path_starts_with_self {
                 seen = true;
-            } else if (!try_to_see || seen) && (!path_starts_with_self || path.len() == self.len()) {
+            } else if (!try_to_see || seen) && (!path_starts_with_self || path.len() == self_len) {
                 after = i;
                 break;
             }

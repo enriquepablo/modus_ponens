@@ -4,7 +4,7 @@ use std::fmt;
 //use std::collections::VecDeque;
 use std::cell::{ RefCell, Cell };
 
-use typed_arena::Arena;
+use bumpalo::{Bump};
 
 use crate::constants;
 use crate::path::SynPath;
@@ -72,8 +72,8 @@ struct UVarChild<'a> {
 
 pub struct RuleSet<'a> {
     pub root: RSNode<'a>,
-    nodes: Arena<RSNode<'a>>,
-    rule_refs: Arena<RuleRef<'a>>,
+    nodes: Bump,
+    rule_refs: Bump,
 }
 
 impl<'a> RuleSet<'a> {
@@ -83,8 +83,8 @@ impl<'a> RuleSet<'a> {
         let root = RSNode::new(root_path_ref, 1);
         RuleSet {
             root,
-            nodes: Arena::new(),
-            rule_refs: Arena::new(),
+            nodes: Bump::new(),
+            rule_refs: Bump::new(),
         }
     }
     pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath], rule_ref: RuleRef<'a>, mut depth: usize) {

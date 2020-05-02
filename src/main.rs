@@ -1,3 +1,4 @@
+#![feature(collections)]
 #![feature(hash_set_entry)]
 #![allow(dead_code)]
 
