@@ -154,8 +154,8 @@ impl<'a> RSNode<'a> {
                 child = parent.get_vchild(new_path);
                 if child.is_some() {
                     found = true;
-                } else if self.var_child.borrow().node.is_some() {
-                    let var_child = self.get_var_child().unwrap();
+                } else if parent.var_child.borrow().node.is_some() {
+                    let var_child = parent.get_var_child().unwrap();
                     if &var_child.path == new_path {
                         visited_vars.push(new_path.value);
                         child = Some(&*var_child);
