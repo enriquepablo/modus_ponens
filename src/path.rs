@@ -135,7 +135,7 @@ impl<'a> SynPath<'a> {
             let new_segment = get_or_key(&matching, &segment);
             is_new = &new_segment != segment;
             new_segments.push(new_segment);
-            old_segments.push(segment.clone());
+            old_segments.push(*segment);
             if is_new {
                 break;
             }
@@ -157,7 +157,7 @@ impl<'a> SynPath<'a> {
             let new_segment = get_or_key_owning(matching.clone(), &segment);
             is_new = &new_segment != segment;
             new_segments.push(new_segment);
-            old_segments.push(segment.clone());
+            old_segments.push(*segment);
             if is_new {
                 break;
             }
@@ -179,7 +179,7 @@ impl<'a> SynPath<'a> {
             let new_segment = get_or_key_owning(matching.clone(), &segment);
             is_new = &new_segment != segment;
             new_segments.push(new_segment);
-            old_segments.push(segment.clone());
+            old_segments.push(*segment);
             if is_new {
                 break;
             }

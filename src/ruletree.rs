@@ -73,7 +73,6 @@ struct UVarChild<'a> {
 pub struct RuleSet<'a> {
     pub root: RSNode<'a>,
     nodes: Arena<RSNode<'a>>,
-    paths: Arena<SynPath<'a>>,
     rule_refs: Arena<RuleRef<'a>>,
 }
 
@@ -85,7 +84,6 @@ impl<'a> RuleSet<'a> {
         RuleSet {
             root,
             nodes: Arena::new(),
-            paths: Arena::new(),
             rule_refs: Arena::new(),
         }
     }
@@ -131,17 +129,16 @@ impl<'a> RuleSet<'a> {
                 continue;
             }
             depth += 1;
-            let new_path_ref = self.paths.alloc(new_path.clone());
-            let child_ref = self.nodes.alloc(RSNode::new(new_path_ref, depth));
+            let child_ref = self.nodes.alloc(RSNode::new(new_path, depth));
             if new_path.value.is_var {
                 if visited.contains(&new_path.value) {
-                    parent.var_children.borrow_mut().insert(new_path_ref, child_ref);
+                    parent.var_children.borrow_mut().insert(new_path, child_ref);
                 } else {
                     visited.push(new_path.value);
                     parent.var_child.borrow_mut().node = Some(child_ref);
                 }
             } else {
-                parent.children.borrow_mut().insert(new_path_ref, child_ref);
+                parent.children.borrow_mut().insert(new_path, child_ref);
             }
             parent = child_ref;
         }

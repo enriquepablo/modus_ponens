@@ -24,7 +24,7 @@ pub fn invert_owning<'a>(matching: SynMatching<'a>) -> SynMatching<'a> {
 pub fn get_or_key<'a>(matching: &'a SynMatching, key: &'a SynSegment) -> &'a SynSegment {
     match matching.get(key) {
         Some(matched) => {
-            matched
+            *matched
             },
         None => {
             key
