@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, mem};
+use std::{cell::RefCell, collections::HashSet, mem};
 use std::clone::Clone;
 use std::hash::{Hash, Hasher};
 use std::fmt;
@@ -42,15 +42,15 @@ impl<'a> Hash for Fact<'a> {
     }
 }
 
-pub struct FLexicon<'a>(RefCell<HashMap<&'a str, Box<Fact<'a>>>>);
+pub struct FLexicon<'a>(RefCell<HashSet<Box<Fact<'a>>>>);
 
 impl<'a> FLexicon<'a> {
     pub fn new() -> Self {
-        FLexicon(RefCell::new(HashMap::with_capacity(20)))
+        FLexicon(RefCell::new(HashSet::with_capacity(20)))
     }
 
     pub fn from_paths(&'a self, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
-        let mut map = self.0.borrow_mut();
+        let mut set = self.0.borrow_mut();
         
         let text = paths.iter()
                         .filter(|path| path.value.is_leaf)
@@ -59,31 +59,18 @@ impl<'a> FLexicon<'a> {
                         .join("");
 
         let stext = Box::leak(text.into_boxed_str());
-
-                        
         let fact = Box::new(Fact::new(stext, paths));
 
-        if !map.contains_key(stext) {
-            map.insert(stext, fact);
-        }
+        let interned = set.get_or_insert(fact).as_ref();
 
-        let interned = &**map.get(stext).unwrap();
-
-        // TODO: Document the pre- and post-conditions that the code must
-        // uphold to make this unsafe code valid instead of copying this
-        // from Stack Overflow without reading it
         unsafe { mem::transmute(interned) }
     }
     pub fn from_paths_and_string(&'a self, text: &'a str, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
-        let mut map = self.0.borrow_mut();
+        let mut set = self.0.borrow_mut();
         
         let fact = Box::new(Fact::new(text, paths));
 
-        if !map.contains_key(text) {
-            map.insert(text, fact);
-        }
-
-        let interned = &**map.get(text).unwrap();
+        let interned = set.get_or_insert(fact).as_ref();
 
         // TODO: Document the pre- and post-conditions that the code must
         // uphold to make this unsafe code valid instead of copying this
