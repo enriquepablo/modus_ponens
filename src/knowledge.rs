@@ -160,7 +160,7 @@ impl<'a> KnowledgeBase<'a> {
     }
     fn process_rule(&'a self, mut rule: Rule<'a>) {
         
-        println!("ADDING RULE {}", rule);
+        //println!("ADDING RULE {}", rule);
         let n_ants = rule.antecedents.len();
         for n in 0..n_ants {
             let mut new_ants = vec![];
@@ -202,7 +202,7 @@ impl<'a> KnowledgeBase<'a> {
                     fact: &'a Fact<'a>,
                     query_rules: bool) {
         
-        println!("ADDING FACT: {}", fact);
+        //println!("ADDING FACT: {}", fact);
         let response = new_response();
         let matched: SynMatching = HashMap::new();
         let paths = fact.paths.as_slice();
