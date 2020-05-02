@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use crate::matching::{ SynMatching, get_real_matching_owning };
 use crate::fact::Fact;
 use crate::factset::FactSet;
-use crate::ruletree::{ Rule, RSNode, RuleRef, new_response };
+use crate::ruletree::{ Rule, RSNode, RuleSet, RuleRef, new_response };
 use crate::parser::{ Grammar, ParseResult };
 
 
@@ -69,28 +69,10 @@ impl KStat {
     }
 }
 
-pub struct KDB<'a> {
-    facts: FactSet<'a>,
-    rules: RSNode<'a>,
-    queue: RefCell<VecDeque<Activation<'a>>>,
-}
-
-impl<'a> KDB<'a> {
-
-    pub fn new (grammar: &'a Grammar<'a>) -> KDB<'a> {
-        let root_path = grammar.lexicon.empty_path();
-        KDB {
-            facts: FactSet::new(),
-            rules: RSNode::new(root_path),
-            queue: RefCell::new(VecDeque::new()),
-        }
-    }
-}
-
 pub struct KnowledgeBase<'a> {
     grammar: &'a Grammar<'a>,
     facts: FactSet<'a>,
-    rules: RSNode<'a>,
+    rules: RuleSet<'a>,
     queue: RefCell<VecDeque<Activation<'a>>>,
 }
 
@@ -101,7 +83,7 @@ impl<'a> KnowledgeBase<'a> {
         KnowledgeBase {
             grammar,
             facts: FactSet::new(),
-            rules: RSNode::new(root_path),
+            rules: RuleSet::new(root_path),
             queue: RefCell::new(VecDeque::new()),
         }
     }
@@ -203,15 +185,12 @@ impl<'a> KnowledgeBase<'a> {
                     query_rules: bool) {
         
         println!("ADDING FACT: {}", fact);
-        let response = new_response();
-        let matched: SynMatching = HashMap::new();
         let paths = fact.paths.as_slice();
-        let (response, _) = self.rules.climb(paths, response, matched);
+        let response = self.rules.query_paths(paths);
         for (rule_refs, matching) in response {
             for rule_ref in rule_refs {
-                let RuleRef { rule, varmap } = *rule_ref;
-                let real_matching = get_real_matching_owning(matching.clone(), varmap); 
-                self.queue.borrow_mut().push_back(Activation::from_matching(rule, real_matching, query_rules));
+                let real_matching = get_real_matching_owning(matching.clone(), rule_ref.varmap.clone()); 
+                self.queue.borrow_mut().push_back(Activation::from_matching(rule_ref.rule.clone(), real_matching, query_rules));
             }
         }
         self.facts.add_fact(&fact);
