@@ -45,23 +45,6 @@ pub fn get_or_key_owning<'a>(matching: SynMatching<'a>, key: &'a SynSegment) -> 
 }
 
 
-/**
-* Substitute normalized variables in the keys of matching
-* with the original variables in varmap,
-* which are keyed by the normalized variables
- */
-pub fn get_real_matching<'a>(matching: &'a SynMatching, varmap: &'a SynMatching) -> SynMatching<'a> {
-    let mut real_matching: SynMatching = HashMap::with_capacity(matching.capacity());
-    for (key, value) in matching {
-        let mut new_key = key;
-        let maybe_key = varmap.get(key);
-        if maybe_key.is_some() {
-            new_key = maybe_key.expect("some key");
-        }
-        real_matching.insert(new_key.clone(), value.clone());
-    }
-    real_matching
-}
 pub fn get_real_matching_owning<'a>(matching: SynMatching<'a>, varmap: SynMatching<'a>) -> SynMatching<'a> {
     let mut real_matching: SynMatching = HashMap::with_capacity(matching.capacity());
     for (key, value) in matching {
@@ -91,22 +74,6 @@ mod tests {
         assert_eq!(*inverted.get(&segm2).expect("segment"), &segm1);
     }
 
-    #[test]
-    fn get_real_matching_1() {
-        let segm11 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
-        let segm12 = SynSegment::new("rule-name2".to_string(), "text".to_string(), true);
-        let mut matching: SynMatching = HashMap::new();
-        matching.insert(&segm11, &segm12);
-
-        let segm21 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), true);
-        let segm22 = SynSegment::new("rule-name3".to_string(), "text".to_string(), true);
-        let mut varmap: SynMatching = HashMap::new();
-        varmap.insert(&segm21, &segm22);
-
-        let new_matching = get_real_matching(&matching, &varmap);
-
-        assert_eq!(*new_matching.get(&segm22).expect("segment"), &segm12);
-    }
 
     #[test]
     fn matching_getorkey_1() {
