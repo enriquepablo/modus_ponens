@@ -52,7 +52,7 @@ impl<'a> FactSet<'a> {
             depth += 1;
             if path.value.in_var_range {
                 let opt_child = parent.get_lchild(path);
-                let new_paths = path.paths_after(paths, true);
+                let new_paths = path.paths_after(paths);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
                     if !path.value.is_leaf {
@@ -69,7 +69,7 @@ impl<'a> FactSet<'a> {
                     } else {
                         child = self.intern_child(parent, path, child_node);
                     };
-                    let renew_paths = path.paths_after(&new_paths, true);
+                    let renew_paths = path.paths_after(&new_paths);
                     self.create_paths(child, &renew_paths, depth);
                     self.create_paths(parent, &new_paths, depth);
                     continue;
@@ -102,7 +102,7 @@ impl<'a> FactSet<'a> {
                 child = self.intern_child(parent, path, child_node);
             };
             if path.value.in_var_range && !path.value.is_leaf {
-                let new_paths = path.paths_after(&paths, true);
+                let new_paths = path.paths_after(&paths);
                 self.create_paths(child,new_paths, depth);
                 continue;
             }

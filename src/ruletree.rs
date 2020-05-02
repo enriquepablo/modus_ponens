@@ -234,7 +234,7 @@ impl<'a> RSNode<'a> {
                 let old_value = matched.get(vpath.value);
                 if old_value.is_some() {
                     if &new_value == old_value.unwrap() {
-                        let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths, false);
+                        let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths);
                         let (new_response, new_matched) = varchild.climb(new_paths, response, matched);
                         response = new_response;
                         matched = new_matched;
@@ -246,7 +246,7 @@ impl<'a> RSNode<'a> {
             if var_child_opt.is_some() {
                 let var_child = var_child_opt.unwrap();
                 let (new_path_slice, new_value) = path.sub_slice(var_child.path.len());
-                let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths, false);
+                let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths);
                 let mut new_matched = matched.clone();
                 new_matched.insert(var_child.path.value, new_value);
                 let (new_response, _) = var_child.climb(new_paths, response, new_matched);

@@ -45,54 +45,38 @@ impl<'a> SynPath<'a> {
         let segments = &self.segments[0..lpath];
         (segments, segments.last().expect("no empty paths"))
     }
-    pub fn paths_after(&'a self, paths: &'a [SynPath], try_to_see: bool) -> &'a [SynPath] {
+    pub fn paths_after(&'a self, paths: &'a [SynPath]) -> &'a [SynPath] {
         let mut seen = false;
-        let mut path_starts_with_self: bool;
-        let mut i = 0;
-        let mut after = 0;
-        let self_len = self.len();
+        let mut i: u16 = 0;
         for path in paths {
             if path.value.is_empty {
                 i += 1;
                 continue;
             }
-            path_starts_with_self = path.starts_with(&self);
-            if path_starts_with_self {
-                after = i;
-            }
-            if try_to_see && !seen && path_starts_with_self {
-                seen = true;
-            } else if (!try_to_see || seen) && (!path_starts_with_self || path.len() == self_len) {
-                after = i;
+            if path.starts_with(&self) {
+                if !seen {
+                    seen = true;
+                }
+            } else if seen {
                 break;
             }
             i += 1;
         }
-        &paths[after..]
+        &paths[i as usize..]
     }
-    pub fn paths_after_slice(path_slice: &'a [&'a SynSegment], paths: &'a [SynPath<'a>], try_to_see: bool) -> &'a [SynPath<'a>] {
-        let mut seen = false;
-        let mut path_starts_with_self: bool;
-        let mut i = 0;
-        let mut after = 0;
+    pub fn paths_after_slice(path_slice: &'a [&'a SynSegment], paths: &'a [SynPath<'a>]) -> &'a [SynPath<'a>] {
+        let mut i: u16 = 0;
         for path in paths {
             if path.value.is_empty || !path.value.is_leaf {
                 i += 1;
                 continue;
             }
-            path_starts_with_self = path.starts_with_slice(path_slice);
-            if path_starts_with_self {
-                after = i;
-            }
-            if try_to_see && !seen && path_starts_with_self {
-                seen = true;
-            } else if (!try_to_see || seen) && (!path_starts_with_self || path.len() == path_slice.len()) {
-                after = i;
+            if !path.starts_with_slice(path_slice) {
                 break;
             }
             i += 1;
         }
-        &paths[after..]
+        &paths[i as usize..]
     }
 
     pub fn substitute(&'a self, matching: &'a SynMatching) -> (SynPath, Option<SynPath>) {
