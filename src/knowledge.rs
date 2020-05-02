@@ -207,8 +207,9 @@ impl<'a> KnowledgeBase<'a> {
         let matched: SynMatching = HashMap::new();
         let paths = fact.paths.as_slice();
         let (response, _) = self.rules.climb(paths, response, matched);
-        for (rule_refs, matching) in *response {
-            for RuleRef { rule, varmap } in rule_refs {
+        for (rule_refs, matching) in response {
+            for rule_ref in rule_refs {
+                let RuleRef { rule, varmap } = *rule_ref;
                 let real_matching = get_real_matching_owning(matching.clone(), varmap); 
                 self.queue.borrow_mut().push_back(Activation::from_matching(rule, real_matching, query_rules));
             }
@@ -394,6 +395,15 @@ mod tests {
         let resp = kb.ask( "susan ISA animal.");
         assert!(resp);
     }
+    #[test]
+    fn test_kb_4_1() {
+        let grammar = Grammar::new();
+        let kb = KnowledgeBase::new(&grammar);
+        kb.tell("<X0> ISA <X0> -> <X0> ISA animal.");
+        kb.tell("susan ISA susan.");
+        let resp = kb.ask( "susan ISA animal.");
+        assert!(resp);
+    }
 //    #[test]
 //    fn kb_4() {
 //        let grammar = Grammar::new();
@@ -491,7 +501,20 @@ mod tests {
 //        assert!(resp3);
 //    }
     #[test]
-    fn kb_6() {
+    fn kb_6_0() {
+        let grammar = Grammar::new();
+        let kb = KnowledgeBase::new(&grammar);
+        kb.tell("(p1: <X0>, p2: <X1>) ISA (hom1: (p1: <X2>, p2: <X3>), hom2: (p1: <X2>, p2: <X3>))\
+                       -> \
+                      (v0: <X0>, v1: <X1>, v2: <X2>, v3: <X3>) ISA thing.");
+
+        kb.tell("(p1: s1, p2: s2) ISA (hom1: (p1: nat, p2: people), hom2: (p1: nat, p2: people)).");
+
+        let resp = kb.ask("(v0: s1, v1: s2, v2: nat, v3: people) ISA thing.");
+        assert!(resp);
+    }
+    #[test]
+    fn kb_6_1() {
         let grammar = Grammar::new();
         let kb = KnowledgeBase::new(&grammar);
         kb.tell("(p1: <X4>, p2: <X5>) ISA (hom1: (p1: <X2>, p2: <X3>), hom2: (p1: <X2>, p2: <X3>))\
@@ -513,8 +536,8 @@ mod tests {
         kb.tell("<X1> ISA (fn: pr, on: nat)\
                      -> \
                      (fn: (fn: pr, on: s1), on: <X1>) EQ (s: <X1>).");
-        kb.tell("s2 ISA (hom1: people, hom2: people).");
         kb.tell("(p1: s1, p2: s2) ISA (hom1: (p1: nat, p2: people), hom2: (p1: nat, p2: people)).");
+        kb.tell("s2 ISA (hom1: people, hom2: people).");
         kb.tell("s1 ISA (hom1: nat, hom2: nat).");
         kb.tell("(p1: (s: 0), p2: john) ISA (fn: pr, on: (p1: nat, p2: people)).");
         kb.tell("john ISA (fn: pr, on: people).\

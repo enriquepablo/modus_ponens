@@ -11,12 +11,10 @@ use crate::matching::SynMatching;
 use crate::fact::Fact;
 
 
-type Response<'a> = Box<Vec<(Vec<RuleRef<'a>>, SynMatching<'a>)>>;
+type Response<'a> = Vec<(Vec<Box<RuleRef<'a>>>, SynMatching<'a>)>;
 
 pub fn new_response<'a>() -> Response<'a> {
-    Box::new(
-        vec![]
-    )
+    vec![]
 }
 
 #[derive(Debug, Clone)]
@@ -58,17 +56,24 @@ pub struct RuleRef<'a> {
 #[derive(Debug)]
 pub struct RSNode<'a> {
     path: SynPath<'a>,
-    var_child : RefCell<UVarChild<'a>>,
-    var_children: RefCell<HashMap<SynPath<'a>, RSNode<'a>>>,
-    children: RefCell<HashMap<SynPath<'a>, RSNode<'a>>>,
-    rule_refs: RefCell<Vec<RuleRef<'a>>>,
+    var_child : RefCell<Box<UVarChild<'a>>>,
+    var_children: RefCell<HashMap<Box<SynPath<'a>>, Box<RSNode<'a>>>>,
+    children: RefCell<HashMap<Box<SynPath<'a>>, Box<RSNode<'a>>>>,
+    rule_refs: RefCell<Vec<Box<RuleRef<'a>>>>,
     end_node: RefCell<EndNode>,
 }
 
 #[derive(Debug)]
 struct UVarChild<'a> {
-    node: Option<&'a RSNode<'a>>
+    node: Option<Box<RSNode<'a>>>
 }
+
+impl<'a> UVarChild<'a> {
+    pub fn set_node(&'a mut self, node: Box<RSNode<'a>>) {
+        self.node = Some(node);
+    }
+}
+
 #[derive(Debug)]
 struct EndNode {
     end: bool
@@ -79,69 +84,67 @@ impl<'a> RSNode<'a> {
     pub fn new(root_path: SynPath<'a>) -> RSNode<'a> {
         RSNode {
             path: root_path,
-            var_child: RefCell::new(UVarChild{ node: None }),
+            var_child: RefCell::new(Box::new(UVarChild{ node: None })),
             children: RefCell::new(HashMap::new()),
             var_children: RefCell::new(HashMap::new()),
             rule_refs: RefCell::new(vec![]),
             end_node: RefCell::new(EndNode { end: false }),
         }
     }
-    pub fn get_children(&'a self) -> &'a HashMap<SynPath<'a>, Self> {
+    pub fn get_children(&'a self) -> &'a HashMap<Box<SynPath<'a>>, Box<Self>> {
         let children = self.children.borrow();
         unsafe { mem::transmute(&*children) }
     }
-    pub fn get_var_children(&'a self) -> &'a HashMap<SynPath<'a>, Self> {
+    pub fn get_var_children(&'a self) -> &'a HashMap<Box<SynPath<'a>>, Box<Self>> {
         let vchildren = self.var_children.borrow();
         unsafe { mem::transmute(&*vchildren) }
     }
     pub fn get_child(&'a self, path: &'a SynPath) -> Option<&'a Self> {
         let children = self.children.borrow();
-        let child = children.get(path);
-        if child.is_none() {
-            None
-        } else {
-            let child_ref = unsafe { mem::transmute(child.unwrap()) };
-            Some(child_ref)
+        match children.get(path) {
+            None => None,
+            Some(child_ref) => {
+                Some( unsafe { mem::transmute(&**child_ref) } )
+            }
         }
     }
     pub fn get_vchild(&'a self, path: &'a SynPath) -> Option<&'a Self> {
         let vchildren = self.var_children.borrow();
-        let child = vchildren.get(path);
-        if child.is_none() {
-            None
-        } else {
-            let child_ref = unsafe { mem::transmute(child.unwrap()) };
-            Some(child_ref)
+        match vchildren.get(path) {
+            None => None,
+            Some(child_ref) => {
+                Some( unsafe { mem::transmute(&**child_ref) } )
+            }
         }
     }
     pub fn get_var_child(&'a self) -> Option<&'a Self> {
-        match self.var_child.borrow().node {
+        match self.var_child.borrow().node.as_ref() {
             None => None,
             Some(child) => {
-                let child_ref =  unsafe { mem::transmute(child) };
+                let child_ref =  unsafe { mem::transmute(&**child) };
                 Some(child_ref)
             }
         }
     }
-    pub fn set_var_child(&'a self, node: RSNode<'a>) -> &'a Self {
-        let mut var_child = self.var_child.borrow_mut();
-        let node_ref = Box::leak(Box::new(node));
-        var_child.node = Some(node_ref);
-        unsafe { mem::transmute(var_child.node.unwrap()) }
+    pub fn set_var_child(&'a self, node: Box<RSNode<'a>>) -> &'a Self {
+        let var_child = self.var_child.borrow_mut();
+        var_child.set_node(node);
+        let child = var_child.node;
+        unsafe { mem::transmute(child) }
     }
-    pub fn intern_child(&'a self, path: &'a SynPath, node: Self) -> &'a Self {
+    pub fn intern_child(&'a self, path: &'a SynPath, node: Box<Self>) -> &'a Self {
         let mut children = self.children.borrow_mut();
-        children.insert(path.clone(), node);
+        children.insert(Box::new(path.clone()), node);
         let child = children.get(path).unwrap();
-        unsafe { mem::transmute(child) }
+        unsafe { mem::transmute(&**child) }
     }
-    pub fn intern_var_child(&'a self, path: &'a SynPath, node: Self) -> &'a Self {
+    pub fn intern_var_child(&'a self, path: &'a SynPath, node: Box<Self>) -> &'a Self {
         let mut var_children = self.var_children.borrow_mut();
-        var_children.insert(path.clone(), node);
+        var_children.insert(Box::new(path.clone()), node);
         let child = var_children.get(path).unwrap();
-        unsafe { mem::transmute(child) }
+        unsafe { mem::transmute(&**child) }
     }
-    pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath], opt_rule_ref: RuleRef<'a>) {
+    pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath], rule_ref: RuleRef<'a>) {
         let mut parent: &RSNode = self; 
         let mut child: Option<&RSNode>; 
         let mut visited_vars: Vec<&SynSegment> = vec![];
@@ -149,26 +152,19 @@ impl<'a> RSNode<'a> {
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
-            let mut found = false;
             if new_path.value.is_var {
                 child = parent.get_vchild(new_path);
-                if child.is_some() {
-                    found = true;
-                } else if self.var_child.borrow().node.is_some() {
+                if child.is_none() && self.var_child.borrow().node.is_some() {
                     let var_child = self.get_var_child().unwrap();
                     if &var_child.path == new_path {
                         visited_vars.push(new_path.value);
-                        child = Some(&*var_child);
-                        found = true;
+                        child = Some(var_child);
                     }
                 }
             } else {
                 child = parent.get_child(new_path);
-                if child.is_some() {
-                   found = true;
-                }
             }
-            if found {
+            if child.is_some() {
                 parent = child.unwrap();
             } else {
                 parent = parent.create_paths(&paths[i..], visited_vars);
@@ -176,7 +172,7 @@ impl<'a> RSNode<'a> {
             }
         }
 
-        parent.rule_refs.borrow_mut().push(opt_rule_ref);
+        parent.rule_refs.borrow_mut().push(Box::new(rule_ref));
     }
 
     fn create_paths(&'a self, paths: &'a [SynPath], mut visited: Vec<&'a SynSegment>) -> &'a Self {
@@ -186,7 +182,7 @@ impl<'a> RSNode<'a> {
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
-            let child = RSNode::new(new_path.clone());
+            let child = Box::new(RSNode::new(new_path.clone()));
             if new_path.value.is_var {
                 if visited.contains(&new_path.value) {
                     child_ref = parent.intern_var_child(new_path, child);
@@ -257,14 +253,13 @@ impl<'a> RSNode<'a> {
                 let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths, false);
                 let mut new_matched = matched.clone();
                 new_matched.insert(var_child.path.value, new_value);
-                let (new_response, new_matched) = var_child.climb(new_paths, response, new_matched);
+                let (new_response, _) = var_child.climb(new_paths, response, new_matched);
                 response = new_response;
-                matched = new_matched;
             }
         }
         if parent.end_node.borrow().end {
             // println!("Found rules: {}", parent_rule_refs.len());
-            response.push(( parent.rule_refs.borrow().to_vec(), matched.clone() ));
+            response.push(( parent.rule_refs.borrow().iter().cloned().collect(), matched.clone() ));
         }
         (response, matched)
     }

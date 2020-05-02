@@ -96,7 +96,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["kb_6"],
+            "args": ["kb_6_1"],
             "cwd": "${workspaceFolder}"
         },
         {
