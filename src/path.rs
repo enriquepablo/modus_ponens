@@ -20,7 +20,7 @@ impl<'a> SynPath<'a> {
             identity.push(segment.name.clone());
             new_segments.push(segment);
         }
-        let value = new_segments.last().expect("no empty paths").clone();
+        let value = *new_segments.last().expect("no empty paths");
         identity.push(value.text.clone());
         SynPath { value, segments: new_segments, identity, }
     }

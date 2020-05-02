@@ -16,16 +16,9 @@ impl Lexicon {
         let mut set = self.0.borrow_mut();
         let value = SynSegment::new(name.to_string(), text.to_string(), is_leaf);
 
-        if !set.contains(&value) {
-            set.insert(Box::new(value.clone()));
-        }
-
-        let interned = &**set.get(&value).unwrap();
-
-        // TODO: Document the pre- and post-conditions that the code must
-        // uphold to make this unsafe code valid instead of copying this
-        // from Stack Overflow without reading it
-        unsafe { mem::transmute(interned) }
+        let interned = set.get_or_insert(Box::new(value));
+        let sref = interned.as_ref();
+        unsafe { mem::transmute(sref) }
     }
 
     pub fn make_var(&self, n: usize) -> &SynSegment {

@@ -6,6 +6,7 @@ use std::cell::{ RefCell, Cell };
 
 use typed_arena::Arena;
 
+use crate::constants;
 use crate::path::SynPath;
 use crate::segment::SynSegment;
 use crate::matching::SynMatching;
@@ -80,7 +81,7 @@ impl<'a> RuleSet<'a> {
 
     pub fn new(root_path: SynPath<'a>) -> Self {
         let root_path_ref = Box::leak(Box::new(root_path));
-        let root = RSNode::new(root_path_ref);
+        let root = RSNode::new(root_path_ref, 1);
         RuleSet {
             root,
             nodes: Arena::new(),
@@ -88,7 +89,7 @@ impl<'a> RuleSet<'a> {
             rule_refs: Arena::new(),
         }
     }
-    pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath], rule_ref: RuleRef<'a>) {
+    pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath], rule_ref: RuleRef<'a>, mut depth: usize) {
         let mut parent: &RSNode = &self.root; 
         let mut child: Option<&RSNode>; 
         let mut visited_vars: Vec<&SynSegment> = vec![];
@@ -96,6 +97,7 @@ impl<'a> RuleSet<'a> {
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
+            depth += 1;
             if new_path.value.is_var {
                 child = parent.get_vchild(new_path);
                 if child.is_none() {
@@ -114,7 +116,7 @@ impl<'a> RuleSet<'a> {
             if child.is_some() {
                 parent = child.unwrap();
             } else {
-                parent = self.create_paths(parent, &paths[i..], visited_vars);
+                parent = self.create_paths(parent, &paths[i..], visited_vars, depth);
                 break;
             }
         }
@@ -123,13 +125,14 @@ impl<'a> RuleSet<'a> {
         parent.rule_refs.borrow_mut().push(rule_ref_ref);
     }
 
-    fn create_paths(&'a self, mut parent: &'a RSNode<'a>, paths: &'a [SynPath], mut visited: Vec<&'a SynSegment>) -> &'a RSNode {
+    fn create_paths(&'a self, mut parent: &'a RSNode<'a>, paths: &'a [SynPath], mut visited: Vec<&'a SynSegment>, mut depth: usize) -> &'a RSNode {
         for new_path in paths {
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
+            depth += 1;
             let new_path_ref = self.paths.alloc(new_path.clone());
-            let child_ref = self.nodes.alloc(RSNode::new(new_path_ref));
+            let child_ref = self.nodes.alloc(RSNode::new(new_path_ref, depth));
             if new_path.value.is_var {
                 if visited.contains(&new_path.value) {
                     parent.var_children.borrow_mut().insert(new_path_ref, child_ref);
@@ -155,12 +158,13 @@ impl<'a> RuleSet<'a> {
 
 impl<'a> RSNode<'a> {
 
-    pub fn new(root_path: &'a SynPath<'a>) -> RSNode<'a> {
+    pub fn new(root_path: &'a SynPath<'a>, depth: usize) -> RSNode<'a> {
+        let capacity = constants::NODE_MAP_CAPACITY / depth;
         RSNode {
             path: root_path,
             var_child: RefCell::new(Box::new(UVarChild { node: None })),
-            children: RefCell::new(HashMap::new()),
-            var_children: RefCell::new(HashMap::new()),
+            children: RefCell::new(HashMap::with_capacity(capacity)),
+            var_children: RefCell::new(HashMap::with_capacity(capacity)),
             rule_refs: RefCell::new(vec![]),
             end_node: Cell::new(false),
         }

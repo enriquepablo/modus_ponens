@@ -172,7 +172,7 @@ impl<'a> KnowledgeBase<'a> {
                 varmap,
             };
             let normal_leaf_paths = normal_ant.paths.as_slice();
-            self.rules.follow_and_create_paths(normal_leaf_paths, rule_ref);
+            self.rules.follow_and_create_paths(normal_leaf_paths, rule_ref, 1);
             rule = Rule {
                 antecedents,
                 more_antecedents,

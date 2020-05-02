@@ -4,6 +4,7 @@ use std::cell::{ RefCell };
 
 use typed_arena::Arena;
 
+use crate::constants;
 use crate::fact::Fact;
 use crate::path::SynPath;
 use crate::matching::SynMatching;
@@ -24,14 +25,14 @@ pub struct FactSet<'a> {
 impl<'a> FactSet<'a> {
     pub fn new () -> FactSet<'a> {
         FactSet {
-            root: Box::new(FSNode::new()),
+            root: Box::new(FSNode::new(1)),
             nodes: Arena::new(),
             paths: Arena::new(),
          }
     }
     pub fn add_fact (&'a self, fact: &'a Fact<'a>) {
         let paths = fact.paths.as_slice();
-        self.follow_and_create_paths(&self.root, paths);
+        self.follow_and_create_paths(&self.root, paths, 1);
     }
     pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching<'a>> {
         let response: Vec<SynMatching<'a>> = vec![];
@@ -39,43 +40,41 @@ impl<'a> FactSet<'a> {
         let matching: SynMatching = HashMap::new();
         self.root.query_paths(paths, matching, response, &self.paths)
     }
-    pub fn follow_and_create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath]) {
+    pub fn follow_and_create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath], mut depth: usize) {
         let mut child: &FSNode;
         for (path_index, path) in paths.iter().enumerate() {
             if path.value.is_empty {
                 continue;
             }
+            depth += 1;
             if path.value.in_var_range {
                 let opt_child = parent.get_lchild(path);
                 let new_paths = path.paths_after(paths, true);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
                     if !path.value.is_leaf {
-                        self.follow_and_create_paths(child, new_paths);
+                        self.follow_and_create_paths(child, new_paths, depth);
                         continue;
                     }
                 } else if path.value.is_leaf {
-                    self.create_paths(parent, &paths[path_index..]);
+                    self.create_paths(parent, &paths[path_index..], depth);
                     return;
                 } else {
-                    let child_node = FSNode {
-                        children: RefCell::new(HashMap::new()),
-                        lchildren: RefCell::new(HashMap::new()),
-                    };
+                    let child_node = FSNode::new(depth);
                     if path.value.in_var_range {
                         child = self.intern_lchild(parent, path, child_node);
                     } else {
                         child = self.intern_child(parent, path, child_node);
                     };
                     let renew_paths = path.paths_after(&new_paths, true);
-                    self.create_paths(child, &renew_paths);
-                    self.create_paths(parent, &new_paths);
+                    self.create_paths(child, &renew_paths, depth);
+                    self.create_paths(parent, &new_paths, depth);
                     continue;
                 }
             } else {
                 let opt_child = parent.get_child(path);
                 if opt_child.is_none() {
-                    self.create_paths(parent, &paths[path_index..]);
+                    self.create_paths(parent, &paths[path_index..], depth);
                     return;
                 } else {
                     child = opt_child.expect("node");
@@ -85,16 +84,14 @@ impl<'a> FactSet<'a> {
         }
     }
 
-    fn create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath]) {
+    fn create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath], mut depth: usize) {
         let mut child: &FSNode;
         for path in paths {
             if path.value.is_empty {
                 continue;
             }
-            let child_node = FSNode {
-                children: RefCell::new(HashMap::new()),
-                lchildren: RefCell::new(HashMap::new()),
-            };
+            depth += 1;
+            let child_node = FSNode::new(depth);
             let logic_node = path.value.in_var_range;
             if logic_node {
                 child = self.intern_lchild(parent, path, child_node);
@@ -103,7 +100,7 @@ impl<'a> FactSet<'a> {
             };
             if path.value.in_var_range && !path.value.is_leaf {
                 let new_paths = path.paths_after(&paths, true);
-                self.create_paths(child,new_paths);
+                self.create_paths(child,new_paths, depth);
                 continue;
             }
             parent = child;
@@ -111,25 +108,24 @@ impl<'a> FactSet<'a> {
     }
     pub fn intern_child(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>) -> &'a FSNode<'a> {
         let mut children = parent.children.borrow_mut();
-        let path_ref = self.paths.alloc(path.clone());
         let child_ref = self.nodes.alloc(child);
-        children.insert(path_ref, child_ref);
+        children.insert(path, child_ref);
         *children.get(path).unwrap()
     }
     pub fn intern_lchild(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>) -> &'a FSNode<'a> {
         let mut children = parent.lchildren.borrow_mut();
-        let path_ref = self.paths.alloc(path.clone());
         let child_ref = self.nodes.alloc(child);
-        children.insert(path_ref, child_ref);
+        children.insert(path, child_ref);
         *children.get(path).unwrap()
     }
 }
 
 impl<'a> FSNode<'a> {
-    pub fn new() -> FSNode<'a> {
+    pub fn new(depth: usize) -> FSNode<'a> {
+        let capacity = constants::NODE_MAP_CAPACITY / depth;
         FSNode { 
-            children: RefCell::new(HashMap::new()),
-            lchildren: RefCell::new(HashMap::new()),
+            children: RefCell::new(HashMap::with_capacity(capacity)),
+            lchildren: RefCell::new(HashMap::with_capacity(capacity)),
         }
     }
     pub fn get_child(&'a self, path: &'a SynPath) -> Option<&'a Self> {
