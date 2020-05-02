@@ -160,7 +160,7 @@ impl<'a> KnowledgeBase<'a> {
                 }
             }
             let new_conseqs = consequents.clone();
-            let new_more_ants = more_antecedents.iter().cloned().collect();
+            let new_more_ants = more_antecedents.clone();
             let new_rule = Rule {
                 antecedents: new_ants,
                 more_antecedents: new_more_ants,
