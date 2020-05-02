@@ -100,9 +100,11 @@ impl<'a> KnowledgeBase<'a> {
             self.process_activations();
         }
         for fact in facts {
-            let act = Activation::from_fact(fact, false);
-            self.queue.borrow_mut().push_back(act);
-            self.process_activations();
+            if !self.facts.ask_fact_bool(&fact) {
+                let act = Activation::from_fact(fact, false);
+                self.queue.borrow_mut().push_back(act);
+                self.process_activations();
+            }
         }
     }
     pub fn ask(&'a self, knowledge: &'a str) -> bool {
@@ -215,7 +217,9 @@ impl<'a> KnowledgeBase<'a> {
         } else {
            for consequent in rule.consequents{
                let new_consequent = self.grammar.substitute_fact(&consequent, matching);
-               self.queue.borrow_mut().push_back(Activation::from_fact(new_consequent, query_rules));
+                if !self.facts.ask_fact_bool(&new_consequent) {
+                    self.queue.borrow_mut().push_back(Activation::from_fact(new_consequent, query_rules));
+                }
            }
         }
     }

@@ -40,6 +40,9 @@ impl<'a> FactSet<'a> {
         let matching: SynMatching = HashMap::new();
         self.root.query_paths(paths, matching, response, &self.paths)
     }
+    pub fn ask_fact_bool (&'a self, fact: &'a Fact) -> bool {
+        self.ask_fact(fact).len() > 0
+    }
     pub fn follow_and_create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath], mut depth: usize) {
         let mut child: &FSNode;
         for (path_index, path) in paths.iter().enumerate() {
