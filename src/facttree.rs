@@ -1,64 +1,45 @@
-use std::mem;
 use std::clone::Clone;
 use std::collections::HashMap;
 use std::cell::{ RefCell };
 
+use typed_arena::Arena;
+
+use crate::fact::Fact;
 use crate::path::SynPath;
 use crate::matching::SynMatching;
 
 #[derive(Debug, PartialEq)]
 pub struct FSNode<'a> {
-    children: RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,  // XXX try putting keys and vals in boxes
-    lchildren: RefCell<HashMap<SynPath<'a>, FSNode<'a>>>,
+    children: RefCell<HashMap<&'a SynPath<'a>, &'a FSNode<'a>>>,  // XXX try putting keys and vals in boxes
+    lchildren: RefCell<HashMap<&'a SynPath<'a>, &'a FSNode<'a>>>,
 }
 
-impl<'a> FSNode<'a> {
-    pub fn new() -> FSNode<'a> {
-        FSNode { 
-            children: RefCell::new(HashMap::new()),
-            lchildren: RefCell::new(HashMap::new()),
-        }
+pub struct FactSet<'a> {
+    pub root: Box<FSNode<'a>>,
+    nodes: Arena<FSNode<'a>>,
+    paths: Arena<SynPath<'a>>,
+}
+
+
+impl<'a> FactSet<'a> {
+    pub fn new () -> FactSet<'a> {
+        FactSet {
+            root: Box::new(FSNode::new()),
+            nodes: Arena::new(),
+            paths: Arena::new(),
+         }
     }
-    pub fn get_child(&'a self, path: &'a SynPath) -> Option<&'a Self> {
-        let children = self.children.borrow();
-        let child = children.get(path);
-        if child.is_none() {
-            None
-        } else {
-            unsafe { mem::transmute(child) }
-        }
+    pub fn add_fact (&'a self, fact: &'a Fact<'a>) {
+        let paths = fact.paths.as_slice();
+        self.follow_and_create_paths(&self.root, paths);
     }
-    pub fn intern_child(&'a self, path: &'a SynPath, node: Self) -> &'a Self {
-        let mut children = self.children.borrow_mut();
-        children.insert(path.clone(), node);
-        let child = children.get(path).unwrap();
-        unsafe { mem::transmute(child) }
+    pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching<'a>> {
+        let response: Vec<SynMatching<'a>> = vec![];
+        let paths = fact.paths.as_slice();
+        let matching: SynMatching = HashMap::new();
+        self.root.query_paths(paths, matching, response, &self.paths)
     }
-    pub fn get_lchild(&'a self, path: &'a SynPath) -> Option<&'a Self> {
-        let lchildren = self.lchildren.borrow();
-        let child = lchildren.get(path);
-        if child.is_none() {
-            None
-        } else {
-            unsafe { mem::transmute(child) }
-        }
-    }
-    pub fn get_lchildren(&'a self) -> &'a HashMap<SynPath<'a>, FSNode<'a>> {
-        let lchildren = self.lchildren.borrow();
-        unsafe { mem::transmute(&*lchildren) }
-    }
-    pub fn get_children(&'a self) -> &'a HashMap<SynPath<'a>, FSNode<'a>> {
-        let children = self.children.borrow();
-        unsafe { mem::transmute(&*children) }
-    }
-    pub fn intern_lchild(&'a self, path: &'a SynPath, node: Self) -> &'a Self {
-        let mut lchildren = self.lchildren.borrow_mut();
-        lchildren.insert(path.clone(), node);
-        let child = lchildren.get(path).unwrap();
-        unsafe { mem::transmute(child) }
-    }
-    pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath]) {
-        let mut parent = self;
+    pub fn follow_and_create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath]) {
         let mut child: &FSNode;
         for (path_index, path) in paths.iter().enumerate() {
             if path.value.is_empty {
@@ -70,11 +51,11 @@ impl<'a> FSNode<'a> {
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
                     if !path.value.is_leaf {
-                        child.follow_and_create_paths(new_paths);
+                        self.follow_and_create_paths(child, new_paths);
                         continue;
                     }
                 } else if path.value.is_leaf {
-                    parent.create_paths(&paths[path_index..]);
+                    self.create_paths(parent, &paths[path_index..]);
                     return;
                 } else {
                     let child_node = FSNode {
@@ -82,19 +63,19 @@ impl<'a> FSNode<'a> {
                         lchildren: RefCell::new(HashMap::new()),
                     };
                     if path.value.in_var_range {
-                        child = parent.intern_lchild(path, child_node);
+                        child = self.intern_lchild(parent, path, child_node);
                     } else {
-                        child = parent.intern_child(path, child_node);
+                        child = self.intern_child(parent, path, child_node);
                     };
                     let renew_paths = path.paths_after(&new_paths, true);
-                    child.create_paths(&renew_paths);
-                    parent.create_paths(&new_paths);
+                    self.create_paths(child, &renew_paths);
+                    self.create_paths(parent, &new_paths);
                     continue;
                 }
             } else {
                 let opt_child = parent.get_child(path);
                 if opt_child.is_none() {
-                    parent.create_paths(&paths[path_index..]);
+                    self.create_paths(parent, &paths[path_index..]);
                     return;
                 } else {
                     child = opt_child.expect("node");
@@ -104,8 +85,7 @@ impl<'a> FSNode<'a> {
         }
     }
 
-    fn create_paths(&'a self, paths: &'a [SynPath]) {
-        let mut parent = self;
+    fn create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath]) {
         let mut child: &FSNode;
         for path in paths {
             if path.value.is_empty {
@@ -117,22 +97,60 @@ impl<'a> FSNode<'a> {
             };
             let logic_node = path.value.in_var_range;
             if logic_node {
-                child = parent.intern_lchild(path, child_node);
+                child = self.intern_lchild(parent, path, child_node);
             } else {
-                child = parent.intern_child(path, child_node);
+                child = self.intern_child(parent, path, child_node);
             };
             if path.value.in_var_range && !path.value.is_leaf {
                 let new_paths = path.paths_after(&paths, true);
-                child.create_paths(new_paths);
+                self.create_paths(child,new_paths);
                 continue;
             }
             parent = child;
+        }
+    }
+    pub fn intern_child(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>) -> &'a FSNode<'a> {
+        let mut children = parent.children.borrow_mut();
+        let path_ref = self.paths.alloc(path.clone());
+        let child_ref = self.nodes.alloc(child);
+        children.insert(path_ref, child_ref);
+        *children.get(path).unwrap()
+    }
+    pub fn intern_lchild(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>) -> &'a FSNode<'a> {
+        let mut children = parent.lchildren.borrow_mut();
+        let path_ref = self.paths.alloc(path.clone());
+        let child_ref = self.nodes.alloc(child);
+        children.insert(path_ref, child_ref);
+        *children.get(path).unwrap()
+    }
+}
+
+impl<'a> FSNode<'a> {
+    pub fn new() -> FSNode<'a> {
+        FSNode { 
+            children: RefCell::new(HashMap::new()),
+            lchildren: RefCell::new(HashMap::new()),
+        }
+    }
+    pub fn get_child(&'a self, path: &'a SynPath) -> Option<&'a Self> {
+        let children = self.children.borrow();
+        match children.get(path) {
+            None => None,
+            Some(child_ref) => Some(*child_ref)
+        }
+    }
+    pub fn get_lchild(&'a self, path: &'a SynPath) -> Option<&'a Self> {
+        let children = self.lchildren.borrow();
+        match children.get(path) {
+            None => None,
+            Some(child_ref) => Some(*child_ref)
         }
     }
     pub fn query_paths(&'a self,
                    mut all_paths: &'a [SynPath],
                    matching: SynMatching<'a>,
                    mut resp: Vec<SynMatching<'a>>,
+                   arena: &'a Arena<SynPath<'a>>
                    ) -> Vec<SynMatching<'a>> {
 
         let mut finished = false;
@@ -155,40 +173,38 @@ impl<'a> FSNode<'a> {
 
         }
         if next_path.is_some(){
-            let mut subs_path: Option<SynPath> = None;
+            let mut subs_path: Option<&SynPath> = None;
             let path = next_path.unwrap();
             let paths = next_paths.unwrap();
             if path.value.is_var {
                 if !matching.contains_key(&path.value) {
-                    let lchildren = self.get_lchildren();
-                    for (lchild_path, lchild_node) in lchildren.iter()  {
+                    for (lchild_path, lchild_node) in self.lchildren.borrow().iter()  {
                         let mut new_matching = matching.clone();
                         new_matching.insert(path.value, lchild_path.value);
-                        resp = lchild_node.query_paths(paths, new_matching, resp);
+                        resp = lchild_node.query_paths(paths, new_matching, resp, arena);
                     }
                     return resp;
                 } else {
                     let (new_path, _) = path.substitute_owning(matching.clone());
-                    subs_path = Some(new_path);
+                    let new_path_ref = arena.alloc(new_path);
+                    subs_path = Some(new_path_ref);
                 }
             }
             let next: Option<&FSNode>;
-            let new_path: SynPath;
+            let new_path: &SynPath;
             if subs_path.is_some() {
                 new_path = subs_path.unwrap();
             } else {
-                new_path = path.clone();
+                new_path = path;
             }
             if new_path.value.in_var_range {
-                let parent_lchildren = self.get_lchildren();
-                next = parent_lchildren.get(&new_path);
+                next = self.get_lchild(new_path);
             } else {
-                let parent_children = self.get_children();
-                next = parent_children.get(&new_path);
+                next = self.get_child(new_path);
             }
             if next.is_some() {
                 let next_node = next.unwrap();
-                resp = next_node.query_paths(paths, matching, resp);
+                resp = next_node.query_paths(paths, matching, resp, arena);
             }
         } else {
             resp.push(matching);

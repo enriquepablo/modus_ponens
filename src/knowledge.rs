@@ -1,10 +1,10 @@
-use std::collections::{ VecDeque, HashMap };
+use std::collections::{ VecDeque };
 use std::cell::RefCell;
 
 use crate::matching::{ SynMatching, get_real_matching_owning };
 use crate::fact::Fact;
-use crate::factset::FactSet;
-use crate::ruletree::{ Rule, RSNode, RuleSet, RuleRef, new_response };
+use crate::facttree::FactSet;
+use crate::ruletree::{ Rule, RuleSet, RuleRef };
 use crate::parser::{ Grammar, ParseResult };
 
 

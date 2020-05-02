@@ -11,7 +11,7 @@ mod path;
 mod fact;
 mod parser;
 mod facttree;
-mod factset;
+//mod factset;
 mod ruletree;
 mod knowledge;
 mod lexicon;
