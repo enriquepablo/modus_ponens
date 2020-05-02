@@ -96,7 +96,7 @@ impl<'a> RuleSet<'a> {
             }
             if new_path.value.is_var {
                 child = parent.get_vchild(new_path);
-                if child.is_none() && self.var_child.borrow().node.is_some() {
+                if child.is_none() && self.var_child.into_inner().is_some() {
                     let var_child = self.get_var_child().unwrap();
                     if &var_child.path == new_path {
                         visited_vars.push(new_path.value);
