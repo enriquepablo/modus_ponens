@@ -80,8 +80,8 @@ impl<'a> SynPath<'a> {
     }
 
     pub fn substitute(&'a self, matching: &'a SynMatching) -> (SynPath, Option<SynPath>) {
-        let mut new_segments = vec![];
-        let mut old_segments = vec![];
+        let mut new_segments = Vec::with_capacity(self.segments.len());
+        let mut old_segments = Vec::with_capacity(self.segments.len());
         let mut is_new = false;
         for segment in self.segments.iter() {
             let new_segment = get_or_key(&matching, &segment);
@@ -102,8 +102,8 @@ impl<'a> SynPath<'a> {
     }
 
     pub fn substitute_owning(&'a self, matching: SynMatching<'a>) -> (SynPath, Option<SynPath>) {
-        let mut new_segments = vec![];
-        let mut old_segments = vec![];
+        let mut new_segments = Vec::with_capacity(self.segments.len());
+        let mut old_segments = Vec::with_capacity(self.segments.len());
         let mut is_new = false;
         for segment in self.segments.iter() {
             let new_segment = get_or_key_owning(matching.clone(), &segment);
