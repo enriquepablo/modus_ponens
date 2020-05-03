@@ -110,16 +110,10 @@ impl<'a> FactSet<'a> {
         }
     }
     pub fn intern_child(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>) -> &'a FSNode<'a> {
-        let mut children = parent.children.borrow_mut();
-        let child_ref = self.nodes.alloc(child);
-        children.insert(path, child_ref);
-        *children.get(path).unwrap()
+        parent.children.borrow_mut().entry(path).or_insert(self.nodes.alloc(child))
     }
     pub fn intern_lchild(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>) -> &'a FSNode<'a> {
-        let mut children = parent.lchildren.borrow_mut();
-        let child_ref = self.nodes.alloc(child);
-        children.insert(path, child_ref);
-        *children.get(path).unwrap()
+        parent.lchildren.borrow_mut().entry(path).or_insert(self.nodes.alloc(child))
     }
 }
 
