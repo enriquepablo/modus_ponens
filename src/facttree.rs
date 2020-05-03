@@ -9,6 +9,25 @@ use crate::fact::Fact;
 use crate::path::SynPath;
 use crate::matching::SynMatching;
 
+
+pub struct CarryOver<'a>(HashMap<&'a SynPath<'a>, Vec<&'a FSNode<'a>>>);
+
+impl<'a> CarryOver<'a> {
+    pub fn add (mut self, path: &'a SynPath, node: &'a FSNode<'a>) -> Self {
+        if !self.0.contains_key(path) {
+            self.0.insert(path, vec![]);
+        }
+        let (new_path, mut nodes) = self.0.remove_entry(path).unwrap();
+        nodes.push(node);
+        self.0.insert(new_path, nodes);
+        self
+    }
+    pub fn nodes (mut self, path: &'a SynPath) -> (Self, Option<Vec<&'a FSNode<'a>>>) {
+        let entry_opt = self.0.remove(path);
+        (self, entry_opt)
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct FSNode<'a> {
     children: RefCell<HashMap<&'a SynPath<'a>, &'a FSNode<'a>>>,  // XXX try putting keys and vals in boxes
@@ -32,7 +51,8 @@ impl<'a> FactSet<'a> {
     }
     pub fn add_fact (&'a self, fact: &'a Fact<'a>) {
         let paths = fact.paths.as_slice();
-        self.follow_and_create_paths(&self.root, paths, 1);
+        let carry = CarryOver(HashMap::new());
+        self.follow_and_create_paths(&self.root, paths, 1, carry);
     }
     pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching<'a>> {
         let response: Vec<SynMatching<'a>> = vec![];
@@ -43,7 +63,7 @@ impl<'a> FactSet<'a> {
     pub fn ask_fact_bool (&'a self, fact: &'a Fact) -> bool {
         self.ask_fact(fact).len() > 0
     }
-    pub fn follow_and_create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath], mut depth: usize) {
+    pub fn follow_and_create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath], mut depth: usize, mut carry: CarryOver<'a>) -> CarryOver<'a> {
         let mut child: &FSNode;
         for (path_index, path) in paths.iter().enumerate() {
             if path.value.is_empty {
@@ -56,38 +76,47 @@ impl<'a> FactSet<'a> {
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
                     if !path.value.is_leaf {
-                        self.follow_and_create_paths(child, new_paths, depth);
+                        carry = self.follow_and_create_paths(child, new_paths, depth, carry);
                         continue;
                     }
                 } else if path.value.is_leaf {
-                    self.create_paths(parent, &paths[path_index..], depth);
-                    return;
+                    carry = self.create_paths(parent, &paths[path_index..], depth, carry);
+                    return carry;
                 } else {
                     let child_node = FSNode::new(depth);
                     if path.value.in_var_range {
-                        child = self.intern_lchild(parent, path, child_node);
+                        let (new_child, new_carry) = self.intern_lchild(parent, path, child_node, carry);
+                        child = new_child;
+                        carry = new_carry;
+
                     } else {
-                        child = self.intern_child(parent, path, child_node);
+                        let (new_child, new_carry) = self.intern_child(parent, path, child_node, carry);
+                        child = new_child;
+                        carry = new_carry;
                     };
-                    let renew_paths = path.paths_after(&new_paths);
-                    self.create_paths(child, &renew_paths, depth);
-                    self.create_paths(parent, &new_paths, depth);
+                    let paths_after = path.paths_after(&new_paths);
+                    if paths_after.len() > 0 {
+                        let renew_path = &paths_after[0];
+                        carry = carry.add(renew_path, child);
+                    }
+                    carry = self.create_paths(parent, new_paths, depth, carry);
                     continue;
                 }
             } else {
                 let opt_child = parent.get_child(path);
                 if opt_child.is_none() {
-                    self.create_paths(parent, &paths[path_index..], depth);
-                    return;
+                    carry = self.create_paths(parent, &paths[path_index..], depth, carry);
+                    return carry;
                 } else {
                     child = opt_child.expect("node");
                 }
             }
             parent = child;
         }
+        carry
     }
 
-    fn create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath], mut depth: usize) {
+    fn create_paths(&'a self, mut parent: &'a FSNode<'a>, paths: &'a [SynPath], mut depth: usize, mut carry: CarryOver<'a>) -> CarryOver<'a> {
         let mut child: &FSNode;
         for path in paths {
             if path.value.is_empty {
@@ -97,23 +126,45 @@ impl<'a> FactSet<'a> {
             let child_node = FSNode::new(depth);
             let logic_node = path.value.in_var_range;
             if logic_node {
-                child = self.intern_lchild(parent, path, child_node);
+                let (new_child, new_carry) = self.intern_lchild(parent, path, child_node, carry);
+                child = new_child;
+                carry = new_carry;
             } else {
-                child = self.intern_child(parent, path, child_node);
+                let (new_child, new_carry) = self.intern_child(parent, path, child_node, carry);
+                child = new_child;
+                carry = new_carry;
             };
-            if path.value.in_var_range && !path.value.is_leaf {
-                let new_paths = path.paths_after(&paths);
-                self.create_paths(child,new_paths, depth);
+            let paths_after = path.paths_after(&paths);
+            if path.value.in_var_range && !path.value.is_leaf && paths_after.len() > 0 {
+                let new_path = &paths_after[0];
+                carry = carry.add(new_path, child);
                 continue;
             }
             parent = child;
         }
+        carry
     }
-    pub fn intern_child(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>) -> &'a FSNode<'a> {
-        parent.children.borrow_mut().entry(path).or_insert(self.nodes.alloc(child))
+    pub fn intern_child(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>, mut carry: CarryOver<'a>) -> (&'a FSNode<'a>, CarryOver<'a>) {
+        let child_ref = self.nodes.alloc(child);
+        let (new_carry, more) = carry.nodes(path);
+        carry = new_carry;
+        if more.is_some() {
+            for node in more.unwrap() {
+                node.children.borrow_mut().insert(path, child_ref);
+            }
+        }
+        (parent.children.borrow_mut().entry(path).or_insert(child_ref), carry)
     }
-    pub fn intern_lchild(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>) -> &'a FSNode<'a> {
-        parent.lchildren.borrow_mut().entry(path).or_insert(self.nodes.alloc(child))
+    pub fn intern_lchild(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>, mut carry: CarryOver<'a>) -> (&'a FSNode<'a>, CarryOver<'a>) {
+        let child_ref = self.nodes.alloc(child);
+        let (new_carry, more) = carry.nodes(path);
+        carry = new_carry;
+        if more.is_some() {
+            for node in more.unwrap() {
+                node.lchildren.borrow_mut().insert(path, child_ref);
+            }
+        }
+        (parent.lchildren.borrow_mut().entry(path).or_insert(child_ref), carry)
     }
 }
 
