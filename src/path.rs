@@ -124,8 +124,8 @@ impl<'a> SynPath<'a> {
     }
 
     pub fn substitute_paths(paths: &'a [SynPath], matching: &'a SynMatching) -> Vec<SynPath<'a>> {
-        let mut new_paths: Vec<SynPath> = vec![];
-        let mut old_paths: Vec<SynPath> = vec![];
+        let mut new_paths: Vec<SynPath> = Vec::with_capacity(paths.len());
+        let mut old_paths: Vec<SynPath> = Vec::with_capacity(paths.len());
         for path in paths {
             let mut seen = false;
             for opath in old_paths.iter() {
@@ -148,8 +148,8 @@ impl<'a> SynPath<'a> {
     }
 
     pub fn substitute_paths_owning(paths: &'a [SynPath], matching: SynMatching<'a>) -> Vec<SynPath<'a>> {
-        let mut new_paths: Vec<SynPath> = vec![];
-        let mut old_paths: Vec<SynPath> = vec![];
+        let mut new_paths: Vec<SynPath> = Vec::with_capacity(paths.len());
+        let mut old_paths: Vec<SynPath> = Vec::with_capacity(paths.len());
         for path in paths {
             let mut seen = false;
             for opath in old_paths.iter() {
