@@ -59,22 +59,16 @@ impl<'a> FLexicon<'a> {
                         .join("");
 
         let stext = Box::leak(text.into_boxed_str());
-        let fact = Box::new(Fact::new(stext, paths));
 
-        let interned = set.get_or_insert(fact).as_ref();
+        let interned = set.get_or_insert(Box::new(Fact::new(stext, paths))).as_ref();
 
         unsafe { mem::transmute(interned) }
     }
     pub fn from_paths_and_string(&'a self, text: &'a str, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
         let mut set = self.0.borrow_mut();
         
-        let fact = Box::new(Fact::new(text, paths));
+        let interned = set.get_or_insert(Box::new(Fact::new(text, paths))).as_ref();
 
-        let interned = set.get_or_insert(fact).as_ref();
-
-        // TODO: Document the pre- and post-conditions that the code must
-        // uphold to make this unsafe code valid instead of copying this
-        // from Stack Overflow without reading it
         unsafe { mem::transmute(interned) }
     }
 }

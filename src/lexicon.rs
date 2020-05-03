@@ -14,11 +14,9 @@ impl Lexicon {
 
     pub fn intern(&self, name: &str, text: &str, is_leaf: bool) -> &SynSegment {
         let mut set = self.0.borrow_mut();
-        let value = SynSegment::new(name.to_string(), text.to_string(), is_leaf);
+        let interned = set.get_or_insert(Box::new(SynSegment::new(name.to_string(), text.to_string(), is_leaf)));
 
-        let interned = set.get_or_insert(Box::new(value));
-        let sref = interned.as_ref();
-        unsafe { mem::transmute(sref) }
+        unsafe { mem::transmute(interned.as_ref()) }
     }
 
     pub fn make_var(&self, n: usize) -> &SynSegment {
