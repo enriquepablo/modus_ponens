@@ -10,19 +10,14 @@ use crate::path::SynPath;
 use crate::matching::SynMatching;
 
 
-pub struct CarryOver<'a>(HashMap<&'a SynPath<'a>, Vec<&'a FSNode<'a>>>);
+pub struct CarryOver<'a>(HashMap<&'a str, &'a FSNode<'a>>);
 
 impl<'a> CarryOver<'a> {
-    pub fn add (mut self, path: &'a SynPath, node: &'a FSNode<'a>) -> Self {
-        if !self.0.contains_key(path) {
-            self.0.insert(path, vec![]);
-        }
-        let (new_path, mut nodes) = self.0.remove_entry(path).unwrap();
-        nodes.push(node);
-        self.0.insert(new_path, nodes);
+    pub fn add (mut self, path: &'a str, node: &'a FSNode<'a>) -> Self {
+        self.0.insert(path, node);
         self
     }
-    pub fn nodes (mut self, path: &'a SynPath) -> (Self, Option<Vec<&'a FSNode<'a>>>) {
+    pub fn node (mut self, path: &'a str) -> (Self, Option<&'a FSNode<'a>>) {
         let entry_opt = self.0.remove(path);
         (self, entry_opt)
     }
@@ -97,7 +92,7 @@ impl<'a> FactSet<'a> {
                     let paths_after = path.paths_after(&new_paths);
                     if paths_after.len() > 0 {
                         let renew_path = &paths_after[0];
-                        carry = carry.add(renew_path, child);
+                        carry = carry.add(renew_path.full_ident(), child);
                     }
                     carry = self.create_paths(parent, new_paths, depth, carry);
                     continue;
@@ -135,9 +130,11 @@ impl<'a> FactSet<'a> {
                 carry = new_carry;
             };
             let paths_after = path.paths_after(&paths);
-            if path.value.in_var_range && !path.value.is_leaf && paths_after.len() > 0 {
-                let new_path = &paths_after[0];
-                carry = carry.add(new_path, child);
+            if path.value.in_var_range && !path.value.is_leaf {
+                if  paths_after.len() > 0 {
+                    let new_path = &paths_after[0];
+                    carry = carry.add(new_path.full_ident(), child);
+                }
                 continue;
             }
             parent = child;
@@ -146,25 +143,23 @@ impl<'a> FactSet<'a> {
     }
     pub fn intern_child(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>, mut carry: CarryOver<'a>) -> (&'a FSNode<'a>, CarryOver<'a>) {
         let child_ref = self.nodes.alloc(child);
-        let (new_carry, more) = carry.nodes(path);
+        let (new_carry, more) = carry.node(path.full_ident());
         carry = new_carry;
         if more.is_some() {
-            for node in more.unwrap() {
-                node.children.borrow_mut().insert(path, child_ref);
-            }
+            more.unwrap().children.borrow_mut().insert(path, child_ref);
         }
-        (parent.children.borrow_mut().entry(path).or_insert(child_ref), carry)
+        parent.children.borrow_mut().insert(path, child_ref);
+        (child_ref, carry)
     }
     pub fn intern_lchild(&'a self, parent: &'a FSNode<'a>, path: &'a SynPath<'a>, child: FSNode<'a>, mut carry: CarryOver<'a>) -> (&'a FSNode<'a>, CarryOver<'a>) {
         let child_ref = self.nodes.alloc(child);
-        let (new_carry, more) = carry.nodes(path);
+        let (new_carry, more) = carry.node(path.full_ident());
         carry = new_carry;
         if more.is_some() {
-            for node in more.unwrap() {
-                node.lchildren.borrow_mut().insert(path, child_ref);
-            }
+            more.unwrap().lchildren.borrow_mut().insert(path, child_ref);
         }
-        (parent.lchildren.borrow_mut().entry(path).or_insert(child_ref), carry)
+        parent.lchildren.borrow_mut().insert(path, child_ref);
+        (child_ref, carry)
     }
 }
 

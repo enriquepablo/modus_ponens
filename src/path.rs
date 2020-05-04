@@ -9,6 +9,7 @@ pub struct SynPath<'a> {
     pub value: &'a SynSegment,
     pub segments: Vec<&'a SynSegment>,
     identity: String,
+    full_identity: String,
 }
 
 impl<'a> SynPath<'a> {
@@ -16,13 +17,16 @@ impl<'a> SynPath<'a> {
         let len = segments.len();
         let mut identity = String::new();
         let mut new_segments = Vec::with_capacity(len);
+        let mut full_identity = String::with_capacity(len * 5);
         for segment in segments {
             identity.push_str(&segment.name);
+            full_identity.push_str(&segment.name);
+            full_identity.push_str(&segment.text);
             new_segments.push(segment);
         }
         let value = *new_segments.last().expect("no empty paths");
         identity.push_str(&value.text);
-        SynPath { value, segments: new_segments, identity, }
+        SynPath { value, segments: new_segments, identity, full_identity }
     }
     pub fn len(&self) -> usize {
         self.segments.len()
@@ -77,6 +81,9 @@ impl<'a> SynPath<'a> {
             i += 1;
         }
         &paths[i as usize..]
+    }
+    pub fn full_ident(&'a self) -> &'a str {
+        self.full_identity.as_str()
     }
 
     pub fn substitute(&'a self, matching: &'a SynMatching) -> (SynPath, Option<SynPath>) {
