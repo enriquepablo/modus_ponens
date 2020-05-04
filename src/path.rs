@@ -45,25 +45,34 @@ impl<'a> SynPath<'a> {
         let segments = &self.segments[0..lpath];
         (segments, segments.last().expect("no empty paths"))
     }
+
     pub fn paths_after(&'a self, paths: &'a [SynPath]) -> &'a [SynPath] {
         let mut seen = false;
-        let mut i: u16 = 0;
+        let mut path_starts_with_self: bool;
+        let mut i = 0;
+        let mut after = 0;
+        let self_len = self.len();
         for path in paths {
             if path.value.is_empty {
                 i += 1;
                 continue;
             }
-            if path.starts_with(&self) {
-                if !seen {
-                    seen = true;
-                }
-            } else if seen {
+            path_starts_with_self = path.starts_with(&self);
+            if path_starts_with_self {
+                after = i;
+            }
+            if !seen && path_starts_with_self {
+                seen = true;
+            } else if seen && (!path_starts_with_self || path.len() == self_len) {
+                after = i;
                 break;
             }
             i += 1;
         }
-        &paths[i as usize..]
+        &paths[after..]
     }
+
+
     pub fn paths_after_slice(path_slice: &'a [&'a SynSegment], paths: &'a [SynPath<'a>]) -> &'a [SynPath<'a>] {
         let mut i: u16 = 0;
         for path in paths {
