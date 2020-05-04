@@ -186,7 +186,7 @@ impl<'a> KnowledgeBase<'a> {
                     fact: &'a Fact<'a>,
                     query_rules: bool) {
         
-        println!("ADDING FACT: {}", fact);
+        //println!("ADDING FACT: {}", fact);
         let paths = fact.paths.as_slice();
         let response = self.rules.query_paths(paths);
         for (rule_refs, matching) in response {

@@ -71,14 +71,11 @@ impl<'a> FactSet<'a> {
             depth += 1;
             if path.value.in_var_range {
                 let opt_child = parent.get_lchild(path);
-                let new_paths = path.paths_after(paths);
-                let reindex = paths.len() - new_paths.len();
+                let reindex = path.paths_after(paths);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
                     if !path.value.is_leaf {
-                        if new_paths.len() > 0 {
-                            carry = carry.add(reindex, child);
-                        }
+                        carry = carry.add(reindex, child);
                         continue;
                     }
                 } else if path.value.is_leaf {
@@ -90,9 +87,7 @@ impl<'a> FactSet<'a> {
                     child = new_child;
                     carry = new_carry;
 
-                    if new_paths.len() > 0 {
-                        carry = carry.add(reindex, child);
-                    }
+                    carry = carry.add(reindex, child);
                     continue;
                 }
             } else {
@@ -132,12 +127,9 @@ impl<'a> FactSet<'a> {
                 child = new_child;
                 carry = new_carry;
             };
-            let paths_after = path.paths_after(&paths);
-            let reindex = offset + paths.len() - paths_after.len();
+            let reindex = path.paths_after(&paths);
             if path.value.in_var_range && !path.value.is_leaf {
-                if  paths_after.len() > 0 {
-                    carry = carry.add(reindex, child);
-                }
+                carry = carry.add(reindex, child);
                 continue;
             }
             parent = child;

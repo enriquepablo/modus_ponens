@@ -47,7 +47,7 @@ impl<'a> SynPath<'a> {
     }
 
     // XXX a little love
-    pub fn paths_after(&'a self, paths: &'a [SynPath]) -> &'a [SynPath] {
+    pub fn paths_after(&'a self, paths: &'a [SynPath]) -> usize {
         let mut seen = false;
         let mut path_starts_with_self: bool;
         let mut i = 0;
@@ -69,7 +69,7 @@ impl<'a> SynPath<'a> {
             }
             i += 1;
         }
-        &paths[after..]
+        after
     }
 
 
