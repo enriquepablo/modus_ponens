@@ -8,64 +8,43 @@ use crate::ruletree::{ Rule, RuleSet, RuleRef };
 use crate::parser::{ Grammar, ParseResult };
 
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum ActType {
-    Rule,
-    Fact,
-    Match,
-}
-
 #[derive(Debug)]
-pub struct Activation<'a> {
-    atype: ActType,
-    rule: Option<Rule<'a>>,
-    fact: Option<&'a Fact<'a>>,
-    matched: Option<SynMatching<'a>>,
-    query_rules: bool,
+pub enum Activation<'a> {
+    Rule {
+        rule: Rule<'a>,
+        query_rules: bool,
+    },
+    Fact {
+        fact: &'a Fact<'a>,
+        query_rules: bool,
+    },
+    Match {
+        rule: Rule<'a>,
+        matched: SynMatching<'a>,
+        query_rules: bool,
+    },
 }
 
 impl<'a> Activation<'a> {
 
     pub fn from_fact(fact: &'a Fact, query_rules: bool) -> Activation<'a> {
-        Activation {
-            atype: ActType::Fact,
-            rule: None,
-            fact: Some(fact),
-            matched: None,
+        Activation::Fact {
+            fact: fact,
             query_rules,
         }
     }
     pub fn from_rule(rule: Rule, query_rules: bool) -> Activation {
-        Activation {
-            atype: ActType::Rule,
-            rule: Some(rule),
-            fact: None,
-            matched: None,
+        Activation::Rule {
+            rule: rule,
             query_rules,
         }
     }
     pub fn from_matching(rule: Rule<'a>, matched: SynMatching<'a>, query_rules: bool) -> Activation<'a> {
-        Activation {
-            atype: ActType::Match,
-            rule: Some(rule),
-            fact: None,
-            matched: Some(matched),
+        Activation::Match {
+            rule: rule,
+            matched: matched,
             query_rules,
         }
-    }
-}
-
-pub struct KStat {
-    pub rules: usize,
-    pub rules_known: usize,
-    pub facts: usize,
-    pub facts_known: usize,
-}
-
-impl KStat {
-
-    pub fn new () -> KStat {
-        KStat {rules: 0, rules_known: 0, facts: 0, facts_known: 0}
     }
 }
 
@@ -117,28 +96,24 @@ impl<'a> KnowledgeBase<'a> {
         while !self.queue.borrow().is_empty() {
             let next = self.queue.borrow_mut().pop_front().unwrap();
             match next {
-                Activation {
-                    atype: ActType::Fact,
-                    fact: Some(fact),
-                    query_rules, ..
+                Activation::Fact {
+                    fact,
+                    query_rules,
                 } => {
                     self.process_fact(fact, query_rules);
                 },
-                Activation {
-                    atype: ActType::Rule,
-                    rule: Some(rule), ..
+                Activation::Rule {
+                    rule, ..
                 } => {
                     self.process_rule(rule);
                 },
-                Activation {
-                    atype: ActType::Match,
-                    rule: Some(rule),
-                    matched: Some(matched),
+                Activation::Match {
+                    rule,
+                    matched,
                     query_rules, ..
                 } => {
                     self.process_match(rule, &matched, query_rules);
-                },
-                _ => {}
+                }
             }
         }
     }

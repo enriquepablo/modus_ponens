@@ -13,16 +13,13 @@ pub struct SynPath<'a> {
 
 impl<'a> SynPath<'a> {
     pub fn new(segments: Vec<&'a SynSegment>) -> SynPath {
-        let len = segments.len();
-        let mut identity = String::new();
-        let mut new_segments = Vec::with_capacity(len);
-        for segment in segments {
-            identity.push_str(&segment.name);
-            new_segments.push(segment);
-        }
-        let value = *new_segments.last().expect("no empty paths");
+        let value = *segments.last().expect("no empty paths");
+        let mut identity = segments.iter()
+                                           .map(|segment| &*segment.name)
+                                           .collect::<Vec<&str>>()
+                                           .concat();
         identity.push_str(&value.text);
-        SynPath { value, segments: new_segments, identity }
+        SynPath { value, segments, identity }
     }
     pub fn len(&self) -> usize {
         self.segments.len()

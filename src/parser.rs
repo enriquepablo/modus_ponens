@@ -22,14 +22,6 @@ pub struct ParseResult<'a> {
     pub rules: Vec<SynRule<'a>>,
 }
 
-#[derive(Debug)]
-struct FactBuilder<'a> {
-    parse_tree: Pair<'a, Rule>,
-    root_segments: Vec<&'a SynSegment>,
-    all_paths: Box<Vec<SynPath<'a>>>,
-    index: usize,
-}
-
 pub struct Grammar<'a> {
     pub lexicon: Box<Lexicon>,
     pub flexicon: Box<FLexicon<'a>>,
@@ -106,31 +98,30 @@ impl<'a> Grammar<'a> {
     }
     
     pub fn build_fact(&'a self, parse_tree: Pair<'a, Rule>) -> &'a Fact<'a> {
-        let all_paths = Box::new(vec![]);
-        let builder = FactBuilder {
-            parse_tree,
-            root_segments: vec![],
-            all_paths,
-            index: 0,
-        };
-        let all_paths = self.visit_parse_node(builder);
-
+        let all_paths = self.visit_parse_node(parse_tree,
+                                                                 vec![],
+                                                                 Box::new(vec![]),
+                                                                 0);
         self.flexicon.from_paths(*all_paths)
     }
 
-    fn visit_parse_node(&'a self, builder: FactBuilder<'a>) -> Box<Vec<SynPath>> {
-        let FactBuilder {
-            parse_tree, root_segments,
-            mut all_paths, index,
-        } = builder;
+    fn visit_parse_node(&'a self,
+                        parse_tree: Pair<'a, Rule>,
+                        root_segments: Vec<&'a SynSegment>,
+                        mut all_paths: Box<Vec<SynPath<'a>>>,
+                        index: usize,
+                    ) -> Box<Vec<SynPath>> {
+        let span = parse_tree.as_span();
         let rule = parse_tree.as_rule();
         let name = format!("{:?}", rule);
-        let mut text = String::from(parse_tree.as_str());
         let can_be_var = name.starts_with(constants::VAR_RANGE_PREFIX);
         let children: Vec<_> = parse_tree.into_inner().collect();
         let is_leaf = children.len() == 0;
-        if !can_be_var && !is_leaf {
-            text = format!("{:?}", index);
+        let text;
+        if can_be_var || is_leaf {
+            text = String::from(span.as_str());
+        } else {
+            text = format!("{}", index);
         }
         let segment = self.lexicon.intern(&name, &text, is_leaf);
         let mut new_root_segments = root_segments.to_vec();
@@ -142,13 +133,11 @@ impl<'a> Grammar<'a> {
         }
         let mut new_index = 0;
         for child in children {
-            let builder = FactBuilder {
-                parse_tree: child,
-                root_segments: new_root_segments.clone(),
-                all_paths, index: new_index,
-            };
+            all_paths = self.visit_parse_node(child,
+                                              new_root_segments.clone(),
+                                              all_paths,
+                                              new_index);
             new_index += 1;
-            all_paths = self.visit_parse_node(builder);
         }
         all_paths
     }
@@ -164,14 +153,10 @@ impl<'a> Grammar<'a> {
         
         let parse_tree = SynParser::parse(Rule::fact, stext).ok().unwrap().next().unwrap();
         let all_paths = Box::new(Vec::with_capacity(fact.paths.len()));
-        let builder = FactBuilder {
-            parse_tree,
-            root_segments: vec![],
-            all_paths,
-            index: 0,
-        };
-        let all_paths = self.visit_parse_node(builder);
-
+        let all_paths = self.visit_parse_node(parse_tree,
+                                                                 vec![],
+                                                                 all_paths,
+                                                                 0);
         self.flexicon.from_paths_and_string(stext, *all_paths)
     }
     pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: SynMatching<'a>) -> &'a Fact<'a> {
