@@ -43,12 +43,10 @@ impl<'a> SynPath<'a> {
         (segments, segments.last().expect("no empty paths"))
     }
 
-    // XXX a little love
     pub fn paths_after(&'a self, paths: &'a [SynPath]) -> usize {
         let mut seen = false;
         let mut path_starts_with_self: bool;
         let mut i = 0;
-        let mut after = 0;
         for path in paths {
             if path.value.is_empty {
                 i += 1;
@@ -56,17 +54,13 @@ impl<'a> SynPath<'a> {
             }
             path_starts_with_self = path.starts_with(&self);
             if path_starts_with_self {
-                after = i;
-                if !seen {
-                    seen = true;
-                }
+                seen = true;
             } else if seen {
-                after = i;
                 break;
             }
             i += 1;
         }
-        after
+        i as usize
     }
 
 
@@ -99,6 +93,8 @@ impl<'a> SynPath<'a> {
             }
         }
         if is_new {
+            new_segments.shrink_to_fit();
+            old_segments.shrink_to_fit();
             let new_path = SynPath::new(new_segments);
             let old_path = SynPath::new(old_segments);
             (new_path, Some(old_path))
@@ -121,6 +117,8 @@ impl<'a> SynPath<'a> {
             }
         }
         if is_new {
+            new_segments.shrink_to_fit();
+            old_segments.shrink_to_fit();
             let new_path = SynPath::new(new_segments);
             let old_path = SynPath::new(old_segments);
             (new_path, Some(old_path))
@@ -135,7 +133,7 @@ impl<'a> SynPath<'a> {
         for path in paths {
             let mut seen = false;
             for opath in old_paths.iter() {
-                if path.starts_with(opath) && path.len() != opath.len() {
+                if path.len() > opath.len() && path.starts_with(opath) {
                     seen = true;
                     break;
                 }
@@ -150,6 +148,7 @@ impl<'a> SynPath<'a> {
                 }
             }
         }
+        new_paths.shrink_to_fit();
         new_paths
     }
 
@@ -174,6 +173,7 @@ impl<'a> SynPath<'a> {
                 }
             }
         }
+        new_paths.shrink_to_fit();
         new_paths
     }
 }

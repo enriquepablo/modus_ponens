@@ -117,18 +117,18 @@ impl<'a> KnowledgeBase<'a> {
             }
         }
     }
-    fn process_rule(&'a self, mut rule: Rule<'a>) {
+    fn process_rule(&'a self, rule: Rule<'a>) {
         
         //println!("ADDING RULE {}", rule);
-        let n_ants = rule.antecedents.len();
+        let Rule {
+            antecedents,
+            more_antecedents,
+            consequents
+        } = rule;
+        let n_ants = antecedents.len();
         for n in 0..n_ants {
             let mut new_ants = vec![];
             let mut new_ant: Option<&Fact> = None;
-            let Rule {
-                antecedents,
-                more_antecedents,
-                consequents
-            } = rule;
             for (i, ant) in antecedents.iter().enumerate() {
                 if n == i {
                     new_ant = Some(*ant);
@@ -150,12 +150,12 @@ impl<'a> KnowledgeBase<'a> {
             };
             let normal_leaf_paths = normal_ant.paths.as_slice();
             self.rules.follow_and_create_paths(normal_leaf_paths, rule_ref, 1);
-            rule = Rule {
-                antecedents,
-                more_antecedents,
-                consequents
-            };
         }
+        Rule {
+            antecedents,
+            more_antecedents,
+            consequents
+        };
     }
     fn process_fact(&'a self,
                     fact: &'a Fact<'a>,
