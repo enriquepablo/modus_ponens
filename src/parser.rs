@@ -10,7 +10,7 @@ use crate::lexicon::Lexicon;
 use crate::path::SynPath;
 use crate::fact::{ Fact, FLexicon };
 use crate::ruletree::Rule as SynRule;
-use crate::matching::{ SynMatching, invert_owning };
+use crate::matching::{ SynMatching };
 
 
 #[derive(Parser)]
@@ -165,6 +165,7 @@ impl<'a> Grammar<'a> {
     }
     pub fn normalize_fact (&'a self, fact: &'a Fact<'a>) -> (SynMatching<'a>, &'a Fact<'a>) {
         let mut varmap: SynMatching<'a> = HashMap::new();
+        let mut invarmap: SynMatching<'a> = HashMap::new();
         let mut counter = 1;
         let leaves = fact.paths.as_slice();
         for path in leaves {
@@ -177,10 +178,10 @@ impl<'a> Grammar<'a> {
                     let new_var = self.lexicon.make_var(counter);
                     counter += 1;
                     varmap.insert(path.value, new_var);
+                    invarmap.insert(new_var, path.value);
                 }
             }
         }
-        let invarmap = invert_owning(varmap.clone());
         let new_fact = self.substitute_fact_fast(fact, varmap);
         (invarmap, new_fact)
     }

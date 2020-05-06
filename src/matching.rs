@@ -12,15 +12,6 @@ pub fn invert<'a>(matching: &'a SynMatching) -> SynMatching<'a> {
     inverted
 }
 
-pub fn invert_owning<'a>(matching: SynMatching<'a>) -> SynMatching<'a> {
-    let mut inverted: SynMatching = HashMap::with_capacity(matching.capacity());
-    for (key, value) in matching {
-        inverted.insert(value, key);
-    }
-    inverted
-}
-
-
 pub fn get_or_key<'a>(matching: &'a SynMatching, key: &'a SynSegment) -> &'a SynSegment {
     match matching.get(key) {
         Some(matched) => {
