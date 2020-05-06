@@ -158,7 +158,7 @@ impl<'a> SynPath<'a> {
         for path in paths {
             let mut seen = false;
             for opath in old_paths.iter() {
-                if path.starts_with(opath) && path.len() != opath.len() {
+                if path.len() > opath.len() && path.starts_with(opath) {
                     seen = true;
                     break;
                 }
