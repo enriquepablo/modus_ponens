@@ -13,15 +13,13 @@ use crate::ruletree::Rule as SynRule;
 use crate::matching::{ SynMatching };
 
 
-#[derive(Parser)]
-#[grammar = "grammar.pest"]
-struct SynParser;
-
 pub struct ParseResult<'a> {
     pub facts: Vec<&'a Fact<'a>>,
     pub rules: Vec<SynRule<'a>>,
 }
 
+#[derive(Parser)]
+#[grammar = "grammar.pest"]
 pub struct Grammar<'a> {
     pub lexicon: Box<Lexicon>,
     pub flexicon: Box<FLexicon<'a>>,
@@ -37,7 +35,7 @@ impl<'a> Grammar<'a> {
     }
 
     pub fn parse_text(&'a self, text: &'a str) -> Result<ParseResult<'a>, Error<Rule>> {
-        let parse_tree = SynParser::parse(Rule::knowledge, text)?.next().unwrap();
+        let parse_tree = Grammar::parse(Rule::knowledge, text)?.next().unwrap();
         let mut facts: Vec<&'a Fact> = vec![];
         let mut rules: Vec<SynRule> = vec![];
         for pair in parse_tree.into_inner() {
@@ -93,7 +91,7 @@ impl<'a> Grammar<'a> {
     }
 
     pub fn parse_fact(&'a self, text: &'a str) -> &'a Fact<'a> {
-        let parse_tree = SynParser::parse(Rule::fact, text).ok().unwrap().next().unwrap();
+        let parse_tree = Grammar::parse(Rule::fact, text).ok().unwrap().next().unwrap();
         self.build_fact(parse_tree)
     }
     
@@ -111,7 +109,7 @@ impl<'a> Grammar<'a> {
                         mut all_paths: Box<Vec<SynPath<'a>>>,
                         index: usize,
                     ) -> Box<Vec<SynPath>> {
-        let span = parse_tree.as_span();
+        let pretext = parse_tree.as_str();
         let rule = parse_tree.as_rule();
         let name = format!("{:?}", rule);
         let can_be_var = name.starts_with(constants::VAR_RANGE_PREFIX);
@@ -119,7 +117,7 @@ impl<'a> Grammar<'a> {
         let is_leaf = children.len() == 0;
         let text;
         if can_be_var || is_leaf {
-            text = String::from(span.as_str());
+            text = format!("{}", pretext);
         } else {
             text = format!("{}", index);
         }
@@ -151,7 +149,7 @@ impl<'a> Grammar<'a> {
         // XXX LEAK!
         let stext = Box::leak(text.into_boxed_str());
         
-        let parse_tree = SynParser::parse(Rule::fact, stext).ok().unwrap().next().unwrap();
+        let parse_tree = Grammar::parse(Rule::fact, stext).ok().unwrap().next().unwrap();
         let all_paths = Box::new(Vec::with_capacity(fact.paths.len()));
         let all_paths = self.visit_parse_node(parse_tree,
                                                                  vec![],
