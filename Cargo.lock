@@ -143,6 +143,16 @@ version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "modus_ponens"
+version = "0.1.0"
+dependencies = [
+ "bumpalo 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "config 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pest 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pest_derive 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -344,16 +354,6 @@ dependencies = [
  "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-xid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "syntree"
-version = "0.1.0"
-dependencies = [
- "bumpalo 3.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "config 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "pest 2.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "pest_derive 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

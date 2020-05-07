@@ -1,5 +1,5 @@
 [package]
-name = "syntree"
+name = "modus_ponens"
 version = "0.1.0"
 authors = ["Enrique Pérez Arnaud <enrique@cazalla.net>"]
 edition = "2018"
