@@ -10,22 +10,22 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
 
         #[derive(Parser)]
         #attr
-        pub struct Grammar<'a> {
+        pub struct MPParser<'a> {
             pub lexicon: Box<Lexicon>,
             pub flexicon: Box<FLexicon<'a>>,
         }
 
-        impl<'a> Grammar<'a> {
+        impl<'a> MPParser<'a> {
 
-            pub fn new() -> Grammar<'a> {
-                Grammar {
+            pub fn new() -> MPParser<'a> {
+                MPParser {
                     lexicon: Box::new(Lexicon::new()),
                     flexicon: Box::new(FLexicon::new()),
                 }
             }
 
             pub fn parse_text(&'a self, text: &'a str) -> Result<ParseResult<'a>, Error<Rule>> {
-                let parse_tree = Grammar::parse(Rule::knowledge, text)?.next().unwrap();
+                let parse_tree = MPParser::parse(Rule::knowledge, text)?.next().unwrap();
                 let mut facts: Vec<&'a Fact> = vec![];
                 let mut rules: Vec<MPRule> = vec![];
                 for pair in parse_tree.into_inner() {
@@ -81,7 +81,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
             }
 
             pub fn parse_fact(&'a self, text: &'a str) -> &'a Fact<'a> {
-                let parse_tree = Grammar::parse(Rule::fact, text).ok().unwrap().next().unwrap();
+                let parse_tree = MPParser::parse(Rule::fact, text).ok().unwrap().next().unwrap();
                 self.build_fact(parse_tree)
             }
             
@@ -139,7 +139,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 // XXX LEAK!
                 let stext = Box::leak(text.into_boxed_str());
                 
-                let parse_tree = Grammar::parse(Rule::fact, stext).ok().unwrap().next().unwrap();
+                let parse_tree = MPParser::parse(Rule::fact, stext).ok().unwrap().next().unwrap();
                 let all_paths = Box::new(Vec::with_capacity(fact.paths.len()));
                 let all_paths = self.visit_parse_node(parse_tree,
                                                                          vec![],

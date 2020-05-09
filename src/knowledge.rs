@@ -8,7 +8,7 @@ use proc_macro2::TokenStream;
 pub fn derive_kb() -> TokenStream {
     quote! {
         pub struct KB<'a> {
-            grammar: &'a Grammar<'a>,
+            mpparser: &'a MPParser<'a>,
             facts: FactSet<'a>,
             rules: RuleSet<'a>,
             queue: RefCell<VecDeque<Activation<'a>>>,
@@ -17,10 +17,10 @@ pub fn derive_kb() -> TokenStream {
         impl<'a> KB<'a> {
 
             pub fn new () -> KB<'a> {
-                let grammar = Box::leak(Box::new(Grammar::new()));
-                let root_path = grammar.lexicon.empty_path();
+                let mpparser = Box::leak(Box::new(MPParser::new()));
+                let root_path = mpparser.lexicon.empty_path();
                 Self {
-                    grammar,
+                    mpparser,
                     facts: FactSet::new(),
                     rules: RuleSet::new(root_path),
                     queue: RefCell::new(VecDeque::new()),
@@ -80,7 +80,7 @@ pub fn derive_kb() -> TokenStream {
                         more_antecedents: new_more_ants,
                         consequents: new_conseqs
                     };
-                    let (varmap, normal_ant) = self.grammar.normalize_fact(&new_ant.unwrap());
+                    let (varmap, normal_ant) = self.mpparser.normalize_fact(&new_ant.unwrap());
                     let rule_ref = RuleRef {
                         rule: new_rule,
                         varmap,
@@ -128,7 +128,7 @@ pub fn derive_kb() -> TokenStream {
                     self.queue.borrow_mut().push_back(Activation::from_rule(rule, query_rules));
                 } else {
                    for consequent in rule.consequents{
-                       let new_consequent = self.grammar.substitute_fact(&consequent, matching);
+                       let new_consequent = self.mpparser.substitute_fact(&consequent, matching);
                         if !self.facts.ask_fact_bool(&new_consequent) {
                             self.queue.borrow_mut().push_back(Activation::from_fact(new_consequent, query_rules));
                         }
@@ -170,17 +170,17 @@ pub fn derive_kb() -> TokenStream {
                     }
                 }
                 let new_antecedents = antecedents.iter()
-                                                 .map(|antecedent| self.grammar.substitute_fact(antecedent, matching))
+                                                 .map(|antecedent| self.mpparser.substitute_fact(antecedent, matching))
                                                  .collect();
                 let mut new_more_antecedents = Vec::new();
                 while more_antecedents.len() > 0 {
                     let more_ants = more_antecedents.remove(0); 
                     new_more_antecedents.push(more_ants.iter()
-                                                       .map(|antecedent| self.grammar.substitute_fact(antecedent, matching))
+                                                       .map(|antecedent| self.mpparser.substitute_fact(antecedent, matching))
                                                        .collect());
                 }
                 let new_consequents = consequents.iter()
-                                                 .map(|consequent| self.grammar.substitute_fact(consequent, matching))
+                                                 .map(|consequent| self.mpparser.substitute_fact(consequent, matching))
                                                  .collect();
                 (MPRule {
                     antecedents: new_antecedents,
@@ -192,7 +192,7 @@ pub fn derive_kb() -> TokenStream {
         }
         impl<'a> KBase<'a> for KB<'a> {
             fn tell(&'a self, knowledge: &'a str) {
-                let result = self.grammar.parse_text(knowledge);
+                let result = self.mpparser.parse_text(knowledge);
                 if result.is_err() {
                     panic!("Parsing problem! {}", result.err().unwrap());
                 }
@@ -211,7 +211,7 @@ pub fn derive_kb() -> TokenStream {
                 }
             }
             fn ask(&'a self, knowledge: &'a str) -> bool {
-                let ParseResult { mut facts, .. } = self.grammar.parse_text(knowledge).ok().unwrap();
+                let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().unwrap();
                 let fact = facts.pop().unwrap();
                 let resps = self.facts.ask_fact(&fact);
                 resps.len() > 0

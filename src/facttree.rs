@@ -6,8 +6,8 @@ use bumpalo::{Bump};
 
 use crate::constants;
 use crate::fact::Fact;
-use crate::path::SynPath;
-use crate::matching::SynMatching;
+use crate::path::MPPath;
+use crate::matching::MPMatching;
 
 
 pub struct CarryOver<'a>(HashMap<usize, &'a FSNode<'a>>);
@@ -25,8 +25,8 @@ impl<'a> CarryOver<'a> {
 
 #[derive(Debug, PartialEq)]
 pub struct FSNode<'a> {
-    children: RefCell<HashMap<&'a SynPath<'a>, &'a FSNode<'a>>>,  // XXX try putting keys and vals in boxes
-    lchildren: RefCell<HashMap<&'a SynPath<'a>, &'a FSNode<'a>>>,
+    children: RefCell<HashMap<&'a MPPath<'a>, &'a FSNode<'a>>>,  // XXX try putting keys and vals in boxes
+    lchildren: RefCell<HashMap<&'a MPPath<'a>, &'a FSNode<'a>>>,
 }
 
 pub struct FactSet<'a> {
@@ -49,10 +49,10 @@ impl<'a> FactSet<'a> {
         let carry = CarryOver(HashMap::new());
         self.follow_and_create_paths(&self.root, paths, 1, carry);
     }
-    pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<SynMatching<'a>> {
-        let response: Vec<SynMatching<'a>> = vec![];
+    pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<MPMatching<'a>> {
+        let response: Vec<MPMatching<'a>> = vec![];
         let paths = fact.paths.as_slice();
-        let matching: SynMatching = HashMap::new();
+        let matching: MPMatching = HashMap::new();
         self.root.query_paths(paths, matching, response, &self.paths)
     }
     pub fn ask_fact_bool (&'a self, fact: &'a Fact) -> bool {
@@ -60,7 +60,7 @@ impl<'a> FactSet<'a> {
     }
     pub fn follow_and_create_paths(&'a self,
                                    mut parent: &'a FSNode<'a>,
-                                   paths: &'a [SynPath],
+                                   paths: &'a [MPPath],
                                    mut depth: usize,
                                    mut carry: CarryOver<'a>,) {
         let mut child: &FSNode;
@@ -105,7 +105,7 @@ impl<'a> FactSet<'a> {
 
     fn create_paths(&'a self,
                     mut parent: &'a FSNode<'a>,
-                    paths: &'a [SynPath],
+                    paths: &'a [MPPath],
                     mut depth: usize,
                     mut carry: CarryOver<'a>,
                     offset: usize,) {
@@ -137,7 +137,7 @@ impl<'a> FactSet<'a> {
     }
     pub fn intern_child(&'a self,
                         parent: &'a FSNode<'a>,
-                        path: &'a SynPath<'a>,
+                        path: &'a MPPath<'a>,
                         child: FSNode<'a>,
                         mut carry: CarryOver<'a>,
                         index: usize,
@@ -154,7 +154,7 @@ impl<'a> FactSet<'a> {
     }
     pub fn intern_lchild(&'a self,
                          parent: &'a FSNode<'a>,
-                         path: &'a SynPath<'a>,
+                         path: &'a MPPath<'a>,
                          child: FSNode<'a>,
                          mut carry: CarryOver<'a>,
                          index: usize,
@@ -178,14 +178,14 @@ impl<'a> FSNode<'a> {
             lchildren: RefCell::new(HashMap::with_capacity(capacity)),
         }
     }
-    pub fn get_child(&'a self, path: &'a SynPath) -> Option<&'a Self> {
+    pub fn get_child(&'a self, path: &'a MPPath) -> Option<&'a Self> {
         let children = self.children.borrow();
         match children.get(path) {
             None => None,
             Some(child_ref) => Some(*child_ref)
         }
     }
-    pub fn get_lchild(&'a self, path: &'a SynPath) -> Option<&'a Self> {
+    pub fn get_lchild(&'a self, path: &'a MPPath) -> Option<&'a Self> {
         let children = self.lchildren.borrow();
         match children.get(path) {
             None => None,
@@ -193,15 +193,15 @@ impl<'a> FSNode<'a> {
         }
     }
     pub fn query_paths(&'a self,
-                   mut all_paths: &'a [SynPath],
-                   matching: SynMatching<'a>,
-                   mut resp: Vec<SynMatching<'a>>,
+                   mut all_paths: &'a [MPPath],
+                   matching: MPMatching<'a>,
+                   mut resp: Vec<MPMatching<'a>>,
                    arena: &'a Bump
-                   ) -> Vec<SynMatching<'a>> {
+                   ) -> Vec<MPMatching<'a>> {
 
         let mut finished = false;
-        let mut next_path: Option<&SynPath> = None;
-        let mut next_paths: Option<&'a [SynPath]> = None;
+        let mut next_path: Option<&MPPath> = None;
+        let mut next_paths: Option<&'a [MPPath]> = None;
         while !finished {
             let split_paths = all_paths.split_first();
             if split_paths.is_some() {
@@ -219,7 +219,7 @@ impl<'a> FSNode<'a> {
 
         }
         if next_path.is_some(){
-            let mut subs_path: Option<&SynPath> = None;
+            let mut subs_path: Option<&MPPath> = None;
             let path = next_path.unwrap();
             let paths = next_paths.unwrap();
             if path.value.is_var {
@@ -237,7 +237,7 @@ impl<'a> FSNode<'a> {
                 }
             }
             let next: Option<&FSNode>;
-            let new_path: &SynPath;
+            let new_path: &MPPath;
             if subs_path.is_some() {
                 new_path = subs_path.unwrap();
             } else {

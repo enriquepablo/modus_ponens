@@ -4,7 +4,7 @@ use std::fmt;
 use crate::constants;
 
 #[derive(Debug, Clone)]
-pub struct SynSegment {
+pub struct MPSegment {
     pub text: String,
     pub name: String,
     pub is_leaf: bool,
@@ -13,12 +13,12 @@ pub struct SynSegment {
     pub is_empty: bool,
 }
 
-impl SynSegment {
-    pub fn new(name: String, text: String, is_leaf: bool) -> SynSegment {
+impl MPSegment {
+    pub fn new(name: String, text: String, is_leaf: bool) -> MPSegment {
         let is_var = name == constants::VAR_RULE_NAME;
         let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
         let is_empty = text.trim().is_empty();
-        SynSegment {
+        MPSegment {
             name, text,
             is_leaf, is_var,
             in_var_range, is_empty,
@@ -26,21 +26,21 @@ impl SynSegment {
     }
 }
 
-impl fmt::Display for SynSegment {
+impl fmt::Display for MPSegment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.text)
     }
 }
 
-impl PartialEq for SynSegment {
+impl PartialEq for MPSegment {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name && self.text == other.text
     }
 }
 
-impl Eq for SynSegment {}
+impl Eq for MPSegment {}
 
-impl Hash for SynSegment {
+impl Hash for MPSegment {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.name.hash(state);
         self.text.hash(state);
@@ -59,7 +59,7 @@ mod tests {
     fn make_segment() {
         let name = "rule-name".to_string();
         let text = "some text".to_string();
-        let segm = SynSegment::new(name, text, true);
+        let segm = MPSegment::new(name, text, true);
         assert_eq!(segm.name, "rule-name");
         assert_eq!(segm.text, "some text");
         assert_eq!(segm.is_leaf, true);
@@ -86,8 +86,8 @@ mod tests {
     fn segment_eq1() {
         let name = "rule-name";
         let text = "some text";
-        let segm1 = SynSegment::new(name.to_string(), text.to_string(), true);
-        let segm2 = SynSegment::new(name.to_string(), text.to_string(), true);
+        let segm1 = MPSegment::new(name.to_string(), text.to_string(), true);
+        let segm2 = MPSegment::new(name.to_string(), text.to_string(), true);
         assert!(segm1 == segm2);
         assert!(calculate_hash(&segm1) == calculate_hash(&segm2));
     }
@@ -96,8 +96,8 @@ mod tests {
     fn segment_eq2() {
         let name = "rule-name";
         let text = "some text";
-        let segm1 = SynSegment::new(name.to_string(), text.to_string(), true);
-        let segm2 = SynSegment::new(name.to_string(), text.to_string(), true);
+        let segm1 = MPSegment::new(name.to_string(), text.to_string(), true);
+        let segm2 = MPSegment::new(name.to_string(), text.to_string(), true);
         assert!(segm1 == segm2);
         assert!(calculate_hash(&segm1) == calculate_hash(&segm2));
     }
@@ -107,8 +107,8 @@ mod tests {
         let name1 = "rule-name1";
         let name2 = "rule-name2";
         let text = "some text";
-        let segm1 = SynSegment::new(name1.to_string(), text.to_string(), true);
-        let segm2 = SynSegment::new(name2.to_string(), text.to_string(), true);
+        let segm1 = MPSegment::new(name1.to_string(), text.to_string(), true);
+        let segm2 = MPSegment::new(name2.to_string(), text.to_string(), true);
         assert!(segm1 != segm2);
         assert!(calculate_hash(&segm1) != calculate_hash(&segm2));
     }
@@ -118,8 +118,8 @@ mod tests {
         let name = "rule-name".to_string();
         let text1 = "some text 1";
         let text2 = "some text 2";
-        let segm1 = SynSegment::new(name.to_string(), text1.to_string(), true);
-        let segm2 = SynSegment::new(name.to_string(), text2.to_string(), true);
+        let segm1 = MPSegment::new(name.to_string(), text1.to_string(), true);
+        let segm2 = MPSegment::new(name.to_string(), text2.to_string(), true);
         assert!(segm1 != segm2);
         assert!(calculate_hash(&segm1) != calculate_hash(&segm2));
     }
@@ -128,7 +128,7 @@ mod tests {
     fn segment_in_var_range() {
         let name = "v_rule-name".to_string();
         let text = "some text".to_string();
-        let segm = SynSegment::new(name, text, true);
+        let segm = MPSegment::new(name, text, true);
         assert!(segm.in_var_range);
     }
 
@@ -136,7 +136,7 @@ mod tests {
     fn segment_not_in_var_range() {
         let name = "rule-name".to_string();
         let text = "some text".to_string();
-        let segm = SynSegment::new(name, text, true);
+        let segm = MPSegment::new(name, text, true);
         assert!(!segm.in_var_range);
     }
 }

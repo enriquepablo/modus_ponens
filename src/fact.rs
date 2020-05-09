@@ -4,14 +4,14 @@ use std::hash::{Hash, Hasher};
 use std::fmt;
 
 
-use crate::path::SynPath;
+use crate::path::MPPath;
 
 
 
 #[derive(Debug, Clone)]
 pub struct Fact<'a> {
     pub text: &'a str,
-    pub paths: Vec<SynPath<'a>>,
+    pub paths: Vec<MPPath<'a>>,
 }
 
 impl<'a> fmt::Display for Fact<'a> {
@@ -22,7 +22,7 @@ impl<'a> fmt::Display for Fact<'a> {
 }
 
 impl<'a> Fact<'a> {
-    fn new(text: &'a str, paths: Vec<SynPath<'a>>) -> Fact<'a> {
+    fn new(text: &'a str, paths: Vec<MPPath<'a>>) -> Fact<'a> {
         Fact { text, paths }
     }
 }
@@ -49,7 +49,7 @@ impl<'a> FLexicon<'a> {
         FLexicon(RefCell::new(HashSet::with_capacity(20)))
     }
 
-    pub fn from_paths(&'a self, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
+    pub fn from_paths(&'a self, paths: Vec<MPPath<'a>>) -> &'a Fact<'a> {
         let mut set = self.0.borrow_mut();
         
         let text = paths.iter()
@@ -64,7 +64,7 @@ impl<'a> FLexicon<'a> {
 
         unsafe { mem::transmute(interned) }
     }
-    pub fn from_paths_and_string(&'a self, text: &'a str, paths: Vec<SynPath<'a>>) -> &'a Fact<'a> {
+    pub fn from_paths_and_string(&'a self, text: &'a str, paths: Vec<MPPath<'a>>) -> &'a Fact<'a> {
         let mut set = self.0.borrow_mut();
         
         let interned = set.get_or_insert(Box::new(Fact::new(text, paths))).as_ref();
