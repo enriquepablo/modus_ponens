@@ -275,7 +275,7 @@ impl<'a> RSNode<'a> {
 //
 //
 //    impl<'a> PremSet<'a> {
-//        fn new (root_path: SynPath<'a>) -> PremSet<'a> {
+//        fn new (root_path: MPPath<'a>) -> PremSet<'a> {
 //            PremSet { root: Box::new(RSNode::new(root_path)) }
 //        }
 //        fn add_fact (self, fact: &'a Fact<'a>) -> PremSet {

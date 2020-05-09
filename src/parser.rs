@@ -95,10 +95,10 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
 
             fn visit_parse_node(&'a self,
                                 parse_tree: Pair<'a, Rule>,
-                                root_segments: Vec<&'a SynSegment>,
-                                mut all_paths: Box<Vec<SynPath<'a>>>,
+                                root_segments: Vec<&'a MPSegment>,
+                                mut all_paths: Box<Vec<MPPath<'a>>>,
                                 index: usize,
-                            ) -> Box<Vec<SynPath>> {
+                            ) -> Box<Vec<MPPath>> {
                 let pretext = parse_tree.as_str();
                 let rule = parse_tree.as_rule();
                 let name = format!("{:?}", rule);
@@ -116,7 +116,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 new_root_segments.push(segment);
                 if can_be_var || is_leaf {
                     let segments = new_root_segments.clone();
-                    let new_path = SynPath::new(segments);
+                    let new_path = MPPath::new(segments);
                     all_paths.push(new_path);
                 }
                 let mut new_index = 0;
@@ -129,8 +129,8 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 }
                 all_paths
             }
-            pub fn substitute_fact(&'a self, fact: &'a Fact<'a>, matching: &SynMatching<'a>) -> &'a Fact<'a> {
-                let new_paths = SynPath::substitute_paths(&fact.paths, matching);
+            pub fn substitute_fact(&'a self, fact: &'a Fact<'a>, matching: &MPMatching<'a>) -> &'a Fact<'a> {
+                let new_paths = MPPath::substitute_paths(&fact.paths, matching);
                 let text = new_paths.iter()
                                     .map(|path| path.value.text.as_str())
                                     .collect::<Vec<&str>>()
@@ -147,13 +147,13 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                                                          0);
                 self.flexicon.from_paths_and_string(stext, *all_paths)
             }
-            pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: SynMatching<'a>) -> &'a Fact<'a> {
-                let new_paths = SynPath::substitute_paths_owning(&fact.paths, matching);
+            pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: MPMatching<'a>) -> &'a Fact<'a> {
+                let new_paths = MPPath::substitute_paths_owning(&fact.paths, matching);
                 self.flexicon.from_paths(new_paths)
             }
-            pub fn normalize_fact (&'a self, fact: &'a Fact<'a>) -> (SynMatching<'a>, &'a Fact<'a>) {
-                let mut varmap: SynMatching<'a> = HashMap::new();
-                let mut invarmap: SynMatching<'a> = HashMap::new();
+            pub fn normalize_fact (&'a self, fact: &'a Fact<'a>) -> (MPMatching<'a>, &'a Fact<'a>) {
+                let mut varmap: MPMatching<'a> = HashMap::new();
+                let mut invarmap: MPMatching<'a> = HashMap::new();
                 let mut counter = 1;
                 let leaves = fact.paths.as_slice();
                 for path in leaves {

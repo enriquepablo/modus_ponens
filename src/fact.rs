@@ -76,28 +76,28 @@ impl<'a> FLexicon<'a> {
 //#[cfg(test)]
 //mod tests {
 //    use super::*;
-//    use crate::segment::SynSegment;
+//    use crate::segment::MPSegment;
 //
 ////    #[test]
 ////    fn fact_1() {
-////        let segm11 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+////        let segm11 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
 ////        let segms1 = vec![&segm11];
-////        let path1 = SynPath::new(segms1);
+////        let path1 = MPPath::new(segms1);
 ////
-////        let segm21 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-////        let segm22 = SynSegment::new("rule-name2".to_string(), "(".to_string(), true);
+////        let segm21 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+////        let segm22 = MPSegment::new("rule-name2".to_string(), "(".to_string(), true);
 ////        let segms2 = vec![&segm21, &segm22];
-////        let path2 = SynPath::new(segms2);
+////        let path2 = MPPath::new(segms2);
 ////
-////        let segm31 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-////        let segm32 = SynSegment::new("rule-name3".to_string(), "text".to_string(), true);
+////        let segm31 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+////        let segm32 = MPSegment::new("rule-name3".to_string(), "text".to_string(), true);
 ////        let segms3 = vec![&segm31, &segm32];
-////        let path3 = SynPath::new(segms3);
+////        let path3 = MPPath::new(segms3);
 ////
-////        let segm41 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-////        let segm42 = SynSegment::new("rule-name4".to_string(), ")".to_string(), true);
+////        let segm41 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+////        let segm42 = MPSegment::new("rule-name4".to_string(), ")".to_string(), true);
 ////        let segms4 = vec![&segm41, &segm42];
-////        let path4 = SynPath::new(segms4);
+////        let path4 = MPPath::new(segms4);
 ////
 ////        let paths = vec![path1, path2, path3, path4];
 ////        //let fact = Fact::from_paths(paths);
@@ -108,29 +108,29 @@ impl<'a> FLexicon<'a> {
 ////
 ////    #[test]
 ////    fn fact_2() {
-////        let segm11 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+////        let segm11 = MPSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
 ////        let segms1 = vec![&segm11];
-////        let path1 = SynPath::new(segms1);
+////        let path1 = MPPath::new(segms1);
 ////
-////        let segm21 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
-////        let segm22 = SynSegment::new("rule-name2".to_string(), "(".to_string(), true);
+////        let segm21 = MPSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+////        let segm22 = MPSegment::new("rule-name2".to_string(), "(".to_string(), true);
 ////        let segms2 = vec![&segm21, &segm22];
-////        let path2 = SynPath::new(segms2);
+////        let path2 = MPPath::new(segms2);
 ////
-////        let segm31 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
-////        let segm32 = SynSegment::new("rule-name3".to_string(), "text".to_string(), true);
+////        let segm31 = MPSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+////        let segm32 = MPSegment::new("rule-name3".to_string(), "text".to_string(), true);
 ////        let segms3 = vec![&segm31, &segm32];
-////        let path3 = SynPath::new(segms3);
+////        let path3 = MPPath::new(segms3);
 ////
-////        let segm41 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
-////        let segm42 = SynSegment::new("rule-name4".to_string(), " ".to_string(), true);
+////        let segm41 = MPSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+////        let segm42 = MPSegment::new("rule-name4".to_string(), " ".to_string(), true);
 ////        let segms4 = vec![&segm41, &segm42];
-////        let path4 = SynPath::new(segms4);
+////        let path4 = MPPath::new(segms4);
 ////
-////        let segm51 = SynSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
-////        let segm52 = SynSegment::new("rule-name5".to_string(), ")".to_string(), true);
+////        let segm51 = MPSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
+////        let segm52 = MPSegment::new("rule-name5".to_string(), ")".to_string(), true);
 ////        let segms5 = vec![&segm51, &segm52];
-////        let path5 = SynPath::new(segms5);
+////        let path5 = MPPath::new(segms5);
 ////
 ////        let paths = vec![path1, path2, path3, path4, path5];
 //        //let fact = Fact::from_paths(paths);

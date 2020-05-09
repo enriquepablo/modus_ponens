@@ -262,45 +262,45 @@ impl<'a> FSNode<'a> {
 //#[cfg(test)]
 //mod tests {
 //    use super::*;
-//    use crate::segment::SynSegment;
+//    use crate::segment::MPSegment;
 //
 //    #[test]
 //    fn factset_1() {
 //        let mut factset = FSNode::new();
 //
-//        let segm11 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
 //        let segms1 = vec![&segm11];
-//        let path1 = SynPath::new(segms1);
+//        let path1 = MPPath::new(segms1);
 //        let cpath1 = path1.clone();
 //
 //        let node1 = FSNode::new();
 //        
 //        factset.children.borrow_mut().insert(cpath1, node1);
 //
-//        let segm21 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-//        let segm22 = SynSegment::new("rule-name2".to_string(), "(".to_string(), true);
+//        let segm21 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+//        let segm22 = MPSegment::new("rule-name2".to_string(), "(".to_string(), true);
 //        let segms2 = vec![&segm21, &segm22];
-//        let path2 = SynPath::new(segms2);
+//        let path2 = MPPath::new(segms2);
 //        let cpath2 = path2.clone();
 //
 //        let node2 = FSNode::new();
 //        let rnode1 = factset.children.borrow().get_mut(&path1).expect("path");
 //        rnode1.children.borrow_mut().insert(cpath2, node2);
 //
-//        let segm31 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-//        let segm32 = SynSegment::new("rule-name3".to_string(), "text".to_string(), true);
+//        let segm31 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+//        let segm32 = MPSegment::new("rule-name3".to_string(), "text".to_string(), true);
 //        let segms3 = vec![&segm31, &segm32];
-//        let path3 = SynPath::new(segms3);
+//        let path3 = MPPath::new(segms3);
 //        let cpath3 = path3.clone();
 //
 //        let node3 = FSNode::new();
 //        let rnode2 = rnode1.children.borrow().get_mut(&path2).expect("path");
 //        rnode2.children.insert(cpath3, node3);
 //
-//        let segm41 = SynSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-//        let segm42 = SynSegment::new("rule-name4".to_string(), ")".to_string(), true);
+//        let segm41 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
+//        let segm42 = MPSegment::new("rule-name4".to_string(), ")".to_string(), true);
 //        let segms4 = vec![&segm41, &segm42];
-//        let path4 = SynPath::new(segms4);
+//        let path4 = MPPath::new(segms4);
 //        let cpath4 = path4.clone();
 //
 //        let node4 = FSNode::new();

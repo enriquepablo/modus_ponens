@@ -111,7 +111,7 @@ pub fn derive_kb() -> TokenStream {
             }
             fn process_match(&'a self,
                              mut rule: MPRule<'a>,
-                             matching: &SynMatching<'a>,
+                             matching: &MPMatching<'a>,
                              mut query_rules: bool) {
                 let old_len = rule.more_antecedents.len();
                 let (nrule, new) = self.preprocess_matched_rule(matching, rule);
@@ -155,7 +155,7 @@ pub fn derive_kb() -> TokenStream {
                 rule
             }
             fn preprocess_matched_rule(&'a self,
-                                       matching: &SynMatching<'a>,
+                                       matching: &MPMatching<'a>,
                                        rule: MPRule<'a>) -> (MPRule<'a>, bool) {
                 let MPRule {
                     mut antecedents,
