@@ -210,11 +210,10 @@ pub fn derive_kb() -> TokenStream {
                     }
                 }
             }
-            fn ask(&'a self, knowledge: &'a str) -> bool {
+            fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>> {
                 let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().unwrap();
                 let fact = facts.pop().unwrap();
-                let resps = self.facts.ask_fact(&fact);
-                resps.len() > 0
+                self.facts.ask_fact(&fact)
             }
         }
     }

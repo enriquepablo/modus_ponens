@@ -1,8 +1,9 @@
 
+use crate::matching::MPMatching;
 
 pub trait KBase<'a> {
     fn tell(&'a self, knowledge: &'a str);
-    fn ask(&'a self, knowledge: &'a str) -> bool;
+    fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>>;
 }
 
 pub trait KBGen<'a> {
