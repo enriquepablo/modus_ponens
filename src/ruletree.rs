@@ -13,20 +13,20 @@ use crate::matching::SynMatching;
 use crate::fact::Fact;
 
 
-type Response<'a> = Vec<(Vec<&'a RuleRef<'a>>, SynMatching<'a>)>;
+pub type Response<'a> = Vec<(Vec<&'a RuleRef<'a>>, SynMatching<'a>)>;
 
 pub fn new_response<'a>() -> Response<'a> {
     vec![]
 }
 
 #[derive(Debug, Clone)]
-pub struct Rule<'a> {
+pub struct MPRule<'a> {
     pub antecedents: Vec<&'a Fact<'a>>,
     pub more_antecedents: Vec<Vec<&'a Fact<'a>>>,
     pub consequents: Vec<&'a Fact<'a>>,
 }
 
-impl<'a> fmt::Display for Rule<'a> {
+impl<'a> fmt::Display for MPRule<'a> {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let more = &self.more_antecedents.iter()
@@ -50,7 +50,7 @@ impl<'a> fmt::Display for Rule<'a> {
 
 #[derive(Debug, Clone)]
 pub struct RuleRef<'a> {
-    pub rule: Rule<'a>,
+    pub rule: MPRule<'a>,
     pub varmap: SynMatching<'a>,
 }
 

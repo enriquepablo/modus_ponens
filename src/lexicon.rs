@@ -24,7 +24,7 @@ impl Lexicon {
         self.intern("var", &text, true)
     }
     pub fn empty_path(&self) -> SynPath {
-        let root = self.intern("root", "empty", false);
+        let root = self.intern("fact", "0", false);
         let segments = vec![root];
         SynPath::new(segments)
     }
