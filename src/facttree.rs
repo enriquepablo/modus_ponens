@@ -1,6 +1,7 @@
 use std::clone::Clone;
 use std::collections::HashMap;
 use std::cell::{ RefCell };
+use std::mem;
 
 use bumpalo::{Bump};
 
@@ -32,7 +33,6 @@ pub struct FSNode<'a> {
 pub struct FactSet<'a> {
     pub root: Box<FSNode<'a>>,
     nodes: Bump,
-    paths: Bump,
 }
 
 
@@ -41,7 +41,6 @@ impl<'a> FactSet<'a> {
         FactSet {
             root: Box::new(FSNode::new(1)),
             nodes: Bump::new(),
-            paths: Bump::new(),
          }
     }
     pub fn add_fact (&'a self, fact: &'a Fact<'a>) {
@@ -53,7 +52,7 @@ impl<'a> FactSet<'a> {
         let response: Vec<MPMatching<'a>> = vec![];
         let paths = fact.paths.as_slice();
         let matching: MPMatching = HashMap::new();
-        self.root.query_paths(paths, matching, response, &self.paths)
+        self.root.query_paths(paths, matching, response)
     }
     pub fn ask_fact_bool (&'a self, fact: &'a Fact) -> bool {
         self.ask_fact(fact).len() > 0
@@ -196,7 +195,6 @@ impl<'a> FSNode<'a> {
                    mut all_paths: &'a [MPPath],
                    matching: MPMatching<'a>,
                    mut resp: Vec<MPMatching<'a>>,
-                   arena: &'a Bump
                    ) -> Vec<MPMatching<'a>> {
 
         let mut finished = false;
@@ -227,12 +225,12 @@ impl<'a> FSNode<'a> {
                     for (lchild_path, lchild_node) in self.lchildren.borrow().iter()  {
                         let mut new_matching = matching.clone();
                         new_matching.insert(path.value, lchild_path.value);
-                        resp = lchild_node.query_paths(paths, new_matching, resp, arena);
+                        resp = lchild_node.query_paths(paths, new_matching, resp);
                     }
                     return resp;
                 } else {
                     let (new_path, _) = path.substitute_owning(matching.clone());
-                    let new_path_ref = arena.alloc(new_path);
+                    let new_path_ref = unsafe { mem::transmute(&new_path) };
                     subs_path = Some(new_path_ref);
                 }
             }
@@ -250,7 +248,7 @@ impl<'a> FSNode<'a> {
             }
             if next.is_some() {
                 let next_node = next.unwrap();
-                resp = next_node.query_paths(paths, matching, resp, arena);
+                resp = next_node.query_paths(paths, matching, resp);
             }
         } else {
             resp.push(matching);
