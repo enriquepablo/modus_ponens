@@ -10,7 +10,6 @@ pub mod path;
 pub mod fact;
 mod parser;
 pub mod facttree;
-//mod factset;
 pub mod ruletree;
 mod knowledge;
 pub mod lexicon;
