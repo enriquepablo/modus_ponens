@@ -14,10 +14,10 @@ pub struct SynPath<'a> {
 impl<'a> SynPath<'a> {
     pub fn new(segments: Vec<&'a SynSegment>) -> SynPath {
         let value = *segments.last().expect("no empty paths");
-        let mut identity = segments.iter()
-                                           .map(|segment| &*segment.name)
-                                           .collect::<Vec<&str>>()
-                                           .concat();
+        let mut identity: String = String::with_capacity(segments.len());
+        for &segment in segments.iter() {
+            identity.push_str(&segment.name);
+        }
         identity.push_str(&value.text);
         SynPath { value, segments, identity }
     }
