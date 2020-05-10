@@ -14,10 +14,10 @@ pub struct MPPath<'a> {
 impl<'a> MPPath<'a> {
     pub fn new(segments: Vec<&'a MPSegment>) -> MPPath {
         let value = *segments.last().expect("no empty paths");
-        let mut identity = segments.iter()
-                                           .map(|segment| &*segment.name)
-                                           .collect::<Vec<&str>>()
-                                           .concat();
+        let mut identity = String::new();
+        for &segment in segments.iter() {
+            identity.push_str(&segment.name);
+        }
         identity.push_str(&value.text);
         MPPath { value, segments, identity }
     }

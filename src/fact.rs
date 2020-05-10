@@ -52,11 +52,12 @@ impl<'a> FLexicon<'a> {
     pub fn from_paths(&'a self, paths: Vec<MPPath<'a>>) -> &'a Fact<'a> {
         let mut set = self.0.borrow_mut();
         
-        let text = paths.iter()
-                        .filter(|path| path.value.is_leaf)
-                        .map(|path| path.value.text.as_str())
-                        .collect::<Vec<&str>>()
-                        .join("");
+        let mut text = String::with_capacity(5);
+        for path in paths.iter() {
+            if path.value.is_leaf {
+                text.push_str(path.value.text.as_str());
+            }
+        }
 
         let stext = Box::leak(text.into_boxed_str());
 
