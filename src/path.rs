@@ -199,280 +199,280 @@ impl<'a> Hash for MPPath<'_> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::HashMap;
-    use std::collections::hash_map::DefaultHasher;
-    
-    //use crate::constants;
-    //use crate::parser::Grammar;
-
-    fn calculate_hash<T: Hash>(t: &T) -> u64 {
-        let mut s = DefaultHasher::new();
-        t.hash(&mut s);
-        s.finish()
-    }
-
-//    #[test]
-//    fn make_path_1() {
-//        let name = "rule-name".to_string();
-//        let text = "some text".to_string();
-//        let segm = MPSegment::new(name, text, true);
-//        let segms = vec![&segm];
-//        let path = MPPath::new(segms);
-//        assert_eq!(path.identity.split(" ").as_slice()[0], "rule-name".to_string());
-//        assert_eq!(path.identity.split()[1], "some text".to_string());
-//        assert_eq!(path.segments[0].name, "rule-name".to_string());
-//        assert_eq!(path.segments[0].text, "some text".to_string());
-//        assert_eq!(path.len(), 1);
-//        assert_eq!(path.value.is_var, false);
-//        assert_eq!(path.value.is_leaf, true);
+//#[cfg(test)]
+//mod tests {
+//    use super::*;
+//    use std::collections::HashMap;
+//    use std::collections::hash_map::DefaultHasher;
+//    
+//    //use crate::constants;
+//    //use crate::parser::Grammar;
+//
+//    fn calculate_hash<T: Hash>(t: &T) -> u64 {
+//        let mut s = DefaultHasher::new();
+//        t.hash(&mut s);
+//        s.finish()
 //    }
 //
-//    #[test]
-//    fn make_var_path_1() {
-//        let grammar = Grammar::new();
-//        let segm = grammar.lexicon.make_var(0);
-//        let segms = vec![segm];
-//        let path = MPPath::new(segms);
-//        assert_eq!(path.identity[0], constants::VAR_RULE_NAME);
-//        assert_eq!(path.identity[1], "<__X0>");
-//        assert_eq!(path.len(), 1);
-//        assert_eq!(path.value.is_var, true);
-//        assert_eq!(path.value.is_leaf, true);
-//    }
+////    #[test]
+////    fn make_path_1() {
+////        let name = "rule-name".to_string();
+////        let text = "some text".to_string();
+////        let segm = MPSegment::new(name, text, true);
+////        let segms = vec![&segm];
+////        let path = MPPath::new(segms);
+////        assert_eq!(path.identity.split(" ").as_slice()[0], "rule-name".to_string());
+////        assert_eq!(path.identity.split()[1], "some text".to_string());
+////        assert_eq!(path.segments[0].name, "rule-name".to_string());
+////        assert_eq!(path.segments[0].text, "some text".to_string());
+////        assert_eq!(path.len(), 1);
+////        assert_eq!(path.value.is_var, false);
+////        assert_eq!(path.value.is_leaf, true);
+////    }
+////
+////    #[test]
+////    fn make_var_path_1() {
+////        let grammar = Grammar::new();
+////        let segm = grammar.lexicon.make_var(0);
+////        let segms = vec![segm];
+////        let path = MPPath::new(segms);
+////        assert_eq!(path.identity[0], constants::VAR_RULE_NAME);
+////        assert_eq!(path.identity[1], "<__X0>");
+////        assert_eq!(path.len(), 1);
+////        assert_eq!(path.value.is_var, true);
+////        assert_eq!(path.value.is_leaf, true);
+////    }
+////
+////    #[test]
+////    fn make_path_2() {
+////        let segm1 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+////        let segm2 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+////        let segms = vec![&segm1, &segm2];
+////        let path = MPPath::new(segms);
+////        assert_eq!(path.identity[0], "rule-name1");
+////        assert_eq!(path.identity[1], "rule-name2");
+////        assert_eq!(path.identity[2], "some text2");
+////        assert_eq!(path.segments[0].name, "rule-name1");
+////        assert_eq!(path.segments[0].text, "some text1");
+////        assert_eq!(path.segments[1].name, "rule-name2");
+////        assert_eq!(path.segments[1].text, "some text2");
+////        assert_eq!(path.len(), 2);
+////    }
 //
 //    #[test]
-//    fn make_path_2() {
-//        let segm1 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-//        let segm2 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-//        let segms = vec![&segm1, &segm2];
-//        let path = MPPath::new(segms);
-//        assert_eq!(path.identity[0], "rule-name1");
-//        assert_eq!(path.identity[1], "rule-name2");
-//        assert_eq!(path.identity[2], "some text2");
-//        assert_eq!(path.segments[0].name, "rule-name1");
-//        assert_eq!(path.segments[0].text, "some text1");
-//        assert_eq!(path.segments[1].name, "rule-name2");
-//        assert_eq!(path.segments[1].text, "some text2");
-//        assert_eq!(path.len(), 2);
-//    }
-
-    #[test]
-    fn make_paths_1() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segms1 = vec![&segm11, &segm12];
-        let path1 = MPPath::new(segms1);
-        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segms2 = vec![&segm21, &segm22];
-        let path2 = MPPath::new(segms2);
-        assert_eq!(&path1, &path2);
-        assert_eq!(calculate_hash(&path1), calculate_hash(&path2));
-    }
-
-    #[test]
-    fn make_paths_2() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text3".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segms1 = vec![&segm11, &segm12];
-        let path1 = MPPath::new(segms1);
-        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segms2 = vec![&segm21, &segm22];
-        let path2 = MPPath::new(segms2);
-        assert_eq!(&path1, &path2);
-        assert_eq!(calculate_hash(&path1), calculate_hash(&path2));
-    }
-
-    #[test]
-    fn starts_with_path_1() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text3".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segms1 = vec![&segm11, &segm12];
-        let path1 = MPPath::new(segms1);
-        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segms2 = vec![&segm21, &segm22];
-        let path2 = MPPath::new(segms2);
-        assert!(path1.starts_with(&path2));
-    }
-
-    #[test]
-    fn starts_with_path_2() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text3".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segms1 = vec![&segm11, &segm12];
-        let path1 = MPPath::new(segms1);
-        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
-        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
-        let segms2 = vec![&segm21, &segm22, &segm23];
-        let path2 = MPPath::new(segms2);
-        assert!(path2.starts_with(&path1));
-        assert_ne!(path1.starts_with(&path2), true);
-    }
-
-    #[test]
-    fn starts_with_path_3() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
-        let segms1 = vec![&segm11, &segm12, &segm13];
-        let path1 = MPPath::new(segms1);
-        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
-        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
-        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
-        let segm25 = MPSegment::new("rule-name5".to_string(), "some text5".to_string(), true);
-        let segms2 = vec![&segm21, &segm22, &segm23, &segm24, &segm25];
-        let path2 = MPPath::new(segms2);
-        assert!(path2.starts_with(&path1));
-        assert_ne!(path1.starts_with(&path2), true);
-    }
-
-    #[test]
-    fn not_starts_with_path_1() {
-        let segm11 = MPSegment::new("rule-name9".to_string(), "some text1".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
-        let segms1 = vec![&segm11, &segm12, &segm13];
-        let path1 = MPPath::new(segms1);
-        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
-        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
-        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
-        let segm25 = MPSegment::new("rule-name5".to_string(), "some text5".to_string(), true);
-        let segms2 = vec![&segm21, &segm22, &segm23, &segm24, &segm25];
-        let path2 = MPPath::new(segms2);
-        assert_ne!(path2.starts_with(&path1), true);
-        assert_ne!(path1.starts_with(&path2), true);
-    }
-
-    #[test]
-    fn not_starts_with_path_2() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text9".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
-        let segms1 = vec![&segm11, &segm12, &segm13];
-        let path1 = MPPath::new(segms1);
-        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
-        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
-        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
-        let segm25 = MPSegment::new("rule-name5".to_string(), "some text5".to_string(), true);
-        let segms2 = vec![&segm21, &segm22, &segm23, &segm24, &segm25];
-        let path2 = MPPath::new(segms2);
-        assert_ne!(path2.starts_with(&path1), true);
-        assert_ne!(path1.starts_with(&path2), true);
-    }
-
-//    #[test]
-//    fn paths_after_1() {
+//    fn make_paths_1() {
 //        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-//        let segms1 = vec![&segm11];
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12];
+//        let path1 = MPPath::new(segms1);
+//        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segms2 = vec![&segm21, &segm22];
+//        let path2 = MPPath::new(segms2);
+//        assert_eq!(&path1, &path2);
+//        assert_eq!(calculate_hash(&path1), calculate_hash(&path2));
+//    }
+//
+//    #[test]
+//    fn make_paths_2() {
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "some text3".to_string(), false);
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12];
+//        let path1 = MPPath::new(segms1);
+//        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segms2 = vec![&segm21, &segm22];
+//        let path2 = MPPath::new(segms2);
+//        assert_eq!(&path1, &path2);
+//        assert_eq!(calculate_hash(&path1), calculate_hash(&path2));
+//    }
+//
+//    #[test]
+//    fn starts_with_path_1() {
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "some text3".to_string(), false);
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12];
+//        let path1 = MPPath::new(segms1);
+//        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segms2 = vec![&segm21, &segm22];
+//        let path2 = MPPath::new(segms2);
+//        assert!(path1.starts_with(&path2));
+//    }
+//
+//    #[test]
+//    fn starts_with_path_2() {
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "some text3".to_string(), false);
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12];
 //        let path1 = MPPath::new(segms1);
 //        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
 //        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
-//        let segms2 = vec![&segm21, &segm22];
+//        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
+//        let segms2 = vec![&segm21, &segm22, &segm23];
 //        let path2 = MPPath::new(segms2);
-//        let segm31 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-//        let segm32 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
-//        let segm33 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
-//        let segms3 = vec![&segm31, &segm32, &segm33];
-//        let path3 = MPPath::new(segms3);
-//        let segm41 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-//        let segm43 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
-//        let segm44 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
-//        let segms4 = vec![&segm41, &segm43, &segm44];
-//        let path4 = MPPath::new(segms4);
-//        let segm51 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-//        let segm53 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
-//        let segm54 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
-//        let segm55 = MPSegment::new("rule-name5".to_string(), "some text5".to_string(), true);
-//        let segms5 = vec![&segm51, &segm53, &segm54, &segm55];
-//        let path5 = MPPath::new(segms5);
-//
-//        let paths = vec![&path1, &path2, &path3, &path4, &path5];
-//
-//        let segm61 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-//        let segm62 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
-//        let segms6 = vec![segm61, segm62];
-//        let path6 = MPPath::new(segms6);
-//
-//        let paths_after1 = path6.paths_after(paths.as_slice(), false);
-//        assert_eq!(paths_after1.len(), 5);
-//
-//        let paths2 = vec![&path2, &path3, &path4, &path5];
-//
-//        let paths_after2 = path6.paths_after(&paths2, false);
-//        assert_eq!(paths_after2.len(), 4);
-//
-//        let paths_after3 = path6.paths_after(&paths, true);
-//        assert_eq!(paths_after3.len(), 2);
-//
-//        let segm71 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-//        let segms7 = vec![&segm71];
-//        let path7 = MPPath::new(segms7);
-//
-//        let paths_after4 = path7.paths_after(&paths2, false);
-//        assert_eq!(paths_after4.len(), 1);
-//
-//        let paths_after5 = path7.paths_after(&paths2, true);
-//        assert_eq!(paths_after5.len(), 1);
+//        assert!(path2.starts_with(&path1));
+//        assert_ne!(path1.starts_with(&path2), true);
 //    }
-
-    #[test]
-    fn var_range_1() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm12 = MPSegment::new("v_rule-name2".to_string(), "some text2".to_string(), true);
-        let segms1 = vec![&segm11, &segm12];
-        let path1 = MPPath::new(segms1);
-        assert!(path1.value.in_var_range);
-    }
-
-    #[test]
-    fn not_var_range_1() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
-        let segms1 = vec![&segm11, &segm12];
-        let path1 = MPPath::new(segms1);
-        assert!(!path1.value.in_var_range);
-    }
-    
-    #[test]
-    fn substitute_1() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
-        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
-        let segms1 = vec![&segm11, &segm12, &segm13];
-        let path1 = MPPath::new(segms1);
-        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
-        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
-        let mut matching: MPMatching = HashMap::new();
-        matching.insert(&segm23, &segm24);
-        let (new_path, old_path) = path1.substitute(&matching);
-
-        assert_eq!(new_path.value.name, "rule-name4");
-        assert_eq!(old_path.unwrap().value.name, "rule-name3");
-    }
-
-    #[test]
-    fn substitute_2() {
-        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
-        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
-        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
-        let segms1 = vec![&segm11, &segm12, &segm13];
-        let path1 = MPPath::new(segms1);
-        let segm23 = MPSegment::new("rule-name5".to_string(), "some text3".to_string(), false);
-        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
-        let mut matching: MPMatching = HashMap::new();
-        matching.insert(&segm23, &segm24);
-        let (new_path, old_path) = path1.substitute(&matching);
-
-        assert_eq!(new_path.value.name, "rule-name3");
-        assert_eq!(old_path, None);
-    }
-}
+//
+//    #[test]
+//    fn starts_with_path_3() {
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12, &segm13];
+//        let path1 = MPPath::new(segms1);
+//        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
+//        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
+//        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
+//        let segm25 = MPSegment::new("rule-name5".to_string(), "some text5".to_string(), true);
+//        let segms2 = vec![&segm21, &segm22, &segm23, &segm24, &segm25];
+//        let path2 = MPPath::new(segms2);
+//        assert!(path2.starts_with(&path1));
+//        assert_ne!(path1.starts_with(&path2), true);
+//    }
+//
+//    #[test]
+//    fn not_starts_with_path_1() {
+//        let segm11 = MPSegment::new("rule-name9".to_string(), "some text1".to_string(), false);
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12, &segm13];
+//        let path1 = MPPath::new(segms1);
+//        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
+//        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
+//        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
+//        let segm25 = MPSegment::new("rule-name5".to_string(), "some text5".to_string(), true);
+//        let segms2 = vec![&segm21, &segm22, &segm23, &segm24, &segm25];
+//        let path2 = MPPath::new(segms2);
+//        assert_ne!(path2.starts_with(&path1), true);
+//        assert_ne!(path1.starts_with(&path2), true);
+//    }
+//
+//    #[test]
+//    fn not_starts_with_path_2() {
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "some text9".to_string(), false);
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12, &segm13];
+//        let path1 = MPPath::new(segms1);
+//        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
+//        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
+//        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
+//        let segm25 = MPSegment::new("rule-name5".to_string(), "some text5".to_string(), true);
+//        let segms2 = vec![&segm21, &segm22, &segm23, &segm24, &segm25];
+//        let path2 = MPPath::new(segms2);
+//        assert_ne!(path2.starts_with(&path1), true);
+//        assert_ne!(path1.starts_with(&path2), true);
+//    }
+//
+////    #[test]
+////    fn paths_after_1() {
+////        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+////        let segms1 = vec![&segm11];
+////        let path1 = MPPath::new(segms1);
+////        let segm21 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+////        let segm22 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
+////        let segms2 = vec![&segm21, &segm22];
+////        let path2 = MPPath::new(segms2);
+////        let segm31 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+////        let segm32 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
+////        let segm33 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
+////        let segms3 = vec![&segm31, &segm32, &segm33];
+////        let path3 = MPPath::new(segms3);
+////        let segm41 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+////        let segm43 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
+////        let segm44 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
+////        let segms4 = vec![&segm41, &segm43, &segm44];
+////        let path4 = MPPath::new(segms4);
+////        let segm51 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+////        let segm53 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
+////        let segm54 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
+////        let segm55 = MPSegment::new("rule-name5".to_string(), "some text5".to_string(), true);
+////        let segms5 = vec![&segm51, &segm53, &segm54, &segm55];
+////        let path5 = MPPath::new(segms5);
+////
+////        let paths = vec![&path1, &path2, &path3, &path4, &path5];
+////
+////        let segm61 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+////        let segm62 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
+////        let segms6 = vec![segm61, segm62];
+////        let path6 = MPPath::new(segms6);
+////
+////        let paths_after1 = path6.paths_after(paths.as_slice(), false);
+////        assert_eq!(paths_after1.len(), 5);
+////
+////        let paths2 = vec![&path2, &path3, &path4, &path5];
+////
+////        let paths_after2 = path6.paths_after(&paths2, false);
+////        assert_eq!(paths_after2.len(), 4);
+////
+////        let paths_after3 = path6.paths_after(&paths, true);
+////        assert_eq!(paths_after3.len(), 2);
+////
+////        let segm71 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+////        let segms7 = vec![&segm71];
+////        let path7 = MPPath::new(segms7);
+////
+////        let paths_after4 = path7.paths_after(&paths2, false);
+////        assert_eq!(paths_after4.len(), 1);
+////
+////        let paths_after5 = path7.paths_after(&paths2, true);
+////        assert_eq!(paths_after5.len(), 1);
+////    }
+//
+//    #[test]
+//    fn var_range_1() {
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm12 = MPSegment::new("v_rule-name2".to_string(), "some text2".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12];
+//        let path1 = MPPath::new(segms1);
+//        assert!(path1.value.in_var_range);
+//    }
+//
+//    #[test]
+//    fn not_var_range_1() {
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12];
+//        let path1 = MPPath::new(segms1);
+//        assert!(!path1.value.in_var_range);
+//    }
+//    
+//    #[test]
+//    fn substitute_1() {
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
+//        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12, &segm13];
+//        let path1 = MPPath::new(segms1);
+//        let segm23 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), false);
+//        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
+//        let mut matching: MPMatching = HashMap::new();
+//        matching.insert(&segm23, &segm24);
+//        let (new_path, old_path) = path1.substitute(&matching);
+//
+//        assert_eq!(new_path.value.name, "rule-name4");
+//        assert_eq!(old_path.unwrap().value.name, "rule-name3");
+//    }
+//
+//    #[test]
+//    fn substitute_2() {
+//        let segm11 = MPSegment::new("rule-name1".to_string(), "some text1".to_string(), false);
+//        let segm12 = MPSegment::new("rule-name2".to_string(), "some text2".to_string(), false);
+//        let segm13 = MPSegment::new("rule-name3".to_string(), "some text3".to_string(), true);
+//        let segms1 = vec![&segm11, &segm12, &segm13];
+//        let path1 = MPPath::new(segms1);
+//        let segm23 = MPSegment::new("rule-name5".to_string(), "some text3".to_string(), false);
+//        let segm24 = MPSegment::new("rule-name4".to_string(), "some text4".to_string(), false);
+//        let mut matching: MPMatching = HashMap::new();
+//        matching.insert(&segm23, &segm24);
+//        let (new_path, old_path) = path1.substitute(&matching);
+//
+//        assert_eq!(new_path.value.name, "rule-name3");
+//        assert_eq!(old_path, None);
+//    }
+//}
