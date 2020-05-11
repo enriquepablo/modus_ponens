@@ -14,7 +14,7 @@ pub struct MPPath<'a> {
 impl<'a> MPPath<'a> {
     pub fn new(segments: Vec<&'a MPSegment>) -> MPPath {
         let value = *segments.last().expect("no empty paths");
-        let mut identity = String::new();
+        let mut identity = String::with_capacity(segments.len());
         for &segment in segments.iter() {
             identity.push_str(&segment.name);
         }

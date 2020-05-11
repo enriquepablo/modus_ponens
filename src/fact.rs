@@ -52,7 +52,7 @@ impl<'a> FLexicon<'a> {
     pub fn from_paths(&'a self, paths: Vec<MPPath<'a>>) -> &'a Fact<'a> {
         let mut set = self.0.borrow_mut();
         
-        let mut text = String::with_capacity(5);
+        let mut text = String::new();
         for path in paths.iter() {
             if path.value.is_leaf {
                 text.push_str(path.value.text.as_str());
