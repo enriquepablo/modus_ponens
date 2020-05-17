@@ -1,32 +1,54 @@
-use std::{cell::RefCell, collections::HashSet, mem};
+use std::{cell::RefCell, collections::{ HashSet, HashMap }, mem};
 
-use crate::segment::SynSegment;
-use crate::path::SynPath;
+use crate::constants;
+use crate::segment::MPSegment;
+use crate::path::MPPath;
 
 
 
-pub struct Lexicon(RefCell<HashSet<Box<SynSegment>>>);
+pub struct Lexicon {
+    segments: RefCell<HashSet<Box<MPSegment>>>,
+    names: RefCell<HashMap<String, (bool, bool)>>,
+}
 
 impl Lexicon {
     pub fn new() -> Self {
-        Lexicon(RefCell::new(HashSet::new()))
+        Lexicon { 
+            segments: RefCell::new(HashSet::new()),
+            names: RefCell::new(HashMap::new()),
+        }
     }
 
-    pub fn intern(&self, name: &str, text: &str, is_leaf: bool) -> &SynSegment {
-        let mut set = self.0.borrow_mut();
-        let interned = set.get_or_insert(Box::new(SynSegment::new(name.to_string(), text.to_string(), is_leaf)));
+    pub fn intern(&self, name: &str, text: &str, is_leaf: bool) -> &MPSegment {
+        let (is_var, in_var_range, new) = match self.names.borrow().get(name) {
+            Some((is_var, in_var_range)) => (*is_var, *in_var_range, false),
+            None => {
+                let is_var = name == constants::VAR_RULE_NAME;
+                let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
+                (is_var, in_var_range, true)
+            }
+        };
+        if new {
+            self.names.borrow_mut().insert(name.to_string(), (is_var, in_var_range));
+        }
+        let mut set = self.segments.borrow_mut();
+        let interned = set.get_or_insert(Box::new(MPSegment::new(name.to_string(),
+                                                                                  text.to_string(),
+                                                                                  is_leaf,
+                                                                                  is_var,
+                                                                                  in_var_range)));
 
         unsafe { mem::transmute(interned.as_ref()) }
     }
 
-    pub fn make_var(&self, n: usize) -> &SynSegment {
+    pub fn make_var(&self, n: usize) -> &MPSegment {
         let text = format!("<__X{}>", &n);
         self.intern("var", &text, true)
     }
-    pub fn empty_path(&self) -> SynPath {
-        let root = self.intern("root", "empty", false);
+    pub fn empty_path(&self) -> MPPath {
+        let root = self.intern("fact", "0", false);
         let segments = vec![root];
-        SynPath::new(segments)
+        MPPath::new(segments)
     }
 }
 

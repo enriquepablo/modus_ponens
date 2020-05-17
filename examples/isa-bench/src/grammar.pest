@@ -1,0 +1,23 @@
+knowledge   = { (sentence ~ ".")+ }
+
+sentence    = _{ rule | fact }
+
+rule        = { antecedents+ ~ consequents }
+
+antecedents = { factset ~ "->" }
+consequents = { factset }
+
+factset     = _{ fact ~ (";" ~ fact)* }
+
+fact        = { value ~ pred ~ value }
+
+var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+
+pred        = @{ "ISA" ~ ('0'..'9')+ | "IS" ~ ('0'..'9')+ }
+
+v_name      = @{ ASCII_ALPHANUMERIC+ }
+
+value       = _{ v_name | var }
+
+COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+WHITESPACE  = { " " | "\t" | "\r" | "\n" }

@@ -7,26 +7,26 @@ use std::cell::{ RefCell, Cell };
 use bumpalo::{Bump};
 
 use crate::constants;
-use crate::path::SynPath;
-use crate::segment::SynSegment;
-use crate::matching::SynMatching;
+use crate::path::MPPath;
+use crate::segment::MPSegment;
+use crate::matching::MPMatching;
 use crate::fact::Fact;
 
 
-type Response<'a> = Vec<(Vec<&'a RuleRef<'a>>, SynMatching<'a>)>;
+pub type Response<'a> = Vec<(Vec<&'a RuleRef<'a>>, MPMatching<'a>)>;
 
 pub fn new_response<'a>() -> Response<'a> {
     vec![]
 }
 
 #[derive(Debug, Clone)]
-pub struct Rule<'a> {
+pub struct MPRule<'a> {
     pub antecedents: Vec<&'a Fact<'a>>,
     pub more_antecedents: Vec<Vec<&'a Fact<'a>>>,
     pub consequents: Vec<&'a Fact<'a>>,
 }
 
-impl<'a> fmt::Display for Rule<'a> {
+impl<'a> fmt::Display for MPRule<'a> {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let more = &self.more_antecedents.iter()
@@ -50,17 +50,17 @@ impl<'a> fmt::Display for Rule<'a> {
 
 #[derive(Debug, Clone)]
 pub struct RuleRef<'a> {
-    pub rule: Rule<'a>,
-    pub varmap: SynMatching<'a>,
+    pub rule: MPRule<'a>,
+    pub varmap: MPMatching<'a>,
 }
 
 
 #[derive(Debug)]
 pub struct RSNode<'a> {
-    path: &'a SynPath<'a>,
+    path: &'a MPPath<'a>,
     var_child : RefCell<Box<UVarChild<'a>>>,
-    var_children: RefCell<HashMap<&'a SynPath<'a>, &'a RSNode<'a>>>,
-    children: RefCell<HashMap<&'a SynPath<'a>, &'a RSNode<'a>>>,
+    var_children: RefCell<HashMap<&'a MPPath<'a>, &'a RSNode<'a>>>,
+    children: RefCell<HashMap<&'a MPPath<'a>, &'a RSNode<'a>>>,
     rule_refs: RefCell<Vec<&'a RuleRef<'a>>>,
     end_node: Cell<bool>,
 }
@@ -78,7 +78,7 @@ pub struct RuleSet<'a> {
 
 impl<'a> RuleSet<'a> {
 
-    pub fn new(root_path: SynPath<'a>) -> Self {
+    pub fn new(root_path: MPPath<'a>) -> Self {
         let root_path_ref = Box::leak(Box::new(root_path));
         let root = RSNode::new(root_path_ref, 1);
         RuleSet {
@@ -87,10 +87,10 @@ impl<'a> RuleSet<'a> {
             rule_refs: Bump::new(),
         }
     }
-    pub fn follow_and_create_paths(&'a self, paths: &'a [SynPath], rule_ref: RuleRef<'a>, mut depth: usize) {
+    pub fn follow_and_create_paths(&'a self, paths: &'a [MPPath], rule_ref: RuleRef<'a>, mut depth: usize) {
         let mut parent: &RSNode = &self.root; 
         let mut child: Option<&RSNode>; 
-        let mut visited_vars: Vec<&SynSegment> = vec![];
+        let mut visited_vars: Vec<&MPSegment> = vec![];
         for (i, new_path) in paths.iter().enumerate() {
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
@@ -123,7 +123,7 @@ impl<'a> RuleSet<'a> {
         parent.rule_refs.borrow_mut().push(rule_ref_ref);
     }
 
-    fn create_paths(&'a self, mut parent: &'a RSNode<'a>, paths: &'a [SynPath], mut visited: Vec<&'a SynSegment>, mut depth: usize) -> &'a RSNode {
+    fn create_paths(&'a self, mut parent: &'a RSNode<'a>, paths: &'a [MPPath], mut visited: Vec<&'a MPSegment>, mut depth: usize) -> &'a RSNode {
         for new_path in paths {
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
@@ -145,9 +145,9 @@ impl<'a> RuleSet<'a> {
         parent.end_node.set(true);
         parent
     }
-    pub fn query_paths(&'a self, paths: &'a [SynPath<'a>]) -> Response {
+    pub fn query_paths(&'a self, paths: &'a [MPPath<'a>]) -> Response {
         let response = new_response();
-        let matched: SynMatching = HashMap::new();
+        let matched: MPMatching = HashMap::new();
         let (response, _) = self.root.climb(paths, response, matched);
         response
     }
@@ -155,7 +155,7 @@ impl<'a> RuleSet<'a> {
 
 impl<'a> RSNode<'a> {
 
-    pub fn new(root_path: &'a SynPath<'a>, depth: usize) -> RSNode<'a> {
+    pub fn new(root_path: &'a MPPath<'a>, depth: usize) -> RSNode<'a> {
         let capacity = constants::NODE_MAP_CAPACITY / depth;
         RSNode {
             path: root_path,
@@ -166,7 +166,7 @@ impl<'a> RSNode<'a> {
             end_node: Cell::new(false),
         }
     }
-    pub fn get_child(&'a self, path: &'a SynPath) -> Option<&'a Self> {
+    pub fn get_child(&'a self, path: &'a MPPath) -> Option<&'a Self> {
         let children = self.children.borrow();
         match children.get(path) {
             None => None,
@@ -175,7 +175,7 @@ impl<'a> RSNode<'a> {
             }
         }
     }
-    pub fn get_vchild(&'a self, path: &'a SynPath) -> Option<&'a Self> {
+    pub fn get_vchild(&'a self, path: &'a MPPath) -> Option<&'a Self> {
         let vchildren = self.var_children.borrow();
         match vchildren.get(path) {
             None => None,
@@ -196,13 +196,13 @@ impl<'a> RSNode<'a> {
     }
 
     pub fn climb(&'a self,
-                 mut paths: &'a [SynPath<'a>],
+                 mut paths: &'a [MPPath<'a>],
                  mut response: Response<'a>,
-                 mut matched: SynMatching<'a>) -> (Response<'a>, SynMatching<'a>) {
+                 mut matched: MPMatching<'a>) -> (Response<'a>, MPMatching<'a>) {
         let parent = self;
         let mut finished = false;
-        let mut next_path: Option<&SynPath> = None;
-        let mut next_paths: Option<&'a [SynPath]> = None;
+        let mut next_path: Option<&MPPath> = None;
+        let mut next_paths: Option<&'a [MPPath]> = None;
         while !finished {
             let split_paths = paths.split_first();
             if split_paths.is_some() {
@@ -234,7 +234,7 @@ impl<'a> RSNode<'a> {
                 let old_value = matched.get(vpath.value);
                 if old_value.is_some() {
                     if &new_value == old_value.unwrap() {
-                        let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths);
+                        let new_paths = MPPath::paths_after_slice(new_path_slice, rest_paths);
                         let (new_response, new_matched) = varchild.climb(new_paths, response, matched);
                         response = new_response;
                         matched = new_matched;
@@ -246,7 +246,7 @@ impl<'a> RSNode<'a> {
             if var_child_opt.is_some() {
                 let var_child = var_child_opt.unwrap();
                 let (new_path_slice, new_value) = path.sub_slice(var_child.path.len());
-                let new_paths = SynPath::paths_after_slice(new_path_slice, rest_paths);
+                let new_paths = MPPath::paths_after_slice(new_path_slice, rest_paths);
                 let mut new_matched = matched.clone();
                 new_matched.insert(var_child.path.value, new_value);
                 let (new_response, _) = var_child.climb(new_paths, response, new_matched);
@@ -275,7 +275,7 @@ impl<'a> RSNode<'a> {
 //
 //
 //    impl<'a> PremSet<'a> {
-//        fn new (root_path: SynPath<'a>) -> PremSet<'a> {
+//        fn new (root_path: MPPath<'a>) -> PremSet<'a> {
 //            PremSet { root: Box::new(RSNode::new(root_path)) }
 //        }
 //        fn add_fact (self, fact: &'a Fact<'a>) -> PremSet {
