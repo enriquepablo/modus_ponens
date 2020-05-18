@@ -1,5 +1,8 @@
 # modus_ponens.
 
+NOTE: this is a mirror, for up to date links for modus_ponens please visit
+http://www.modus_ponens.net/
+
 ## Introduction.
 
 [Modus_ponens][0] is a [rust][1] library that can be used to build [forward chaining][2] [inference engines][3],
