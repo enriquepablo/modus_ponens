@@ -18,8 +18,6 @@ modus_ponens interesting to you:
 * It is scalable. The algorithmic cost (time and space) of adding
   both new facts and new rules to the system is independent of the amount of them already there.
   In this sense it must be noted that it uses a novel algorithm with little resemblance to [RETE][6].
-  The results below show that adding a single rule or fact to the system took a few tens of nanoseconds, 
-  both into an empty system and into a system with 2e5 rules and 6e5 facts.
 
 These properties should make it very appropriate for large and expresive expert systems.
 
