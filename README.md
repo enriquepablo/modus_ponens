@@ -1,7 +1,7 @@
 # modus_ponens.
 
 NOTE: this is a mirror, for up to date links for modus_ponens please visit
-http://www.modus_ponens.net/
+http://www.modus-ponens.net/
 
 ## Introduction.
 
