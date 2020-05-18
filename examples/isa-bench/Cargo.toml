@@ -12,6 +12,6 @@ env_logger = "0.7.1"
 pest = "2.1.2"
 pest_derive = "2.1.0"
 bumpalo = "3.2.1"
-modus_ponens = { path = "../../" }
-modus_ponens_derive = { path = "../../modus_ponens_derive" }
+modus_ponens = "0.11.0"
+modus_ponens_derive = "0.1.0"
 structopt = "0.3.14"
