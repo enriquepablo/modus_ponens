@@ -1,6 +1,5 @@
 target/
 **/*.rs.bk
-syntree.code-workspace
 .project
 heaptrack.*
 out
