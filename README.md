@@ -38,7 +38,7 @@ The fundamental operational semantics of these objects, in forward chaining syst
 is three-fold:
 1) Facts and rules are added by the user to the system;
 2) Facts can match with rules, thus producing new facts not directly provided by the user
-   (or, equivalently, triggering some other arbitrary actions).
+   (or, equivalently, triggering some other arbitrary actions);
 3) The system can be queried for the presence of facts, according to some query language.
 
 Popular examples of forward chaining inference engines are the one in CLIPS,
@@ -92,10 +92,17 @@ and also that Dog is a sub-taxon of Mammal, and then we query the system for mam
 we want to obtain Bobby in the response.
 For this, we will add 2 rules:
 
-1) A sub-taxon B & B sub-taxon C -> A sub-taxon C
-2) A belongs B & B sub-taxon C -> A belongs C
+1) A ia a sub-taxon of B & B is a sub-taxon of C -> A is a sub-taxon of C
+2) A belongs to B & B is a sub-taxon of C -> A belongs to C
 
-So first, the grammar. Since we can use unicode, we'll do so.
+First of all, we must add a dependency to our `Cargo.toml`:
+
+```toml
+[dependencies]
+modus_ponens_derive = "0.1.0"
+```
+
+Now, the grammar. Since we can use unicode, we'll do so.
 For the "sub-taxon" predicate we'll use `⊆`, and for belongs, `∈`.
 We also need names for the individuals and taxons,
 for which we'll use strings of lower case latin letters.
@@ -134,12 +141,12 @@ Note how we mark the production `v_name`, that can match variables, with a prefi
 and mix it with `var` in a further `name` production.
 We call these *logical* productions. 
 In this case `v_name` is a terminal production, but it need not be so;
-and there can be more than one production marked as logical,
-so it is perfectly possible to represent higher order logics.
+and there can be more than one production marked as logical.
+So it is perfectly possible to represent higher order logics.
 
 We store this grammar in a file named `grammar.pest`.
 
-now, we build our knowledge base based on the grammar. First some boilerplate:
+Then, we build our knowledge base based on the grammar. First some boilerplate:
 
 ```rust
 extern crate modus_ponens;
@@ -188,7 +195,7 @@ assert_eq!(kb.ask("primate ∈ animal.", false);
 ```
 
 That completes a first approach to modus_ponens.
-To try the code yourself, you can do as follows:
+To try the code in this example yourself, you can do as follows:
 
 ```bash
 $ git clone <modus_ponens mirror>
@@ -227,22 +234,18 @@ there is not a single filtered iteration of nodes involved.
 This is not the case for RETE:
 With RETE, the cost of adding a fact or a rule increases with the total number
 of rules in the system. At least, that is what the numbers below show.
-Doorenboss in [his thesis][13]
-sets as objective:
-
-"Ouranalysisasksunderwhatcircumstancesecientmatchingcanbeguaranteed.By\e-cient,"wemeanthematchcostshouldbe(1)polynomialinW,thenumberofWMEsinworkingmemory;(2)polynomialinC,thenumberofconditionsperproduction;1and(3)sublinearinP,thenumberofproductions."
-
-
-claims that RETE can be adapted to have a match cost independent on the number of rules
-under certain conditions
-(that as far as I can see are met by the experiments below),
-so I may be mistaken in the sense that CLIPS is state of the art.
+Doorenboss in [his thesis][13] sets as objective for an efficient matching algorithm
+one that is polynomial in the number of facts (WMEs) and sublinear in the number of
+rules. He claims the objective to be achievable that with his RETE/UL enhancement of RETE.
+What I observe with CLIPS is a performance independent of the number of facts
+and linear in the number of rules.
 
 The benchmarks shown below consisted on adding 200 000 rules and 600 000 facts,
 where every 2 rules would be matched by 6 of the facts to produce 4 extra assertions.
-Every 1000 rules we would measure the time cost of adding a few more rules and facts.
-We are showing the results of 3 runs. Each run took modus_pones around 2 minutes,
-and CLIPS around 7 hours. This is the code for the CLIPS benchmark and this for modus_ponens.
+Every 1000 rules added we would measure the time cost of adding a few more rules and facts.
+We are showing the results of 3 runs. Each run took modus_ponens around 2 minutes,
+and CLIPS around 7 hours. [This is the code for the CLIPS benchmark][14]
+and [this for modus_ponens][15].
 
 First we see the effect of increasing the number of rules in the system
 on the time the system takes to process each new fact.
@@ -253,7 +256,7 @@ whereas modus_ponens persistently takes the same time for each fact.
 
 ![Effect of the number of rules in the system on the time cost of adding a new fact in modus_ponens](img/mopo-fact.svg)
 
-Some results which are boring and thus we do not show,
+Some results which we do not plot,
 gave evidence to the effect that maintining the number of rules,
 and increasing the number of facts in the system,
 had no effect on the cost of adding new facts or rules,
@@ -277,6 +280,7 @@ independently of the number of favts and rules already in the system.
 There is room for improvement in this sense, as 2kb / fact is way more
 than strictly needed.
 
+## References
 
 [0]:http://www.modus-ponens.net/
 [1]:https://www.rust-lang.org
