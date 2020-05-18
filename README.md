@@ -277,8 +277,6 @@ independently of the number of favts and rules already in the system.
 There is room for improvement in this sense, as 2kb / fact is way more
 than strictly needed.
 
-## References
-
 [0]:http://www.modus-ponens.net/
 [1]:https://www.rust-lang.org
 [2]:https://en.wikipedia.org/wiki/Forward_chaining
@@ -293,6 +291,8 @@ than strictly needed.
 [11]:https://pest.rs
 [12]:https://pyclips.sourceforge.net/web/
 [13]:http://reports-archive.adm.cs.cmu.edu/anon/1995/CMU-CS-95-113.pdf
+[14]:https://gitlab.com/enriquepablo/modus_ponens/-/blob/mirrors/python/benchmark_clips.py
+[15]:https://gitlab.com/enriquepablo/modus_ponens/-/blob/mirrors/examples/isa-bench/src/main.rs
 
 ---
 
