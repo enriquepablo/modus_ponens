@@ -252,9 +252,9 @@ on the time the system takes to process each new fact.
 CLIPS shows a (seemingly constantly) increasing cost,
 whereas modus_ponens persistently takes the same time for each fact.
 
-![Effect of the number of rules in the system on the time cost of adding a new fact in CLIPS](img/clips-fact.svg)
+![Effect of the number of rules in the system on the time cost of adding a new fact in CLIPS](img/clips-fact.png)
 
-![Effect of the number of rules in the system on the time cost of adding a new fact in modus_ponens](img/mopo-fact.svg)
+![Effect of the number of rules in the system on the time cost of adding a new fact in modus_ponens](img/mopo-fact.png)
 
 Some results which we do not plot,
 gave evidence to the effect that maintining the number of rules,
@@ -269,9 +269,9 @@ The next results show the effect that increasing the total number of rules
 had on the cost of adding a new rule. Again, in CLIPS the cost seems to increase continuously,
 whereas in modus_ponens the cost seems independent of the number of rules.
 
-![Effect of the number of rules in the system on the time cost of adding a new rule in CLIPS](img/clips-rules.svg)
+![Effect of the number of rules in the system on the time cost of adding a new rule in CLIPS](img/clips-rule.png)
 
-![Effect of the number of rules in the system on the time cost of adding a new rule in modus_ponens](img/mopo-rules.svg)
+![Effect of the number of rules in the system on the time cost of adding a new rule in modus_ponens](img/mopo-rule.png)
 
 I also measured the peak memory allocated by the process as measured by heaptrack,
 with different numbers of facts and rules. I don't have enough data to plot it,
