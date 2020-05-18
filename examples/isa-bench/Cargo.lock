@@ -209,6 +209,8 @@ checksum = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
 [[package]]
 name = "modus_ponens"
 version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8640016d00e6724849e3a552f5ce28d3bcaa5e4c5ae40e18facdffe81bf172eb"
 dependencies = [
  "bumpalo",
  "env_logger",
@@ -223,6 +225,8 @@ dependencies = [
 [[package]]
 name = "modus_ponens_derive"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3eb11e43e313460ce9891bac828130fd2501b978fa9448a02673aa4a02263b9f"
 dependencies = [
  "modus_ponens",
 ]
