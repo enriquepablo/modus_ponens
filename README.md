@@ -227,7 +227,7 @@ of rules in the system. At least, that is what the numbers below show.
 Doorenboss in [his thesis][13]
 sets as objective:
 
-
+"Ouranalysisasksunderwhatcircumstancesecientmatchingcanbeguaranteed.By\e-cient,"wemeanthematchcostshouldbe(1)polynomialinW,thenumberofWMEsinworkingmemory;(2)polynomialinC,thenumberofconditionsperproduction;1and(3)sublinearinP,thenumberofproductions."
 
 
 claims that RETE can be adapted to have a match cost independent on the number of rules
