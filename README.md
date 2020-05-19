@@ -151,7 +151,8 @@ WHITESPACE  = { " " | "\t" | "\r" | "\n" }
 In this grammar, the productions `WHITESPACE`, `knowledge`, `sentence`, `rule`,
 `antecedents`, `consequents`, `factset`, and `var` are prescribed by modus\_ponens.
 On top of these, the user must provide a production for `fact`.
-In this case we provide very simple facts, just triples subject-predicate-object.
+So we, as "user", are providing `name`, `v_name`, and `pred`, to compose `fact`.
+In this case we allow very simple facts, just triples subject-predicate-object.
 
 Note how we mark the production `v_name`, that can match variables, with a prefix "v_",
 and mix it with `var` in a further `name` production.
