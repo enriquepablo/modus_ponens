@@ -68,7 +68,7 @@ according to modus ponens.
 
 ## modus_ponens
 
-What modus_ponens provides is an implementation of logical conjunction and implication and
+What modus\_ponens provides is an implementation of logical conjunction and implication and
 of quantified variables, and it does so, not on top of some particular syntax for the facts
 that are conjoined or implied or that contain the variables, but on top of [PEG][10] parse trees.
 For modus_ponens, a fact is just a parse tree produced by the [Pest][11] PEG parser.
@@ -79,7 +79,7 @@ So, the provided PEG must include productions accounting for the logical connect
 and for variables, prescribed by modus_ponens.
 As a bridge between what modus_ponens prescribes and what the user ad-libs,
 the user needs to mark which of the productions that compose her facts
-can match the variables prescribed by modus_ponens.
+can match the variables prescribed by modus\_ponens.
 Otherwise, there is no restriction in the structure of the productions providing the facts.
 
 I think that this justifies the claim that
