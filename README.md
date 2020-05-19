@@ -114,7 +114,8 @@ pest_derive = "2.1.0"
 log = "0.4"
 env_logger = "0.7.1"
 ```
-
+&nbsp;
+&nbsp;
 
 Now, the grammar. It is Pest that interprets this grammar,
 so look up the [Pest documentation][16] for its syntax.
@@ -147,6 +148,8 @@ name        = _{ v_name | var }
 
 WHITESPACE  = { " " | "\t" | "\r" | "\n" }
 ```
+&nbsp;
+&nbsp;
 
 In this grammar, the productions `WHITESPACE`, `knowledge`, `sentence`, `rule`,
 `antecedents`, `consequents`, `factset`, and `var` are prescribed by modus\_ponens.
@@ -177,6 +180,8 @@ extern crate pest_derive;
 #[grammar = "grammar.pest"]
 pub struct KBGenerator;
 ```
+&nbsp;
+&nbsp;
 
 This provides us with a `struct` `KBgenerator`, whose only responsibility is to
 create knowledge bases that can hold facts and rules according to `grammar.pest`.
@@ -185,6 +190,8 @@ So we can build a knowledge base:
 ```rust
 let kb = KBGenerator::gen_kb();
 ```
+&nbsp;
+&nbsp;
 
 We can add rules to it:
 
@@ -192,6 +199,8 @@ We can add rules to it:
 kb.tell("<x0> ⊆ <X1> ∧ <X1> ⊆ <X2> → <X0> ⊆ <X2>.");
 kb.tell("<X0> ∈ <X1> ∧ <X1> ⊆ <X2> → <X0> ∈ <X2>.");
 ```
+&nbsp;
+&nbsp;
 
 We add some content:
 
@@ -200,6 +209,8 @@ kb.tell("human ⊆ primate.");
 kb.tell("primate ⊆ animal.");
 kb.tell("susan ∈ human.");
 ```
+&nbsp;
+&nbsp;
 
 And we query the system:
 
@@ -209,6 +220,8 @@ assert_eq!(kb.ask("susan ∈ animal.", true);
 assert_eq!(kb.ask("susan ⊆ animal.", false);
 assert_eq!(kb.ask("primate ∈ animal.", false);
 ```
+&nbsp;
+&nbsp;
 
 That completes a first approach to modus\_ponens.
 To try the code in this example yourself, you can do as follows:
@@ -219,6 +232,8 @@ $ cd modus_ponens/examples/readme-example
 $ cargo build --release
 $ RUST_LOG=trace ./target/release/readme-example
 ```
+&nbsp;
+&nbsp;
 
 `RUST_LOG=trace` will log to stdout all facts and rules added in the system;
 `RUST_LOG=info` will only log facts.
