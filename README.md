@@ -3,7 +3,14 @@
 NOTE: this is a mirror, for up to date links for modus_ponens please visit
 http://www.modus-ponens.net/
 
-## Introduction.
+## Contents
+1. [Introduction](#intro)
+2. [Inference engines](#engines)
+3. [modus_ponens](#mopo)
+4. [Example](#example)
+5. [Complexity](#complexity)
+
+## Introduction
 
 [Modus_ponens][0] is a [rust][1] library that can be used to build [forward chaining][2] [inference engines][3],
 a.k.a. [production rule systems][4]. If you need such a system, these are the reasons that might make
@@ -29,7 +36,7 @@ However, it must also be said that
 
 Below, I will try to substantiate the claims I have made above.
 
-## Inference engines.
+## Inference engines
 
 Inference engines deal with 2 basic kinds of objects: facts and rules.
 The fundamental operational semantics of these objects, in forward chaining systems,
@@ -76,7 +83,7 @@ Otherwise, there is no restriction in the structure of the productions providing
 I think that this justifies the claim that
 modus_ponens provides extreme freedom in choosing a syntax for the facts to be dealt with.
 
-## example.
+## Example
 
 As an example, we will develop a system that represents a simple taxonomy.
 In this system, sentences have 2 basic forms:
@@ -93,11 +100,16 @@ For this, we will add 2 rules:
 1) A ia a sub-taxon of B & B is a sub-taxon of C -> A is a sub-taxon of C
 2) A belongs to B & B is a sub-taxon of C -> A belongs to C
 
-First of all, we must add a dependency to our `Cargo.toml`:
+First of all, we must add some dependencies to our `Cargo.toml`:
 
 ```toml
 [dependencies]
+modus_ponens = "0.11.0"
 modus_ponens_derive = "0.1.0"
+pest = "2.1.2"
+pest_derive = "2.1.0"
+log = "0.4"
+env_logger = "0.7.1"
 ```
 
 Now, the grammar. It is Pest that interprets this grammar,
@@ -210,7 +222,7 @@ $ RUST_LOG=trace ./target/release/readme-example
 TODO: document queries with variables,
 TODO: document consecutive sets of conditions.
 
-## complexity.
+## Complexity
 
 We consider here that the state of the art in forward chaining inference engines are implementations
 of variants of the RETE algorithm, with different kinds of heuristic improvements
