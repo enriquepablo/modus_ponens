@@ -9,7 +9,7 @@ homepage = "http://www.modus_ponens.net"
 documentation = "http://doc.modus_ponens.net"
 repository = "https://gitlab.com/enriquepablo/modus_ponens"
 readme = "README.md"
-include = ["img/*.png"]
+include = ["README.md", "LICENSE.txt", "src/*", "img/*.png"]
 
 [dependencies]
 log = "0.4"
