@@ -313,11 +313,11 @@ Zooming in on modus\_ponens data:
 It is worth noting that in modus\_ponens, contrary to CLIPS, it is much cheaper adding rules
 that adding facts.
 
-I also measured the peak memory allocated by the process as measured by heaptrack,
+I also measured the peak memory allocated by the process as measured by [heaptrack][17],
 with different numbers of facts and rules. I don't have enough data to plot it,
-but preliminary results show a constant spatial cost per fact of around 2kb,
+but preliminary results show a constant spatial cost per fact of around 2KB,
 independently of the number of favts and rules already in the system.
-There is room for improvement in this sense, as 2kb / fact is way more
+There is room for improvement in this sense, as 2KB / fact is way more
 than strictly needed.
 
 [0]:http://www.modus-ponens.net/
@@ -337,7 +337,8 @@ than strictly needed.
 [14]:https://gitlab.com/enriquepablo/modus_ponens/-/blob/mirrors/python/benchmark_clips.py
 [15]:https://gitlab.com/enriquepablo/modus_ponens/-/blob/mirrors/examples/isa-bench/src/main.rs
 [16]:https://pest.rs/book/grammars/syntax.html
+[17]:https://www.kdab.com/heaptrack-v1-0-0-release/
 
 ---
 
-© Enrique Pérez Arnaud <enrique at cazalla.net> 2020
+© Enrique Pérez Arnaud &lt;enrique at cazalla.net&gt; 2020
