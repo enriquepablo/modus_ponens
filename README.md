@@ -20,7 +20,7 @@ modus_ponens interesting to you:
   it is the same order of magnitude fast as the [CLIPS][5] programming language,
   and with tens and hundreds of thousands of rules, it is an increasing number of orders
   of magnitude faster than CLIPS (e.g., with 200 000 rules in the system, modus_ponens
-  is 4 orders of magnitude faster, see the results below).
+  is 4 orders of magnitude faster adding another rule, see the results below).
 * It is customizable. There is total freedom in the syntax of the facts that
   can be fed to inference engines produced with modus_ponens.
 * It is scalable. The algorithmic cost (time and space) of adding
