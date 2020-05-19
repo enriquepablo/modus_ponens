@@ -54,6 +54,7 @@ or the one behind the [Drools][7] Business Rules Management System.
 Different engines provide different syntax for their facts.
 For example, CLIPS uses [lisp style s-expressions][8],
 and Drools uses some own ad-hoc syntax.
+
 Rules are essentially made up of a number of conditions and a number of actions,
 where conditions are facts that can contain quantified, bound variables,
 and actions can be anything to be triggered when the conditions of a rule are matched;
