@@ -100,7 +100,7 @@ and also that Dog is a sub-taxon of Mammal, and then we query the system for mam
 we want to obtain Bobby in the response.
 For this, we will add 2 rules:
 
-1. A ia a sub-taxon of B & B is a sub-taxon of C -> A is a sub-taxon of C
+1. A is a sub-taxon of B & B is a sub-taxon of C -> A is a sub-taxon of C
 2. A belongs to B & B is a sub-taxon of C -> A belongs to C
 
 First of all, we must add some dependencies to our `Cargo.toml`:
