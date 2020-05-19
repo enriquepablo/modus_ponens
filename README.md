@@ -247,7 +247,7 @@ but with no significative change in the fundamental complexity.
 We use CLIPS 6.30 as reference implementation of RETE, managed from [PyCLIPS][12].
 There is CLIPS 6.31 and 6.4beta, but we gather from their changelogs that
 those new versions do not carry algorithmic improvements that would alter the results shown below,
-and PyCLIPS is very convenient for benchmarking CLIPS - and only knows about 6.30.
+and PyCLIPS is very convenient for benchmarking CLIPS - and only knows about CLIPS 6.30.
 
 Now, with modus\_ponens, the cost of adding a new fact (or rule) to the system is only dependent
 on the grammatical complexity of the fact (or of the conditions of the rule) being added,
@@ -265,7 +265,7 @@ With RETE, the cost of adding a fact or a rule increases with the total number
 of rules in the system. At least, that is what the numbers below show.
 Doorenboss in [his thesis][13] sets as objective for an efficient matching algorithm
 one that is polynomial in the number of facts (WMEs) and sublinear in the number of
-rules. He claims the objective to be achievable that with his RETE/UL enhancement of RETE.
+rules. He claims the objective to be achievable with his RETE/UL enhancement of RETE.
 What I observe with CLIPS is a performance independent of the number of facts
 and linear in the number of rules.
 
