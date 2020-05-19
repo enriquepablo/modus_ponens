@@ -97,7 +97,9 @@ First of all, we must add a dependency to our `Cargo.toml`:
 modus_ponens_derive = "0.1.0"
 ```
 
-Now, the grammar. Since we can use unicode, we'll do so.
+Now, the grammar. It is Pest that interprets this grammar,
+so look up the [Pest documentation][16] for its syntax.
+Since we can use unicode, we'll do so.
 For the "sub-taxon" predicate we'll use `⊆`, and for belongs, `∈`.
 We also need names for the individuals and taxons,
 for which we'll use strings of lower case latin letters.
@@ -247,7 +249,9 @@ on the time the system takes to process each new fact.
 CLIPS shows a (seemingly constantly) increasing cost,
 whereas modus_ponens persistently takes the same time for each fact.
 
-![Effect of the number of rules in the system on the time cost of adding a new fact in CLIPS](img/clips-fact.png)
+![Effect of the number of rules in the system on the time cost of adding a new fact](img/facts-clips-mopo.png)
+
+Zooming in on modus_ponens data:
 
 ![Effect of the number of rules in the system on the time cost of adding a new fact in modus_ponens](img/mopo-fact.png)
 
@@ -264,7 +268,9 @@ The next results show the effect that increasing the total number of rules
 had on the cost of adding a new rule. Again, in CLIPS the cost seems to increase continuously,
 whereas in modus_ponens the cost seems independent of the number of rules.
 
-![Effect of the number of rules in the system on the time cost of adding a new rule in CLIPS](img/clips-rule.png)
+![Effect of the number of rules in the system on the time cost of adding a new rule](img/rules-clips-mopo.png)
+
+Zooming in on modus_ponens data:
 
 ![Effect of the number of rules in the system on the time cost of adding a new rule in modus_ponens](img/mopo-rule.png)
 
@@ -291,6 +297,7 @@ than strictly needed.
 [13]:http://reports-archive.adm.cs.cmu.edu/anon/1995/CMU-CS-95-113.pdf
 [14]:https://gitlab.com/enriquepablo/modus_ponens/-/blob/mirrors/python/benchmark_clips.py
 [15]:https://gitlab.com/enriquepablo/modus_ponens/-/blob/mirrors/examples/isa-bench/src/main.rs
+[16]:https://pest.rs/book/grammars/syntax.html
 
 ---
 
