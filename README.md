@@ -277,6 +277,10 @@ Zooming in on modus_ponens data:
 
 ![Effect of the number of rules in the system on the time cost of adding a new rule in modus_ponens](img/mopo-rule.png)
 
+
+It is worth noting that in modus_ponens, contrary to CLIPS, it is much cheaper adding rules
+that adding facts.
+
 I also measured the peak memory allocated by the process as measured by heaptrack,
 with different numbers of facts and rules. I don't have enough data to plot it,
 but preliminary results show a constant spatial cost per fact of around 2kb,
