@@ -42,6 +42,7 @@ Below, I will try to substantiate the claims I have made above.
 Inference engines deal with 2 basic kinds of objects: facts and rules.
 The fundamental operational semantics of these objects, in forward chaining systems,
 is three-fold:
+
 1) Facts and rules are added by the user to the system;
 2) Facts can match with rules, thus producing new facts not directly provided by the user
    (or, equivalently, triggering some other arbitrary actions);
