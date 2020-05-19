@@ -83,9 +83,6 @@ the user needs to mark which of the productions that compose her facts
 can match the variables prescribed by modus\_ponens.
 Otherwise, there is no restriction in the structure of the productions providing the facts.
 
-I think that this justifies the claim that
-modus\_ponens provides extreme freedom in choosing a syntax for the facts to be dealt with.
-
 ## Example
 
 As an example, we will develop a system that represents a simple taxonomy.
