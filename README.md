@@ -276,6 +276,9 @@ We are showing the results of 3 runs. Each run took modus\_ponens around 2 minut
 and CLIPS around 7 hours. [This is the code for the CLIPS benchmark][14]
 and [this for modus\_ponens][15].
 
+The fact that we only show data from 3 runs shows, in the odd artifacts in the graphs,
+but the general trends are clear enough that I think we can ignore the artifacts.
+
 First we see the effect of increasing the number of rules in the system
 on the time the system takes to process each new fact.
 CLIPS shows a (seemingly constantly) increasing cost,
