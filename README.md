@@ -1,6 +1,6 @@
 # modus_ponens.
 
-NOTE: this is a mirror, for up to date links for modus_ponens please visit
+NOTE: this is a mirror, for up to date links for modus\_ponens please visit
 http://www.modus-ponens.net/
 
 ## Contents
@@ -14,15 +14,15 @@ http://www.modus-ponens.net/
 
 [Modus_ponens][0] is a [rust][1] library that can be used to build [forward chaining][2] [inference engines][3],
 a.k.a. [production rule systems][4]. If you need such a system, these are the reasons that might make
-modus_ponens interesting to you:
+modus\_ponens interesting to you:
 
 * It is fast. With hundreds or thousands of rules loaded in the system,
   it is the same order of magnitude fast as the [CLIPS][5] programming language,
   and with tens and hundreds of thousands of rules, it is an increasing number of orders
-  of magnitude faster than CLIPS (e.g., with 200 000 rules in the system, modus_ponens
+  of magnitude faster than CLIPS (e.g., with 200 000 rules in the system, modus\_ponens
   is 4 orders of magnitude faster adding another rule, see the results below).
 * It is customizable. There is total freedom in the syntax of the facts that
-  can be fed to inference engines produced with modus_ponens.
+  can be fed to inference engines produced with modus\_ponens.
 * It is scalable. The algorithmic cost (time and space) of adding
   both new facts and new rules to the system is independent of the amount of them already there.
   In this sense it must be noted that it uses a novel algorithm with little resemblance to [RETE][6].
@@ -71,19 +71,19 @@ according to modus ponens.
 What modus\_ponens provides is an implementation of logical conjunction and implication and
 of quantified variables, and it does so, not on top of some particular syntax for the facts
 that are conjoined or implied or that contain the variables, but on top of [PEG][10] parse trees.
-For modus_ponens, a fact is just a parse tree produced by the [Pest][11] PEG parser.
+For modus\_ponens, a fact is just a parse tree produced by the [Pest][11] PEG parser.
 Thus, the user of the library can provide whatever PEG she chooses to define her space of facts.
 In a sense, the user of the library provides the grammar for the facts,
-and modus_ponens provides the grammar to build rules out of those facts.
+and modus\_ponens provides the grammar to build rules out of those facts.
 So, the provided PEG must include productions accounting for the logical connectives
-and for variables, prescribed by modus_ponens.
-As a bridge between what modus_ponens prescribes and what the user ad-libs,
+and for variables, prescribed by modus\_ponens.
+As a bridge between what modus\_ponens prescribes and what the user ad-libs,
 the user needs to mark which of the productions that compose her facts
 can match the variables prescribed by modus\_ponens.
 Otherwise, there is no restriction in the structure of the productions providing the facts.
 
 I think that this justifies the claim that
-modus_ponens provides extreme freedom in choosing a syntax for the facts to be dealt with.
+modus\_ponens provides extreme freedom in choosing a syntax for the facts to be dealt with.
 
 ## Example
 
@@ -147,7 +147,7 @@ WHITESPACE  = { " " | "\t" | "\r" | "\n" }
 ```
 
 In this grammar, the productions `WHITESPACE`, `knowledge`, `sentence`, `rule`,
-`antecedents`, `consequents`, `factset`, and `var` are prescribed by modus_ponens.
+`antecedents`, `consequents`, `factset`, and `var` are prescribed by modus\_ponens.
 On top of these, the user must provide a production for `fact`.
 In this case we provide very simple facts, just triples subject-predicate-object.
 
@@ -208,7 +208,7 @@ assert_eq!(kb.ask("susan ⊆ animal.", false);
 assert_eq!(kb.ask("primate ∈ animal.", false);
 ```
 
-That completes a first approach to modus_ponens.
+That completes a first approach to modus\_ponens.
 To try the code in this example yourself, you can do as follows:
 
 ```bash
@@ -234,7 +234,7 @@ There is CLIPS 6.31 and 6.4beta, but we gather from their changelogs that
 those new versions do not carry algorithmic improvements that would alter the results shown below,
 and PyCLIPS is very convenient for benchmarking CLIPS - and only knows about 6.30.
 
-Now, with modus_ponens, the cost of adding a new fact (or rule) to the system is only dependent
+Now, with modus\_ponens, the cost of adding a new fact (or rule) to the system is only dependent
 on the grammatical complexity of the fact (or of the conditions of the rule) being added,
 and on the number of rules that the fact matches
 (or on the number of facts that match a condition of the rule, when adding a rule).
@@ -257,18 +257,18 @@ and linear in the number of rules.
 The benchmarks shown below consisted on adding 200 000 rules and 600 000 facts,
 where every 2 rules would be matched by 6 of the facts to produce 4 extra assertions.
 Every 1000 rules added we would measure the time cost of adding a few more rules and facts.
-We are showing the results of 3 runs. Each run took modus_ponens around 2 minutes,
+We are showing the results of 3 runs. Each run took modus\_ponens around 2 minutes,
 and CLIPS around 7 hours. [This is the code for the CLIPS benchmark][14]
-and [this for modus_ponens][15].
+and [this for modus\_ponens][15].
 
 First we see the effect of increasing the number of rules in the system
 on the time the system takes to process each new fact.
 CLIPS shows a (seemingly constantly) increasing cost,
-whereas modus_ponens persistently takes the same time for each fact.
+whereas modus\_ponens persistently takes the same time for each fact.
 
 ![Effect of the number of rules in the system on the time cost of adding a new fact](img/facts-clips-mopo.png)
 
-Zooming in on modus_ponens data:
+Zooming in on modus\_ponens data:
 
 ![Effect of the number of rules in the system on the time cost of adding a new fact in modus_ponens](img/mopo-fact.png)
 
@@ -277,22 +277,22 @@ gave evidence to the effect that maintining the number of rules,
 and increasing the number of facts in the system,
 had no effect on the cost of adding new facts or rules,
 for any of the systems.
-In fact, in the case of modus_ponens the above graph can be taken as evidence that the cost
+In fact, in the case of modus\_ponens the above graph can be taken as evidence that the cost
 does not depend on the number of facts,
 since for each trial with more rules, the number of facts increased accordingly.
 
 The next results show the effect that increasing the total number of rules
 had on the cost of adding a new rule. Again, in CLIPS the cost seems to increase continuously,
-whereas in modus_ponens the cost seems independent of the number of rules.
+whereas in modus\_ponens the cost seems independent of the number of rules.
 
 ![Effect of the number of rules in the system on the time cost of adding a new rule](img/rules-clips-mopo.png)
 
-Zooming in on modus_ponens data:
+Zooming in on modus\_ponens data:
 
 ![Effect of the number of rules in the system on the time cost of adding a new rule in modus_ponens](img/mopo-rule.png)
 
 
-It is worth noting that in modus_ponens, contrary to CLIPS, it is much cheaper adding rules
+It is worth noting that in modus\_ponens, contrary to CLIPS, it is much cheaper adding rules
 that adding facts.
 
 I also measured the peak memory allocated by the process as measured by heaptrack,
