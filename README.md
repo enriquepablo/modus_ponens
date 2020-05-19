@@ -91,8 +91,8 @@ modus\_ponens provides extreme freedom in choosing a syntax for the facts to be 
 As an example, we will develop a system that represents a simple taxonomy.
 In this system, sentences have 2 basic forms:
 
-1) taxon A is a sub-taxon of taxon B
-2) individual A belongs to taxon B
+1. taxon A is a sub-taxon of taxon B
+2. individual A belongs to taxon B
 
 We want the system to provide a complete view of our taxonomy;
 So, for example, if we tell the system that Bobby belongs to Dog,
@@ -100,8 +100,8 @@ and also that Dog is a sub-taxon of Mammal, and then we query the system for mam
 we want to obtain Bobby in the response.
 For this, we will add 2 rules:
 
-1) A ia a sub-taxon of B & B is a sub-taxon of C -> A is a sub-taxon of C
-2) A belongs to B & B is a sub-taxon of C -> A belongs to C
+1. A ia a sub-taxon of B & B is a sub-taxon of C -> A is a sub-taxon of C
+2. A belongs to B & B is a sub-taxon of C -> A belongs to C
 
 First of all, we must add some dependencies to our `Cargo.toml`:
 
