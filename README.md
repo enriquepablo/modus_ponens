@@ -273,11 +273,9 @@ The benchmarks shown below consisted on adding 200 000 rules and 600 000 facts,
 where every 2 rules would be matched by 6 of the facts to produce 4 extra assertions.
 Every 1000 rules added we would measure the time cost of adding a few more rules and facts.
 We are showing the results of 3 runs. Each run took modus\_ponens around 2 minutes,
-and CLIPS around 7 hours. [This is the code for the CLIPS benchmark][14]
+and CLIPS around 7 hours, in my i5-8250U @1.60GHz laptop.
+[This is the code for the CLIPS benchmark][14]
 and [this for modus\_ponens][15].
-
-The fact that we only show data from 3 runs shows, in the odd artifacts in the graphs,
-but the general trends are clear enough that I think we can ignore the artifacts.
 
 First we see the effect of increasing the number of rules in the system
 on the time the system takes to process each new fact.
