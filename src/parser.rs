@@ -102,7 +102,6 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
             }
 
             pub fn parse_fact(&'a self, text: &'a str) -> &'a Fact<'a> {
-                info!("{}", text);
                 let parse_tree = FactParser::parse(Rule::fact, text).ok().unwrap().next().unwrap();
                 self.build_fact(parse_tree)
             }
