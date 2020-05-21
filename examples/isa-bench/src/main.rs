@@ -28,7 +28,7 @@ extern crate pest_derive;
 use std::mem;
 use std::time::SystemTime;
 use structopt::StructOpt;
-use std::{thread, time};
+//use std::{thread, time};
 
 
 use crate::modus_ponens::kbase::KBGen;
@@ -68,7 +68,7 @@ fn main() {
     let num_r = 2;
     let num_f = opt.facts + 4;
 
-    let o_one_sec = time::Duration::from_millis(100);
+    //let o_one_sec = time::Duration::from_millis(100);
     let t0 = SystemTime::now();
     let mut start = 0;
     
@@ -94,7 +94,7 @@ fn main() {
         }
         if ((r % opt.report) == 0) || (r + 1 == opt.rules) {
             for _s in 0..opt.samples {
-                thread::sleep(o_one_sec);
+                //thread::sleep(o_one_sec);
 
                 let mut t_rs = vec![];
                 let mut t_fs = vec![];

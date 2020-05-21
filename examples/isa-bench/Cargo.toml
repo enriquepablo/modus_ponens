@@ -7,11 +7,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+modus_ponens = { path = "../../" }
+modus_ponens_derive = { path = "../../modus_ponens_derive" }
 log = "0.4"
 env_logger = "0.7.1"
 pest = "2.1.2"
 pest_derive = "2.1.0"
 bumpalo = "3.2.1"
-modus_ponens = "0.11.0"
-modus_ponens_derive = "0.1.0"
 structopt = "0.3.14"
