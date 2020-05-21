@@ -1,0 +1,11 @@
+var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+
+fact        = { name ~ pred ~ name }
+
+pred        = @{ "∈" | "⊆" }
+
+v_name      = @{ ASCII_ALPHANUMERIC+ }
+
+name        = _{ v_name | var }
+
+WHITESPACE  = { (" " | "\t" | NEWLINE)+ }

@@ -33,7 +33,12 @@ pub mod ruletree;
 mod knowledge;
 pub mod lexicon;
 pub mod kbase;
+pub mod kparser;
 
+
+extern crate pest;
+#[macro_use]
+extern crate pest_derive;
 
 extern crate proc_macro;
 extern crate proc_macro2;
@@ -72,6 +77,7 @@ pub fn derive_kbase(input: proc_macro::TokenStream) -> TokenStream {
         use modus_ponens::path::MPPath;
         use modus_ponens::ruletree::{ MPRule, RuleSet, RuleRef };
         use modus_ponens::segment::MPSegment;
+        use modus_ponens::kparser;
 
 
         #derived_parser

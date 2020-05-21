@@ -27,7 +27,7 @@ modus\_ponens interesting to you:
   both new facts and new rules to the system is independent of the amount of them already there.
   In this sense it must be noted that it uses a novel algorithm with little resemblance to [RETE][6].
 
-These properties should make it very appropriate for large and expresive expert systems.
+These properties should make it very appropriate for knowledge representation and reasoning.
 
 However, it must also be said that
 

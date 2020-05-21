@@ -18,5 +18,5 @@
 // If not, see <http://www.gnu.org/licenses/>.
 
 #[derive(KBGen)]
-#[grammar = "grammar.pest"]
+#[grammar = "fact.pest"]
 pub struct KBGenerator;

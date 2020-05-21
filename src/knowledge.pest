@@ -1,0 +1,15 @@
+knowledge   = { (sentence ~ ".")+ }
+
+sentence    = _{ rule | fact }
+
+rule        = { antecedents+ ~ consequents }
+
+antecedents = { factset ~ ("->"|"→") }
+consequents = { factset }
+
+factset     = _{ fact ~ ((";"|"∧") ~ fact)* }
+
+fact        = { (!("."|"->"|"→"|";"|"∧") ~ ANY)+ }
+
+COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+WHITESPACE  = { (" " | "\t" | NEWLINE)+ }

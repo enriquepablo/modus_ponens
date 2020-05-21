@@ -27,12 +27,14 @@ use proc_macro2::TokenStream;
 pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
     quote! {
 
-        #[derive(Parser)]
-        #attr
         pub struct MPParser<'a> {
             pub lexicon: Box<Lexicon>,
             pub flexicon: Box<FLexicon<'a>>,
         }
+
+        #[derive(Parser)]
+        #attr
+        pub struct FactParser;
 
         impl<'a> MPParser<'a> {
 
@@ -43,27 +45,27 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 }
             }
 
-            pub fn parse_text(&'a self, text: &'a str) -> Result<ParseResult<'a>, Error<Rule>> {
-                let parse_tree = MPParser::parse(Rule::knowledge, text)?.next().unwrap();
+            pub fn parse_text(&'a self, text: &'a str) -> Result<ParseResult<'a>, Error<kparser::Rule>> {
+                let parse_tree = kparser::KParser::parse(kparser::Rule::knowledge, text)?.next().unwrap();
                 let mut facts: Vec<&'a Fact> = vec![];
                 let mut rules: Vec<MPRule> = vec![];
                 for pair in parse_tree.into_inner() {
                     match pair.as_rule() {
-                        Rule::fact => {
-                            let fact = self.build_fact(pair);
+                        kparser::Rule::fact => {
+                            let fact = self.parse_fact(pair.as_str());
                             facts.push(fact);
                         },
-                        Rule::rule => {
+                        kparser::Rule::rule => {
                             let mut more_antecedents = Vec::new();
                             let mut consequents = vec![];
                             for pairset in pair.into_inner() {
                                 match pairset.as_rule() {
-                                    Rule::antecedents => {
+                                    kparser::Rule::antecedents => {
                                         let mut ants = vec![];
                                         for factpair in pairset.into_inner() {
                                             match factpair.as_rule() {
-                                                Rule::fact => {
-                                                    let antecedent = self.build_fact(factpair);
+                                                kparser::Rule::fact => {
+                                                    let antecedent = self.parse_fact(factpair.as_str());
                                                     ants.push(antecedent);
                                                 },
                                                 _ => {}
@@ -71,11 +73,11 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                         }
                                         more_antecedents.push(ants);
                                     },
-                                    Rule::consequents => {
+                                    kparser::Rule::consequents => {
                                         for factpair in pairset.into_inner() {
                                             match factpair.as_rule() {
-                                                Rule::fact => {
-                                                    let consequent = self.build_fact(factpair);
+                                                kparser::Rule::fact => {
+                                                    let consequent = self.parse_fact(factpair.as_str());
                                                     consequents.push(consequent);
                                                 },
                                                 _ => {}
@@ -100,7 +102,8 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
             }
 
             pub fn parse_fact(&'a self, text: &'a str) -> &'a Fact<'a> {
-                let parse_tree = MPParser::parse(Rule::fact, text).ok().unwrap().next().unwrap();
+                info!("{}", text);
+                let parse_tree = FactParser::parse(Rule::fact, text).ok().unwrap().next().unwrap();
                 self.build_fact(parse_tree)
             }
             
@@ -158,7 +161,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 // XXX LEAK!
                 let stext = Box::leak(text.into_boxed_str());
                 
-                let parse_tree = MPParser::parse(Rule::fact, stext).ok().unwrap().next().unwrap();
+                let parse_tree = FactParser::parse(Rule::fact, stext).ok().unwrap().next().unwrap();
                 let all_paths = Box::new(Vec::with_capacity(fact.paths.len()));
                 let all_paths = self.visit_parse_node(parse_tree,
                                                                          vec![],
