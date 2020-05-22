@@ -7,17 +7,18 @@ use pest::error::Error;
 use pest::Parser;
 use std::ffi::CString;
 
-use crate::matching::SynMatching;
+use crate::matching::MPMatching;
+use crate::segment::MPSegment;
 
 #[derive(Parser)]
 #[grammar = "transform.pest"]
 pub struct TParser;
 
 
-pub fn parse(source: &str, matching: SynMatching) -> Result<Vec<AstNode>, Error<Rule>> {
-    let mut ast = vec![];
+pub fn parse(source: &str, matching: MPMatching) -> MPMatching {
+    let mut  = vec![];
 
-    let pairs = TParser::parse(Rule::program, source)?;
+    let pairs = TParser::parse(Rule::transform, source).ok().unwrap().next().unwrap();
     for pair in pairs {
         match pair.as_rule() {
             Rule::expr => {

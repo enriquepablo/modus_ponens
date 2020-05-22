@@ -62,8 +62,8 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                 match pairset.as_rule() {
                                     kparser::Rule::antecedents => {
                                         let mut ants = vec![];
-                                        let mut transforms: String;
-                                        let mut conditions: String;
+                                        let mut transforms = String::new();
+                                        let mut conditions = String::new();
                                         for factpair in pairset.into_inner() {
                                             match factpair.as_rule() {
                                                 kparser::Rule::fact => {
@@ -71,10 +71,10 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                                     ants.push(antecedent);
                                                 },
                                                 kparser::Rule::transforms => {
-                                                    transforms = factpair.as_str();
+                                                    transforms = String::from(factpair.as_str());
                                                 },
                                                 kparser::Rule::conditions => {
-                                                    conditions = factpair.as_str();
+                                                    conditions = String::from(factpair.as_str());
                                                 },
                                                 _ => {}
                                             }
