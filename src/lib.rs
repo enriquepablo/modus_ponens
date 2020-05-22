@@ -34,6 +34,7 @@ mod knowledge;
 pub mod lexicon;
 pub mod kbase;
 pub mod kparser;
+pub mod transform;
 
 
 extern crate pest;
