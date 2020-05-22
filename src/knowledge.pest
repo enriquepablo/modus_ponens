@@ -14,9 +14,6 @@ fact        = { (!("."|"->"|"→"|";"|"∧") ~ ANY)+ }
 COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 WHITESPACE  = { (" " | "\t" | NEWLINE)+ }
 
+conditions   = { "[[[" ~ (!"]]]" ~ ANY)+ ~ "]]]" }
 
-condition   = { (!("]]]"|";"|"∧") ~ ANY)+ }
-conditions  = { "[[[" ~ condition ~ ((";"|"∧") ~ condition)* ~ "]]]" }
-
-transform   = { (!("}}}"|";"|"∧") ~ ANY)+ }
-transforms  = { "{{{" ~ transform ~ ((";"|"∧") ~ transform)* ~ "}}}" }
+transforms   = { "{{{" ~ (!"}}}" ~ ANY)+ ~ "}}}" }

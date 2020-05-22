@@ -1,5 +1,7 @@
 
-transform   = { SOI ~ var ~ "=" ~ expr ~ EOI }
+transforms  = { transform ~ ((";"|"∧") ~ transform)* }
+
+transform   = { var ~ "=" ~ expr }
 
 var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
 
@@ -12,7 +14,7 @@ monadicExpr = { monadicOp ~ term }
 
 dyadicExpr = { term ~ dyadicOp ~ term }
 
-term = _{ decimal | integer | var | "(" ~ expr ~ ")" }
+term = _{ decimal | var | "(" ~ expr ~ ")" }
 
 monadicOp = {
     "-" | "log"  | "exp" | "sin" | "cos" | "tan" | "fac"
@@ -22,8 +24,6 @@ monadicOp = {
 dyadicOp = {
     "-" | "+" | "**" | "*" | "/" | "%" | "min" | "max"
 }
-
-integer = @{ "_"? ~ ASCII_DIGIT+ }
 
 decimal = @{ "_"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
 

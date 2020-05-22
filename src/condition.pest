@@ -1,5 +1,5 @@
 
-condition   = { SOI ~ expr ~ EOI }
+conditions  = { expr ~ ((";"|"∧") ~ expr)* }
 
 var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
 

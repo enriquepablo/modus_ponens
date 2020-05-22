@@ -168,7 +168,7 @@ pub fn derive_kb() -> TokenStream {
                     let resps = self.facts.ask_fact(ant);
                     for resp in resps {
                         let new_rule = MPRule {
-                            antecedents: new_ants.clone(),   // XXX bad clone
+                            antecedents: new_ants.clone(),
                             more_antecedents: rule.more_antecedents.clone(),
                             consequents: rule.consequents.clone(),
                         };

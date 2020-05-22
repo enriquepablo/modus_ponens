@@ -41,8 +41,8 @@ pub fn new_response<'a>() -> Response<'a> {
 #[derive(Debug, Clone)]
 pub struct Antecedents<'a> {
     pub facts: Vec<&'a Fact<'a>>,
-    pub transforms: Vec<String>,
-    pub conditions: Vec<String>,
+    pub transforms: String,
+    pub conditions: String,
 }
 
 #[derive(Debug, Clone)]
