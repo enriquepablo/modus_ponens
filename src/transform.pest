@@ -17,12 +17,12 @@ dyadicExpr = { term ~ dyadicOp ~ term }
 term = _{ decimal | var | "(" ~ expr ~ ")" }
 
 monadicOp = {
-    "-" | "log"  | "exp" | "sin" | "cos" | "tan" | "fac"
-  | "floor"  | "ceil" | "arcsin" | "arccos" | "arctan"
+    "-" | "log"  | "exp" | "sin" | "cos" | "tan"
+  | "floor"  | "ceil" | "asin" | "acos" | "atan"
 }
 
 dyadicOp = {
-    "-" | "+" | "**" | "*" | "/" | "%" | "min" | "max"
+    "-" | "+" | "**" | "*" | "/" | "%"
 }
 
 decimal = @{ "_"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
