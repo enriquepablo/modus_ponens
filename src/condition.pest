@@ -1,0 +1,29 @@
+
+condition   = { SOI ~ expr ~ EOI }
+
+var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+
+expr = {
+      monadicExpr
+    | dyadicExpr
+}
+
+monadicExpr = { monadicPred ~ term }
+
+dyadicExpr = { term ~ dyadicPred ~ term }
+
+term = _{ decimal | integer | var | "(" ~ expr ~ ")" }
+
+monadicPred = {
+    "not"
+}
+
+dyadicPred = {
+    "==" | "<" | ">" | "or"
+}
+
+integer = @{ "_"? ~ ASCII_DIGIT+ }
+
+decimal = @{ "_"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+
+WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }

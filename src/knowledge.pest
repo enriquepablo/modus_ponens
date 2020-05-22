@@ -4,7 +4,7 @@ sentence    = _{ rule | fact }
 
 rule        = { antecedents+ ~ consequents }
 
-antecedents = { factset ~ ("->"|"→") }
+antecedents = { factset ~ transforms? ~ conditions? ~ ("->"|"→") }
 consequents = { factset }
 
 factset     = _{ fact ~ ((";"|"∧") ~ fact)* }
@@ -13,3 +13,10 @@ fact        = { (!("."|"->"|"→"|";"|"∧") ~ ANY)+ }
 
 COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 WHITESPACE  = { (" " | "\t" | NEWLINE)+ }
+
+
+condition   = { (!("]]]"|";"|"∧") ~ ANY)+ }
+conditions  = { "[[[" ~ condition ~ ((";"|"∧") ~ condition)* ~ "]]]" }
+
+transform   = { (!("}}}"|";"|"∧") ~ ANY)+ }
+transforms  = { "{{{" ~ transform ~ ((";"|"∧") ~ transform)* ~ "}}}" }

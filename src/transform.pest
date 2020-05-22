@@ -1,0 +1,30 @@
+
+transform   = { SOI ~ var ~ "=" ~ expr ~ EOI }
+
+var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+
+expr = {
+      monadicExpr
+    | dyadicExpr
+}
+
+monadicExpr = { monadicOp ~ term }
+
+dyadicExpr = { term ~ dyadicOp ~ term }
+
+term = _{ decimal | integer | var | "(" ~ expr ~ ")" }
+
+monadicOp = {
+    "-" | "log"  | "exp" | "sin" | "cos" | "tan" | "fac"
+  | "floor"  | "ceil" | "arcsin" | "arccos" | "arctan"
+}
+
+dyadicOp = {
+    "-" | "+" | "**" | "*" | "/" | "%" | "min" | "max"
+}
+
+integer = @{ "_"? ~ ASCII_DIGIT+ }
+
+decimal = @{ "_"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+
+WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }
