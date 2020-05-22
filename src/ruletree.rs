@@ -39,9 +39,16 @@ pub fn new_response<'a>() -> Response<'a> {
 }
 
 #[derive(Debug, Clone)]
+pub struct Antecedents<'a> {
+    pub facts: Vec<&'a Fact<'a>>,
+    pub transforms: Vec<String>,
+    pub conditions: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct MPRule<'a> {
-    pub antecedents: Vec<&'a Fact<'a>>,
-    pub more_antecedents: Vec<Vec<&'a Fact<'a>>>,
+    pub antecedents: Antecedents<'a>,
+    pub more_antecedents: Vec<Antecedents<'a>>,
     pub consequents: Vec<&'a Fact<'a>>,
 }
 
@@ -49,13 +56,13 @@ impl<'a> fmt::Display for MPRule<'a> {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let more = &self.more_antecedents.iter()
-                                         .map(|ants| ants.iter()
+                                         .map(|ants| ants.facts.iter()
                                                          .map(|a| format!("{}", a))
                                                          .collect::<Vec<String>>()
                                                          .join("; "))
                                          .collect::<Vec<String>>()
                                          .join(" -> ");
-        write!(f, "{} -> {} -> {}", &self.antecedents.iter()
+        write!(f, "{} -> {} -> {}", &self.antecedents.facts.iter()
                                    .map(|a| format!("{}", a))
                                    .collect::<Vec<String>>()
                                    .join("; "),

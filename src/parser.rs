@@ -71,7 +71,11 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                                 _ => {}
                                             }
                                         }
-                                        more_antecedents.push(ants);
+                                        more_antecedents.push(Antecedents {
+                                            facts: ants,
+                                            transforms: vec![],
+                                            conditions: vec![],
+                                        });
                                     },
                                     kparser::Rule::consequents => {
                                         for factpair in pairset.into_inner() {

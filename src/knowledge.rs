@@ -81,11 +81,11 @@ pub fn derive_kb() -> TokenStream {
                     more_antecedents,
                     consequents
                 } = rule;
-                let n_ants = antecedents.len();
+                let n_ants = antecedents.facts.len();
                 for n in 0..n_ants {
                     let mut new_ants = vec![];
                     let mut new_ant: Option<&Fact> = None;
-                    for (i, ant) in antecedents.iter().enumerate() {
+                    for (i, ant) in antecedents.facts.iter().enumerate() {
                         if n == i {
                             new_ant = Some(*ant);
                         } else {
@@ -95,7 +95,11 @@ pub fn derive_kb() -> TokenStream {
                     let new_conseqs = consequents.clone();
                     let new_more_ants = more_antecedents.clone();
                     let new_rule = MPRule {
-                        antecedents: new_ants,
+                        antecedents: Antecedents {
+                            facts: new_ants,
+                            transforms: antecedents.transforms.clone(),
+                            conditions: antecedents.conditions.clone(),
+                        },
                         more_antecedents: new_more_ants,
                         consequents: new_conseqs
                     };
@@ -158,13 +162,13 @@ pub fn derive_kb() -> TokenStream {
                           rule: MPRule<'a>,
                           query_rules: bool) -> MPRule {
 
-                for i in 0..rule.antecedents.len() {
+                for i in 0..rule.antecedents.facts.len() {
                     let mut new_ants = rule.antecedents.clone();
-                    let ant = new_ants.remove(i);
+                    let ant = new_ants.facts.remove(i);
                     let resps = self.facts.ask_fact(ant);
                     for resp in resps {
                         let new_rule = MPRule {
-                            antecedents: new_ants.clone(),
+                            antecedents: new_ants.clone(),   // XXX bad clone
                             more_antecedents: rule.more_antecedents.clone(),
                             consequents: rule.consequents.clone(),
                         };
@@ -181,28 +185,36 @@ pub fn derive_kb() -> TokenStream {
                     mut more_antecedents,
                     consequents
                 } = rule;
-                if antecedents.len() == 0 {
+                if antecedents.facts.len() == 0 {
                     if more_antecedents.len() == 0 {
                         return (MPRule {antecedents, more_antecedents, consequents}, false);
                     } else {
                         antecedents = more_antecedents.remove(0);
                     }
                 }
-                let new_antecedents = antecedents.iter()
+                let new_antecedents = antecedents.facts.iter()
                                                  .map(|antecedent| self.mpparser.substitute_fact(antecedent, matching))
                                                  .collect();
                 let mut new_more_antecedents = Vec::new();
                 while more_antecedents.len() > 0 {
                     let more_ants = more_antecedents.remove(0); 
-                    new_more_antecedents.push(more_ants.iter()
-                                                       .map(|antecedent| self.mpparser.substitute_fact(antecedent, matching))
-                                                       .collect());
+                    new_more_antecedents.push(Antecedents {
+                        facts: more_ants.facts.iter()
+                                              .map(|antecedent| self.mpparser.substitute_fact(antecedent, matching))
+                                              .collect(),
+                        transforms: more_ants.transforms,
+                        conditions: more_ants.conditions,
+                    });
                 }
                 let new_consequents = consequents.iter()
                                                  .map(|consequent| self.mpparser.substitute_fact(consequent, matching))
                                                  .collect();
                 (MPRule {
-                    antecedents: new_antecedents,
+                    antecedents: Antecedents {
+                        facts: new_antecedents,
+                        transforms: antecedents.transforms.clone(),
+                        conditions: antecedents.conditions.clone(),
+                    },
                     more_antecedents: new_more_antecedents,
                     consequents: new_consequents
                 }, true)
