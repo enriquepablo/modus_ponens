@@ -1,0 +1,13 @@
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
+
+fact       = _{ SOI ~ rfact ~ EOI }
+
+rfact        = { pred ~ decimal ~ decimal }
+
+pred        = { "fib" }
+
+decimal        = _{ v_decimal | var }
+
+v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
+
+WHITESPACE  = { (" " | "\t" | NEWLINE)+ }
