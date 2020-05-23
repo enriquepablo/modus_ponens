@@ -55,14 +55,10 @@ pub fn get_or_key_owning<'a>(matching: MPMatching<'a>, key: &'a MPSegment) -> &'
 }
 
 
-pub fn get_real_matching_owning<'a>(matching: MPMatching<'a>, varmap: MPMatching<'a>) -> MPMatching<'a> {
-    let mut real_matching: MPMatching = HashMap::with_capacity(matching.capacity());
+pub fn get_real_matching<'a>(matching: &MPMatching<'a>, varmap: &MPMatching<'a>) -> MPMatching<'a> {
+    let mut real_matching: MPMatching = HashMap::with_capacity(matching.len());
     for (key, value) in matching {
-        let mut new_key = key;
-        let maybe_key = varmap.get(key);
-        if maybe_key.is_some() {
-            new_key = maybe_key.expect("some key");
-        }
+        let new_key = varmap.get(key).unwrap();
         real_matching.insert(&new_key, &value);
     }
     real_matching

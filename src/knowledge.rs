@@ -50,7 +50,7 @@ pub fn derive_kb() -> TokenStream {
 
             fn process_activations(&'a self) {
                 loop {
-                    debug!("Pending activations: {}", self.queue.borrow().len());
+                    //debug!("Pending activations: {}", self.queue.borrow().len());
                     let next_opt = self.queue.borrow_mut().pop_front();
                     if next_opt.is_none() {
                         break
@@ -126,9 +126,11 @@ pub fn derive_kb() -> TokenStream {
                 let paths = fact.paths.as_slice();
                 let response = self.rules.query_paths(paths);
                 let mut queue = self.queue.borrow_mut();
+                debug!("Got responses: {}", response.len());
                 for (rule_refs, matching) in response {
+                    debug!("Got rule_refs: {}", rule_refs.borrow().len());
                     for rule_ref in rule_refs.borrow().iter() {
-                        let real_matching = get_real_matching_owning(matching.clone(), rule_ref.varmap.clone()); 
+                        let real_matching = get_real_matching(&matching, &rule_ref.varmap); 
                         queue.push_back(Activation::from_matching(rule_ref.rule.clone(), real_matching, query_rules));
                     }
                 }

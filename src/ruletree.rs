@@ -24,6 +24,7 @@ use std::fmt;
 use std::cell::{ RefCell, Cell };
 
 use bumpalo::{Bump};
+use log::debug;
 
 use crate::constants;
 use crate::path::MPPath;
@@ -158,6 +159,7 @@ impl<'a> RuleSet<'a> {
             }
         }
 
+        parent.end_node.set(true);
         parent.rule_refs.borrow_mut().push(rule_ref);
     }
 
@@ -287,11 +289,13 @@ impl<'a> RSNode<'a> {
                 let new_paths = MPPath::paths_after_slice(new_path_slice, rest_paths);
                 let mut new_matched = matched.clone();
                 new_matched.insert(var_child.path.value, new_value);
-                let (new_response, _) = var_child.climb(new_paths, response, new_matched);
+                let (new_response, new_matched) = var_child.climb(new_paths, response, new_matched);
                 response = new_response;
+                matched = new_matched;
             }
         }
         if parent.end_node.get() {
+            debug!("Pushing to response: {}\n\n{:?} \n\n{:?}", &parent.rule_refs.borrow().first().unwrap().rule, &parent.rule_refs.borrow().first().unwrap().varmap, &matched);
             // println!("Found rules: {}", parent_rule_refs.len());
             response.push(( &parent.rule_refs, matched.clone() ));
         }
