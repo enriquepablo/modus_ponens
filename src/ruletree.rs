@@ -32,7 +32,7 @@ use crate::matching::MPMatching;
 use crate::fact::Fact;
 
 
-pub type Response<'a> = Vec<(Vec<&'a RuleRef<'a>>, MPMatching<'a>)>;
+pub type Response<'a> = Vec<(&'a RefCell<Vec<RuleRef<'a>>>, MPMatching<'a>)>;
 
 pub fn new_response<'a>() -> Response<'a> {
     vec![]
@@ -102,7 +102,7 @@ pub struct RSNode<'a> {
     var_child : RefCell<Box<UVarChild<'a>>>,
     var_children: RefCell<HashMap<&'a MPPath<'a>, &'a RSNode<'a>>>,
     children: RefCell<HashMap<&'a MPPath<'a>, &'a RSNode<'a>>>,
-    rule_refs: RefCell<Vec<&'a RuleRef<'a>>>,
+    rule_refs: RefCell<Vec<RuleRef<'a>>>,
     end_node: Cell<bool>,
 }
 
@@ -114,7 +114,6 @@ struct UVarChild<'a> {
 pub struct RuleSet<'a> {
     pub root: RSNode<'a>,
     nodes: Bump,
-    rule_refs: Bump,
 }
 
 impl<'a> RuleSet<'a> {
@@ -125,7 +124,6 @@ impl<'a> RuleSet<'a> {
         RuleSet {
             root,
             nodes: Bump::new(),
-            rule_refs: Bump::new(),
         }
     }
     pub fn follow_and_create_paths(&'a self, paths: &'a [MPPath], rule_ref: RuleRef<'a>, mut depth: usize) {
@@ -160,8 +158,7 @@ impl<'a> RuleSet<'a> {
             }
         }
 
-        let rule_ref_ref = self.rule_refs.alloc(rule_ref);
-        parent.rule_refs.borrow_mut().push(rule_ref_ref);
+        parent.rule_refs.borrow_mut().push(rule_ref);
     }
 
     fn create_paths(&'a self, mut parent: &'a RSNode<'a>, paths: &'a [MPPath], mut visited: Vec<&'a MPSegment>, mut depth: usize) -> &'a RSNode {
@@ -296,7 +293,7 @@ impl<'a> RSNode<'a> {
         }
         if parent.end_node.get() {
             // println!("Found rules: {}", parent_rule_refs.len());
-            response.push(( parent.rule_refs.borrow().clone(), matched.clone() ));
+            response.push(( &parent.rule_refs, matched.clone() ));
         }
         (response, matched)
     }

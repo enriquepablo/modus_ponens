@@ -127,7 +127,7 @@ pub fn derive_kb() -> TokenStream {
                 let response = self.rules.query_paths(paths);
                 let mut queue = self.queue.borrow_mut();
                 for (rule_refs, matching) in response {
-                    for rule_ref in rule_refs {
+                    for rule_ref in rule_refs.borrow().iter() {
                         let real_matching = get_real_matching_owning(matching.clone(), rule_ref.varmap.clone()); 
                         queue.push_back(Activation::from_matching(rule_ref.rule.clone(), real_matching, query_rules));
                     }
