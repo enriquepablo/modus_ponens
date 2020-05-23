@@ -64,7 +64,7 @@ pub fn derive_kbase(input: proc_macro::TokenStream) -> TokenStream {
         use std::collections::{ HashMap, VecDeque };
         use std::cell::RefCell;
 
-        use log::{info, trace};
+        use log::{info, trace, debug};
 
         use pest::error::Error;
         use pest::Parser;

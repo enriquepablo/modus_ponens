@@ -56,7 +56,7 @@ pub struct MPRule<'a> {
 impl<'a> fmt::Display for MPRule<'a> {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut string = String::new();
+        let mut string = String::from("rule\n\n");
         for fact in self.antecedents.facts.iter() {
             string.push_str(&fact.text);
             string.push_str(" ; ");

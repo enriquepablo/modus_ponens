@@ -49,9 +49,13 @@ pub fn derive_kb() -> TokenStream {
 
 
             fn process_activations(&'a self) {
-                while !self.queue.borrow().is_empty() {
-                    let next = self.queue.borrow_mut().pop_front().unwrap();
-                    match next {
+                loop {
+                    debug!("Pending activations: {}", self.queue.borrow().len());
+                    let next_opt = self.queue.borrow_mut().pop_front();
+                    if next_opt.is_none() {
+                        break
+                    }
+                    match next_opt.unwrap() {
                         Activation::Fact {
                             fact,
                             query_rules,
