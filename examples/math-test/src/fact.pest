@@ -1,6 +1,8 @@
-var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
 
-fact        = { decimal ~ pred ~ set }
+fact       = _{ SOI ~ rfact ~ EOI }
+
+rfact        = { decimal ~ pred ~ set }
 
 pred        = { "∈" }
 
@@ -8,6 +10,6 @@ set         = { "N" }
 
 decimal        = _{ v_decimal | var }
 
-v_decimal = @{ "_"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
 
 WHITESPACE  = { (" " | "\t" | NEWLINE)+ }

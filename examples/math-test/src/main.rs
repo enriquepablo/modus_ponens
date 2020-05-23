@@ -35,7 +35,17 @@ mod kb;
 fn main() {
     env_logger::init();
     let kb = kb::KBGenerator::gen_kb();
-    kb.tell("<X0> ∈ N ∧ {{{ <X1> = (<X0> + 1.0) % 5.0 }}} → <X1> ∈ N ◊");
+    kb.tell("
 
-    kb.tell("0.0 ∈ N ◊");
+        <X0> ∈ N ∧
+            {={
+                <X1> = <X0> + 1
+            }=} ∧ {?{
+                <X1> <= 5
+            }?}
+            → <X1> ∈ N ◊
+
+    ");
+
+    kb.tell("0 ∈ N ◊");
 }

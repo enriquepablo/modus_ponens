@@ -140,7 +140,10 @@ pub fn derive_kb() -> TokenStream {
                              matching: &MPMatching<'a>,
                              mut query_rules: bool) {
                 let old_len = rule.more_antecedents.len();
-                let (nrule, new) = self.preprocess_matched_rule(matching, rule);
+                let (nrule, new, passed) = self.preprocess_matched_rule(matching, rule);
+                if !passed {
+                    return;
+                }
                 rule = nrule;
 
                 if new {
@@ -185,7 +188,7 @@ pub fn derive_kb() -> TokenStream {
             }
             fn preprocess_matched_rule(&'a self,
                                        matching: &MPMatching<'a>,
-                                       rule: MPRule<'a>) -> (MPRule<'a>, bool) {
+                                       rule: MPRule<'a>) -> (MPRule<'a>, bool, bool) {
                 let MPRule {
                     mut antecedents,
                     mut more_antecedents,
@@ -199,9 +202,15 @@ pub fn derive_kb() -> TokenStream {
                     if !antecedents.transforms.is_empty() {
                         matched = TParser::process_transforms(antecedents.transforms.as_str(), matched, &self.mpparser.lexicon);
                     }
+                    if !antecedents.conditions.is_empty() {
+                        let passed = CParser::check_conditions(antecedents.conditions.as_str(), &matched, &self.mpparser.lexicon);
+                        if !passed {
+                            return (MPRule {antecedents, more_antecedents, consequents, matched}, false, false);
+                        }
+                    }
 
                     if more_antecedents.len() == 0 {
-                        return (MPRule {antecedents, more_antecedents, consequents, matched}, false);
+                        return (MPRule {antecedents, more_antecedents, consequents, matched}, false, true);
                     } else {
                         antecedents = more_antecedents.remove(0);
                     }
@@ -232,13 +241,13 @@ pub fn derive_kb() -> TokenStream {
                     more_antecedents: new_more_antecedents,
                     consequents: new_consequents,
                     matched,
-                }, true)
+                }, true, true)
 
             }
         }
         impl<'a> KBase<'a> for KB<'a> {
             fn tell(&'a self, knowledge: &'a str) {
-                let result = self.mpparser.parse_text(knowledge);
+                let result = self.mpparser.parse_text(knowledge.trim());
                 if result.is_err() {
                     panic!("Parsing problem! {}", result.err().unwrap());
                 }

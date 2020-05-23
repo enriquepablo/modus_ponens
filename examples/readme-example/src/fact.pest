@@ -1,6 +1,8 @@
-var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
 
-fact        = { name ~ pred ~ name }
+fact        = _{ SOI ~ rfact ~ EOI }
+
+rfact        = { name ~ pred ~ name }
 
 pred        = @{ "∈" | "⊆" }
 

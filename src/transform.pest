@@ -1,9 +1,10 @@
+transforms       = _{ SOI ~ rtransforms ~ EOI }
 
-transforms  = { transform ~ ((";"|"∧") ~ transform)* }
+rtransforms  = { transform ~ ((";"|"∧") ~ transform)* }
 
 transform   = { var ~ "=" ~ v_expr }
 
-var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
 
 v_expr = {
       monadicExpr
@@ -25,6 +26,6 @@ dyadicOp = {
     "-" | "+" | "**" | "*" | "/" | "%"
 }
 
-v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
 
 WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }

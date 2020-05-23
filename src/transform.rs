@@ -28,7 +28,7 @@ impl<'a> TParser {
             let exprpair = asspair.next().expect("tre");
             let (new_val, new_matching) = TParser::compile_expr(exprpair, matching, lexicon);
             matching = new_matching;
-            let new_str = format!("{:.5}", new_val);
+            let new_str = format!("{}", new_val);
             val = lexicon.intern("v_decimal", new_str.as_str(), true);
             matching.insert(var, val);
         }

@@ -35,6 +35,7 @@ pub mod lexicon;
 pub mod kbase;
 pub mod kparser;
 pub mod transform;
+pub mod condition;
 
 
 extern crate pest;
@@ -80,6 +81,7 @@ pub fn derive_kbase(input: proc_macro::TokenStream) -> TokenStream {
         use modus_ponens::segment::MPSegment;
         use modus_ponens::kparser;
         use modus_ponens::transform::TParser;
+        use modus_ponens::condition::CParser;
 
 
         #derived_parser

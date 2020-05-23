@@ -1,27 +1,17 @@
+conditions       = _{ SOI ~ rconditions ~ EOI }
 
-conditions  = { v_expr ~ ((";"|"∧") ~ v_expr)* }
+rconditions  = { v_expr ~ ((";"|"∧") ~ v_expr)* }
 
-var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
 
-v_expr = {
-      monadicExpr
-    | dyadicExpr
+v_expr = { term ~ pred ~ term }
+
+term = _{ v_decimal | var }
+
+pred = {
+    "==" | "!=" | "<=" | ">=" | "<" | ">"
 }
 
-monadicExpr = { monadicPred ~ term }
-
-dyadicExpr = { term ~ dyadicPred ~ term }
-
-term = _{ v_decimal | var | "(" ~ v_expr ~ ")" }
-
-monadicPred = {
-    "not"
-}
-
-dyadicPred = {
-    "==" | "<" | ">" | "or"
-}
-
-v_decimal = @{ "_"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
 
 WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }

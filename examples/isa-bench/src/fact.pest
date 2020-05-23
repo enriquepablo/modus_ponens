@@ -1,6 +1,8 @@
-fact        = { value ~ pred ~ value }
+fact        = _{ SOI ~ rfact ~ EOI }
 
-var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+rfact        = { value ~ pred ~ value }
+
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
 
 pred        = @{ "ISA" ~ ('0'..'9')+ | "IS" ~ ('0'..'9')+ }
 

@@ -61,7 +61,7 @@ impl Lexicon {
     }
 
     pub fn make_var(&self, n: usize) -> &MPSegment {
-        let text = format!("<__X{}>", &n);
+        let text = format!("<X{}>", &n);
         self.intern("var", &text, true)
     }
     pub fn empty_path(&self) -> MPPath {
