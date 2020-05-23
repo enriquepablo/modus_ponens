@@ -56,22 +56,36 @@ pub struct MPRule<'a> {
 impl<'a> fmt::Display for MPRule<'a> {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let more = &self.more_antecedents.iter()
-                                         .map(|ants| ants.facts.iter()
-                                                         .map(|a| format!("{}", a))
-                                                         .collect::<Vec<String>>()
-                                                         .join("; "))
-                                         .collect::<Vec<String>>()
-                                         .join(" -> ");
-        write!(f, "{} -> {} -> {}", &self.antecedents.facts.iter()
-                                   .map(|a| format!("{}", a))
-                                   .collect::<Vec<String>>()
-                                   .join("; "),
-                              more,
-                              &self.consequents.iter()
-                                   .map(|a| format!("{}", a))
-                                   .collect::<Vec<String>>()
-                                   .join("; "))
+        let mut string = String::new();
+        for fact in self.antecedents.facts.iter() {
+            string.push_str(&fact.text);
+            string.push_str(" ; ");
+        }
+        string.push_str("{={ ");
+        string.push_str(&self.antecedents.transforms);
+        string.push_str("}=} ; {?{ ");
+        string.push_str(&self.antecedents.conditions);
+        string.push_str("}?} ->\n");
+        for more_ants in &self.more_antecedents {
+            for fact in more_ants.facts.iter() {
+                string.push_str(&fact.text);
+                string.push_str(" ; ");
+            }
+            string.push_str("{={ ");
+            string.push_str(&more_ants.transforms);
+            string.push_str("}=} ; {?{ ");
+            string.push_str(&more_ants.conditions);
+            string.push_str("}?} ->\n");
+        }
+
+        for consequent in &self.consequents {
+            string.push_str(&consequent.text);
+            string.push_str(" ; ");
+        }
+
+        string.push_str(&format!("\n\nmatching: {:?}", &self.matched));
+
+        write!(f, "{}", string)
     }
 }
 

@@ -113,12 +113,6 @@ pub fn derive_kb() -> TokenStream {
                     let normal_leaf_paths = normal_ant.paths.as_slice();
                     self.rules.follow_and_create_paths(normal_leaf_paths, rule_ref, 1);
                 }
-                MPRule {
-                    antecedents,
-                    more_antecedents,
-                    consequents,
-                    matched,
-                };
             }
             fn process_fact(&'a self,
                             fact: &'a Fact<'a>,
@@ -127,10 +121,11 @@ pub fn derive_kb() -> TokenStream {
                 info!("ADDING FACT: {}", fact);
                 let paths = fact.paths.as_slice();
                 let response = self.rules.query_paths(paths);
+                let mut queue = self.queue.borrow_mut();
                 for (rule_refs, matching) in response {
                     for rule_ref in rule_refs {
                         let real_matching = get_real_matching_owning(matching.clone(), rule_ref.varmap.clone()); 
-                        self.queue.borrow_mut().push_back(Activation::from_matching(rule_ref.rule.clone(), real_matching, query_rules));
+                        queue.push_back(Activation::from_matching(rule_ref.rule.clone(), real_matching, query_rules));
                     }
                 }
                 self.facts.add_fact(&fact);
@@ -151,40 +146,38 @@ pub fn derive_kb() -> TokenStream {
                         query_rules = true;
                     }
                     if query_rules {
-                        let nrule = self.query_rule(rule, query_rules);
-                        rule = nrule;
+                        self.query_rule(&rule, query_rules);
                     }
                     self.queue.borrow_mut().push_back(Activation::from_rule(rule, query_rules));
                 } else {
-                   for consequent in rule.consequents{
+                    let mut queue = self.queue.borrow_mut();
+                    for consequent in rule.consequents{
                        let new_consequent = self.mpparser.substitute_fact(&consequent, &rule.matched);
                         if !self.facts.ask_fact_bool(&new_consequent) {
-                            self.queue.borrow_mut().push_back(Activation::from_fact(new_consequent, query_rules));
+                            queue.push_back(Activation::from_fact(new_consequent, query_rules));
                         }
-                   }
+                    }
                 }
             }
             fn query_rule(&'a self,
-                          rule: MPRule<'a>,
-                          query_rules: bool) -> MPRule {
+                          rule: &MPRule<'a>,
+                          query_rules: bool) {
 
+                let mut queue = self.queue.borrow_mut();
                 for i in 0..rule.antecedents.facts.len() {
                     let mut new_ants = rule.antecedents.clone();
                     let ant = new_ants.facts.remove(i);
                     let resps = self.facts.ask_fact(ant);
                     for resp in resps {
-                        let mut old_matched = rule.matched.clone();
-                        old_matched.extend(&resp);
                         let new_rule = MPRule {
                             antecedents: new_ants.clone(),
                             more_antecedents: rule.more_antecedents.clone(),
                             consequents: rule.consequents.clone(),
-                            matched: old_matched,
+                            matched: rule.matched.clone(),
                         };
-                        self.process_match(new_rule, &resp, query_rules);
+                        queue.push_back(Activation::from_matching(new_rule, resp, query_rules));
                     }
                 }
-                rule
             }
             fn preprocess_matched_rule(&'a self,
                                        matching: &MPMatching<'a>,
@@ -235,8 +228,8 @@ pub fn derive_kb() -> TokenStream {
                 (MPRule {
                     antecedents: Antecedents {
                         facts: new_antecedents,
-                        transforms: antecedents.transforms.clone(),
-                        conditions: antecedents.conditions.clone(),
+                        transforms: antecedents.transforms,
+                        conditions: antecedents.conditions,
                     },
                     more_antecedents: new_more_antecedents,
                     consequents: new_consequents,
@@ -250,20 +243,21 @@ pub fn derive_kb() -> TokenStream {
                 let result = self.mpparser.parse_text(knowledge.trim());
                 if result.is_err() {
                     panic!("Parsing problem! {}", result.err().unwrap());
-                }
-                let ParseResult { rules, facts } = result.ok().unwrap();
-                for rule in rules {
-                    let act = Activation::from_rule(rule, true);
-                    self.queue.borrow_mut().push_back(act);
-                    self.process_activations();
-                }
-                for fact in facts {
-                    if !self.facts.ask_fact_bool(&fact) {
-                        let act = Activation::from_fact(fact, false);
-                        self.queue.borrow_mut().push_back(act);
-                        self.process_activations();
+                } else {
+                    let ParseResult { rules, facts } = result.ok().unwrap();
+                    let mut queue = self.queue.borrow_mut();
+                    for rule in rules {
+                        let act = Activation::from_rule(rule, true);
+                        queue.push_back(act);
+                    }
+                    for fact in facts {
+                        if !self.facts.ask_fact_bool(&fact) {
+                            let act = Activation::from_fact(fact, false);
+                            queue.push_back(act);
+                        }
                     }
                 }
+                self.process_activations();
             }
             fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>> {
                 let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().expect("parse result");
