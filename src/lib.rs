@@ -79,6 +79,7 @@ pub fn derive_kbase(input: proc_macro::TokenStream) -> TokenStream {
         use modus_ponens::ruletree::{ Antecedents, MPRule, RuleSet, RuleRef };
         use modus_ponens::segment::MPSegment;
         use modus_ponens::kparser;
+        use modus_ponens::transform::TParser;
 
 
         #derived_parser

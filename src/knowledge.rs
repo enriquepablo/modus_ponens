@@ -154,7 +154,7 @@ pub fn derive_kb() -> TokenStream {
                     self.queue.borrow_mut().push_back(Activation::from_rule(rule, query_rules));
                 } else {
                    for consequent in rule.consequents{
-                       let new_consequent = self.mpparser.substitute_fact(&consequent, matching);
+                       let new_consequent = self.mpparser.substitute_fact(&consequent, &rule.matched);
                         if !self.facts.ask_fact_bool(&new_consequent) {
                             self.queue.borrow_mut().push_back(Activation::from_fact(new_consequent, query_rules));
                         }
@@ -192,7 +192,14 @@ pub fn derive_kb() -> TokenStream {
                     consequents,
                     mut matched,
                 } = rule;
+
+                matched.extend(matching);
+
                 if antecedents.facts.len() == 0 {
+                    if !antecedents.transforms.is_empty() {
+                        matched = TParser::process_transforms(antecedents.transforms.as_str(), matched, &self.mpparser.lexicon);
+                    }
+
                     if more_antecedents.len() == 0 {
                         return (MPRule {antecedents, more_antecedents, consequents, matched}, false);
                     } else {
@@ -200,23 +207,22 @@ pub fn derive_kb() -> TokenStream {
                     }
                 }
                 let new_antecedents = antecedents.facts.iter()
-                                                 .map(|antecedent| self.mpparser.substitute_fact(antecedent, matching))
+                                                 .map(|antecedent| self.mpparser.substitute_fact(antecedent, &matched))
                                                  .collect();
                 let mut new_more_antecedents = Vec::new();
                 while more_antecedents.len() > 0 {
                     let more_ants = more_antecedents.remove(0); 
                     new_more_antecedents.push(Antecedents {
                         facts: more_ants.facts.iter()
-                                              .map(|antecedent| self.mpparser.substitute_fact(antecedent, matching))
+                                              .map(|antecedent| self.mpparser.substitute_fact(antecedent, &matched))
                                               .collect(),
                         transforms: more_ants.transforms,
                         conditions: more_ants.conditions,
                     });
                 }
                 let new_consequents = consequents.iter()
-                                                 .map(|consequent| self.mpparser.substitute_fact(consequent, matching))
+                                                 .map(|consequent| self.mpparser.substitute_fact(consequent, &matched))
                                                  .collect();
-                matched.extend(matching);
                 (MPRule {
                     antecedents: Antecedents {
                         facts: new_antecedents,
