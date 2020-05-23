@@ -79,7 +79,8 @@ pub fn derive_kb() -> TokenStream {
                 let MPRule {
                     antecedents,
                     more_antecedents,
-                    consequents
+                    consequents,
+                    matched,
                 } = rule;
                 let n_ants = antecedents.facts.len();
                 for n in 0..n_ants {
@@ -101,7 +102,8 @@ pub fn derive_kb() -> TokenStream {
                             conditions: antecedents.conditions.clone(),
                         },
                         more_antecedents: new_more_ants,
-                        consequents: new_conseqs
+                        consequents: new_conseqs,
+                        matched: matched.clone()
                     };
                     let (varmap, normal_ant) = self.mpparser.normalize_fact(&new_ant.unwrap());
                     let rule_ref = RuleRef {
@@ -114,7 +116,8 @@ pub fn derive_kb() -> TokenStream {
                 MPRule {
                     antecedents,
                     more_antecedents,
-                    consequents
+                    consequents,
+                    matched,
                 };
             }
             fn process_fact(&'a self,
@@ -167,10 +170,13 @@ pub fn derive_kb() -> TokenStream {
                     let ant = new_ants.facts.remove(i);
                     let resps = self.facts.ask_fact(ant);
                     for resp in resps {
+                        let mut old_matched = rule.matched.clone();
+                        old_matched.extend(&resp);
                         let new_rule = MPRule {
                             antecedents: new_ants.clone(),
                             more_antecedents: rule.more_antecedents.clone(),
                             consequents: rule.consequents.clone(),
+                            matched: old_matched,
                         };
                         self.process_match(new_rule, &resp, query_rules);
                     }
@@ -183,11 +189,12 @@ pub fn derive_kb() -> TokenStream {
                 let MPRule {
                     mut antecedents,
                     mut more_antecedents,
-                    consequents
+                    consequents,
+                    mut matched,
                 } = rule;
                 if antecedents.facts.len() == 0 {
                     if more_antecedents.len() == 0 {
-                        return (MPRule {antecedents, more_antecedents, consequents}, false);
+                        return (MPRule {antecedents, more_antecedents, consequents, matched}, false);
                     } else {
                         antecedents = more_antecedents.remove(0);
                     }
@@ -209,6 +216,7 @@ pub fn derive_kb() -> TokenStream {
                 let new_consequents = consequents.iter()
                                                  .map(|consequent| self.mpparser.substitute_fact(consequent, matching))
                                                  .collect();
+                matched.extend(matching);
                 (MPRule {
                     antecedents: Antecedents {
                         facts: new_antecedents,
@@ -216,7 +224,8 @@ pub fn derive_kb() -> TokenStream {
                         conditions: antecedents.conditions.clone(),
                     },
                     more_antecedents: new_more_antecedents,
-                    consequents: new_consequents
+                    consequents: new_consequents,
+                    matched,
                 }, true)
 
             }

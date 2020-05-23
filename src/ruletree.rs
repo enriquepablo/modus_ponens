@@ -50,6 +50,7 @@ pub struct MPRule<'a> {
     pub antecedents: Antecedents<'a>,
     pub more_antecedents: Vec<Antecedents<'a>>,
     pub consequents: Vec<&'a Fact<'a>>,
+    pub matched: MPMatching<'a>,
 }
 
 impl<'a> fmt::Display for MPRule<'a> {

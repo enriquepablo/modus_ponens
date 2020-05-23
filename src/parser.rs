@@ -103,7 +103,8 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                             let rule = MPRule {
                                 antecedents,
                                 more_antecedents,
-                                consequents
+                                consequents,
+                                matched: HashMap::new(),
                             };
                             rules.push(rule);
                         },
