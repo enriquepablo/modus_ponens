@@ -25,7 +25,7 @@ impl<'a> TParser {
             let (new_val, new_matching) = TParser::compile_expr(exprpair, matching, lexicon);
             matching = new_matching;
             let new_str = new_val.to_string();
-            val = lexicon.intern("decimal", new_str.as_str(), true);
+            val = lexicon.intern("v_decimal", new_str.as_str(), true);
             matching.insert(var, val);
         }
         matching
@@ -33,7 +33,7 @@ impl<'a> TParser {
 
     fn compile_expr(pair: pest::iterators::Pair<Rule>, matching: MPMatching<'a>, lexicon: &Lexicon) -> (f64, MPMatching<'a>) {
         match pair.as_rule() {
-            Rule::expr => {
+            Rule::v_expr => {
                 TParser::compile_expr(pair.into_inner().next().unwrap(), matching, lexicon)
             },
             Rule::monadicExpr => {
@@ -52,7 +52,7 @@ impl<'a> TParser {
                 let (rhs, new_matching) = TParser::compile_expr(rhspair, new_matching, lexicon);
                 (parse_dyadic_op(op, lhs, rhs), new_matching)
             },
-            Rule::decimal => {
+            Rule::v_decimal => {
                 (pair.as_str().parse::<f64>().ok().unwrap(), matching)
             },
             Rule::var => {
