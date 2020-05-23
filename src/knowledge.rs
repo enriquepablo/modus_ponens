@@ -257,7 +257,7 @@ pub fn derive_kb() -> TokenStream {
                 }
             }
             fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>> {
-                let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().unwrap();
+                let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().expect("parse result");
                 let fact = facts.pop().unwrap();
                 self.facts.ask_fact(&fact)
             }
