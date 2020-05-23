@@ -1,5 +1,5 @@
 use pest::Parser;
-use log::debug;
+//use log::debug;
 
 use crate::lexicon::Lexicon;
 use crate::matching::MPMatching;

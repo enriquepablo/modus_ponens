@@ -74,22 +74,22 @@ fn main() {
     
     for r in 0..opt.rules {
         start += 1;
-        let f1 = format!("<X0> ISA{start} <X1>; <X1> IS{start} <X2> -> <X0> ISA{start} <X2>.", start = start);
+        let f1 = format!("<X0> ISA{start} <X1>; <X1> IS{start} <X2> -> <X0> ISA{start} <X2> ◊", start = start);
         kb.tell( unsafe { mem::transmute( f1.as_str() ) });
-        let f2 = format!("<X0> IS{start} <X1>; <X1> IS{start} <X2> -> <X0> IS{start} <X2>.", start = start);
+        let f2 = format!("<X0> IS{start} <X1>; <X1> IS{start} <X2> -> <X0> IS{start} <X2> ◊", start = start);
         kb.tell( unsafe { mem::transmute( f2.as_str() ) });
-        let f3 = format!("animal IS{start} thing.", start = start);
+        let f3 = format!("animal IS{start} thing ◊", start = start);
         kb.tell( unsafe { mem::transmute( f3.as_str() ) });
-        let f4 = format!("mammal IS{start} animal.", start = start);
+        let f4 = format!("mammal IS{start} animal ◊", start = start);
         kb.tell( unsafe { mem::transmute( f4.as_str() ) });
-        let f5 = format!("primate IS{start} mammal.", start = start);
+        let f5 = format!("primate IS{start} mammal ◊", start = start);
         kb.tell( unsafe { mem::transmute( f5.as_str() ) });
-        let f6 = format!("human IS{start} primate.", start = start);
+        let f6 = format!("human IS{start} primate ◊", start = start);
         kb.tell( unsafe { mem::transmute( f6.as_str() ) });
         for i in 0..opt.facts {
             let s = sets[(i % nsets) as usize];
             let name = format!("{}{}{}", s, i, start);
-            let f = Box::leak(Box::new(format!("{name} ISA{start} {s}.", name = name, start = start, s = s)));
+            let f = Box::leak(Box::new(format!("{name} ISA{start} {s} ◊", name = name, start = start, s = s)));
             kb.tell( unsafe { mem::transmute( f.as_str() ) });
         }
         if ((r % opt.report) == 0) || (r + 1 == opt.rules) {
@@ -104,25 +104,25 @@ fn main() {
 
                     let t0 = SystemTime::now();
 
-                    let f1 = format!("<X0> ISA{start} <X1>; <X1> IS{start} <X2> -> <X0> ISA{start} <X2>.", start = start);
+                    let f1 = format!("<X0> ISA{start} <X1>; <X1> IS{start} <X2> -> <X0> ISA{start} <X2> ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f1.as_str() ) });
-                    let f2 = format!("<X0> IS{start} <X1>; <X1> IS{start} <X2> -> <X0> IS{start} <X2>.", start = start);
+                    let f2 = format!("<X0> IS{start} <X1>; <X1> IS{start} <X2> -> <X0> IS{start} <X2> ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f2.as_str() ) });
 
                     let t1 = SystemTime::now();
 
-                    let f3 = format!("animal IS{start} thing.", start = start);
+                    let f3 = format!("animal IS{start} thing ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f3.as_str() ) });
-                    let f4 = format!("mammal IS{start} animal.", start = start);
+                    let f4 = format!("mammal IS{start} animal ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f4.as_str() ) });
-                    let f5 = format!("primate IS{start} mammal.", start = start);
+                    let f5 = format!("primate IS{start} mammal ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f5.as_str() ) });
-                    let f6 = format!("human IS{start} primate.", start = start);
+                    let f6 = format!("human IS{start} primate ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f6.as_str() ) });
                     for i in 0..opt.facts {
                         let s = sets[(i % nsets) as usize];
                         let name = format!("{}{}{}", s, i, start);
-                        let f = Box::leak(Box::new(format!("{name} ISA{start} {s}.", name = name, start = start, s = s)));
+                        let f = Box::leak(Box::new(format!("{name} ISA{start} {s} ◊", name = name, start = start, s = s)));
                         kb.tell( unsafe { mem::transmute( f.as_str() ) });
                     }
                     let t2 = SystemTime::now();
