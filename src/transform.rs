@@ -1,4 +1,5 @@
 use pest::Parser;
+use log::debug;
 
 use crate::lexicon::Lexicon;
 use crate::matching::MPMatching;
@@ -14,16 +15,20 @@ impl<'a> TParser {
         let mut var: &MPSegment;
         let mut val: &MPSegment;
 
-        let pairs = TParser::parse(Rule::transforms, source).ok().expect("uno");
+        let parse_result = TParser::parse(Rule::transforms, source);
+        if parse_result.is_err() {
+            panic!("These do not seem like transforms: \"{}\"\n\nerr: {}\n\nmatching: {:?}", source, parse_result.err().unwrap(), matching);
+        }
+        let mut pairs = parse_result.ok().unwrap();
 
-        for pair in pairs {
+        for pair in pairs.next().unwrap().into_inner() {
             let mut asspair = pair.into_inner();
             let varpair = asspair.next().expect("dos");
             var = lexicon.intern("var", varpair.as_str(), true);
             let exprpair = asspair.next().expect("tre");
             let (new_val, new_matching) = TParser::compile_expr(exprpair, matching, lexicon);
             matching = new_matching;
-            let new_str = new_val.to_string();
+            let new_str = format!("{:.5}", new_val);
             val = lexicon.intern("v_decimal", new_str.as_str(), true);
             matching.insert(var, val);
         }
@@ -56,7 +61,12 @@ impl<'a> TParser {
             },
             Rule::var => {
                 let var = lexicon.intern("var", pair.as_str(), true);
-                (matching.get(var).expect("onc").text.parse::<f64>().ok().expect("doc"), matching)
+                let number = matching.get(var).expect("number segment");
+                let result = number.text.parse::<f64>();
+                if result.is_err() {
+                    panic!("This do not seem like a number: \"{}\"\n\nerr: {}\n\nmatching: {:?}", number.text, result.err().unwrap(), matching);
+                }
+                (result.ok().unwrap(), matching)
             },
             unknown_expr => panic!("Unexpected expression: {:?}", unknown_expr),
         }
@@ -66,11 +76,11 @@ impl<'a> TParser {
 fn parse_dyadic_op(op: pest::iterators::Pair<Rule>, lhs: f64, rhs: f64) -> f64 {
     match op.as_str() {
         "-" => lhs - rhs,
-        "+" => lhs + rhs,
+        "+" => lhs + rhs as f64,
         "**" => lhs.powf(rhs),
         "*" => lhs * rhs,
-        "/" => lhs / rhs,
-        "%" => lhs % rhs,
+        "/" => lhs / rhs as f64,
+        "%" => (lhs % rhs) as f64,
         _ => panic!("Unexpected dyadic operator: {}", op.as_str()),
     }
 }

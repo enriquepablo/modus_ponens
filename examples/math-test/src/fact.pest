@@ -1,0 +1,13 @@
+var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
+
+fact        = { decimal ~ pred ~ set }
+
+pred        = { "∈" }
+
+set         = { "N" }
+
+decimal        = _{ v_decimal | var }
+
+v_decimal = @{ "_"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+
+WHITESPACE  = { (" " | "\t" | NEWLINE)+ }

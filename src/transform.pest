@@ -25,6 +25,6 @@ dyadicOp = {
     "-" | "+" | "**" | "*" | "/" | "%"
 }
 
-v_decimal = @{ "_"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
 
 WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }

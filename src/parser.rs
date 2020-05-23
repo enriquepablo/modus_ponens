@@ -117,7 +117,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
             pub fn parse_fact(&'a self, text: &'a str) -> &'a Fact<'a> {
                 let result = FactParser::parse(Rule::fact, text);
                 if result.is_err() {
-                    panic!("This does not seem like a fact: {}", text);
+                    panic!("This does not seem like a fact: \"{}\"\n\nerr: {}", text.trim(), result.err().unwrap());
                 }
                 let parse_tree = result.ok().expect("fact pairset").next().expect("fact pair");
                 self.build_fact(parse_tree)
@@ -177,7 +177,11 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 // XXX LEAK!
                 let stext = Box::leak(text.into_boxed_str());
                 
-                let parse_tree = FactParser::parse(Rule::fact, stext).ok().expect("2nd fact pairset").next().expect("2nd fact pair");
+                let parse_result = FactParser::parse(Rule::fact, stext);
+                if parse_result.is_err() {
+                    panic!("These does not seem like a fact: \"{}\"\n\nerr: {}\n\nmatching: {:?}", stext, parse_result.err().unwrap(), matching);
+                }
+                let parse_tree = parse_result.ok().unwrap().next().expect("2nd fact pair");
                 let all_paths = Box::new(Vec::with_capacity(fact.paths.len()));
                 let all_paths = self.visit_parse_node(parse_tree,
                                                                          vec![],

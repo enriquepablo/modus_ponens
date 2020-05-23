@@ -1,19 +1,21 @@
-knowledge   = { (sentence ~ ".")+ }
+knowledge   = { (sentence ~ ("<>"|"◊"))+ }
 
 sentence    = _{ rule | fact }
 
 rule        = { antecedents+ ~ consequents }
 
-antecedents = { factset ~ transforms? ~ conditions? ~ ("->"|"→") }
+antecedents = { factset ~ transforms_section? ~ conditions_section? ~ ("->"|"→") }
 consequents = { factset }
 
 factset     = _{ fact ~ ((";"|"∧") ~ fact)* }
 
-fact        = { (!("."|"->"|"→"|";"|"∧") ~ ANY)+ }
+fact        = { (!("<>"|"◊"|"->"|"→"|";"|"∧"|"[[["|"{{{") ~ ANY)+ }
 
 COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 WHITESPACE  = { (" " | "\t" | NEWLINE)+ }
 
-conditions   = { "[[[" ~ (!"]]]" ~ ANY)+ ~ "]]]" }
+conditions   = { (!"]]]" ~ ANY)+ }
+conditions_section   = _{ (";"|"∧") ~ "[[[" ~ conditions ~ "]]]" }
 
-transforms   = { "{{{" ~ (!"}}}" ~ ANY)+ ~ "}}}" }
+transforms   = { (!"}}}" ~ ANY)+ }
+transforms_section   = _{ (";"|"∧") ~ "{{{" ~ transforms ~ "}}}" }
