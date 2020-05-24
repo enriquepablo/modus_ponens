@@ -117,8 +117,8 @@ pub fn derive_kb() -> TokenStream {
                     let new_rule = MPRule {
                         antecedents: Antecedents {
                             facts: new_ants,
-                            transforms: antecedents.transforms.clone(),
-                            conditions: antecedents.conditions.clone(),
+                            transforms: antecedents.transforms,
+                            conditions: antecedents.conditions,
                         },
                         more_antecedents: new_more_ants,
                         consequents: new_conseqs,
@@ -215,10 +215,10 @@ pub fn derive_kb() -> TokenStream {
 
                 if antecedents.facts.len() == 0 {
                     if !antecedents.transforms.is_empty() {
-                        matched = TParser::process_transforms(antecedents.transforms.as_str(), matched, &self.mpparser.lexicon);
+                        matched = TParser::process_transforms(antecedents.transforms, matched, &self.mpparser.lexicon);
                     }
                     if !antecedents.conditions.is_empty() {
-                        let passed = CParser::check_conditions(antecedents.conditions.as_str(), &matched, &self.mpparser.lexicon);
+                        let passed = CParser::check_conditions(antecedents.conditions, &matched, &self.mpparser.lexicon);
                         if !passed {
                             return (MPRule {antecedents, more_antecedents, consequents, matched}, false, false);
                         }

@@ -52,10 +52,10 @@ impl Lexicon {
         }
         let mut set = self.segments.borrow_mut();
         let interned = set.get_or_insert(Box::new(MPSegment::new(name.to_string(),
-                                                                                  text.to_string(),
-                                                                                  is_leaf,
-                                                                                  is_var,
-                                                                                  in_var_range)));
+                                                                 text.to_string(),
+                                                                 is_leaf,
+                                                                 is_var,
+                                                                 in_var_range)));
 
         unsafe { mem::transmute(interned.as_ref()) }
     }

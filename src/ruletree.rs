@@ -42,8 +42,8 @@ pub fn new_response<'a>() -> Response<'a> {
 #[derive(Debug, Clone)]
 pub struct Antecedents<'a> {
     pub facts: Vec<&'a Fact<'a>>,
-    pub transforms: String,
-    pub conditions: String,
+    pub transforms: &'a str,
+    pub conditions: &'a str,
 }
 
 #[derive(Debug, Clone)]
@@ -63,9 +63,9 @@ impl<'a> fmt::Display for MPRule<'a> {
             string.push_str(" ; ");
         }
         string.push_str("{={ ");
-        string.push_str(&self.antecedents.transforms);
+        string.push_str(self.antecedents.transforms);
         string.push_str("}=} ; {?{ ");
-        string.push_str(&self.antecedents.conditions);
+        string.push_str(self.antecedents.conditions);
         string.push_str("}?} ->\n");
         for more_ants in &self.more_antecedents {
             for fact in more_ants.facts.iter() {
@@ -73,9 +73,9 @@ impl<'a> fmt::Display for MPRule<'a> {
                 string.push_str(" ; ");
             }
             string.push_str("{={ ");
-            string.push_str(&more_ants.transforms);
+            string.push_str(more_ants.transforms);
             string.push_str("}=} ; {?{ ");
-            string.push_str(&more_ants.conditions);
+            string.push_str(more_ants.conditions);
             string.push_str("}?} ->\n");
         }
 

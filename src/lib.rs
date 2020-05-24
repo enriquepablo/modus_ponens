@@ -61,8 +61,9 @@ pub fn derive_kbase(input: proc_macro::TokenStream) -> TokenStream {
 
     quote! {
 
-        use std::collections::{ HashMap, VecDeque };
+        use std::collections::{ HashMap, HashSet, VecDeque };
         use std::cell::RefCell;
+        use std::mem;
 
         use log::{info, trace, debug};
 

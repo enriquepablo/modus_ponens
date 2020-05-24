@@ -27,9 +27,29 @@ use proc_macro2::TokenStream;
 pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
     quote! {
 
+        pub struct MathStrings(RefCell<HashSet<String>>);
+
+        impl MathStrings {
+            fn new() -> Self {
+                MathStrings(RefCell::new(HashSet::new()))
+            }
+
+            fn intern<'a>(&'a self, s: &str) -> &'a str {
+                let mut set = self.0.borrow_mut();
+                let mut interned = set.get(s);
+
+                if interned.is_none() {
+                    set.insert(s.into());
+                    interned = set.get(s);
+                }
+                unsafe { mem::transmute(interned.unwrap().as_str()) }
+            }
+        }
+
         pub struct MPParser<'a> {
             pub lexicon: Box<Lexicon>,
             pub flexicon: Box<FLexicon<'a>>,
+            pub math: MathStrings,
         }
 
         #[derive(Parser)]
@@ -42,6 +62,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 MPParser {
                     lexicon: Box::new(Lexicon::new()),
                     flexicon: Box::new(FLexicon::new()),
+                    math: MathStrings::new(),
                 }
             }
 
@@ -62,8 +83,8 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                 match pairset.as_rule() {
                                     kparser::Rule::antecedents => {
                                         let mut ants = vec![];
-                                        let mut transforms = String::new();
-                                        let mut conditions = String::new();
+                                        let mut transforms = "";
+                                        let mut conditions = "";
                                         for factpair in pairset.into_inner() {
                                             match factpair.as_rule() {
                                                 kparser::Rule::fact => {
@@ -71,10 +92,10 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                                     ants.push(antecedent);
                                                 },
                                                 kparser::Rule::transforms => {
-                                                    transforms = String::from(factpair.as_str());
+                                                    transforms = self.math.intern(factpair.as_str());
                                                 },
                                                 kparser::Rule::conditions => {
-                                                    conditions = String::from(factpair.as_str());
+                                                    conditions = self.math.intern(factpair.as_str());
                                                 },
                                                 _ => {}
                                             }
