@@ -74,9 +74,9 @@ fn main() {
     
     for r in 0..opt.rules {
         start += 1;
-        let f1 = format!("<X0> ISA{start} <X1>; <X1> IS{start} <X2> -> <X0> ISA{start} <X2> ◊", start = start);
+        let f1 = format!("<X0> ISA{start} <X1> -> <X1> IS{start} <X2> -> <X0> ISA{start} <X2> ◊", start = start);
         kb.tell( unsafe { mem::transmute( f1.as_str() ) });
-        let f2 = format!("<X0> IS{start} <X1>; <X1> IS{start} <X2> -> <X0> IS{start} <X2> ◊", start = start);
+        let f2 = format!("<X0> IS{start} <X1> -> <X1> IS{start} <X2> -> <X0> IS{start} <X2> ◊", start = start);
         kb.tell( unsafe { mem::transmute( f2.as_str() ) });
         let f3 = format!("animal IS{start} thing ◊", start = start);
         kb.tell( unsafe { mem::transmute( f3.as_str() ) });
@@ -104,9 +104,9 @@ fn main() {
 
                     let t0 = SystemTime::now();
 
-                    let f1 = format!("<X0> ISA{start} <X1>; <X1> IS{start} <X2> -> <X0> ISA{start} <X2> ◊", start = start);
+                    let f1 = format!("<X0> ISA{start} <X1> -> <X1> IS{start} <X2> -> <X0> ISA{start} <X2> ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f1.as_str() ) });
-                    let f2 = format!("<X0> IS{start} <X1>; <X1> IS{start} <X2> -> <X0> IS{start} <X2> ◊", start = start);
+                    let f2 = format!("<X0> IS{start} <X1> -> <X1> IS{start} <X2> -> <X0> IS{start} <X2> ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f2.as_str() ) });
 
                     let t1 = SystemTime::now();

@@ -241,30 +241,14 @@ pub fn derive_kb() -> TokenStream {
                 let new_antecedents = antecedents.facts.iter()
                                                  .map(|antecedent| self.mpparser.substitute_fact(antecedent, &matched))
                                                  .collect();
-                let mut new_more_antecedents = VecDeque::new();
-                while more_antecedents.len() > 0 {
-                    let more_ants = more_antecedents.pop_front().unwrap(); 
-                    new_more_antecedents.push_back(
-                        Antecedents {
-                            facts: more_ants.facts.iter()
-                                                  .map(|antecedent| self.mpparser.substitute_fact(antecedent, &matched))
-                                                  .collect(),
-                            transforms: more_ants.transforms,
-                            conditions: more_ants.conditions,
-                        }
-                    );
-                }
-                let new_consequents = consequents.iter()
-                                                 .map(|consequent| self.mpparser.substitute_fact(consequent, &matched))
-                                                 .collect();
                 (MPRule {
                     antecedents: Antecedents {
                         facts: new_antecedents,
                         transforms: antecedents.transforms,
                         conditions: antecedents.conditions,
                     },
-                    more_antecedents: new_more_antecedents,
-                    consequents: new_consequents,
+                    more_antecedents,
+                    consequents,
                     matched,
                     output,
                 }, true, true)
