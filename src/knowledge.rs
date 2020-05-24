@@ -75,7 +75,9 @@ pub fn derive_kb() -> TokenStream {
                             fact,
                             query_rules,
                         } => {
-                            queues = self.process_fact(fact, query_rules, queues);
+                            if !self.facts.ask_fact_bool(fact) {
+                                queues = self.process_fact(fact, query_rules, queues);
+                            }
                         },
                         Activation::MPRule {
                             rule, ..
@@ -175,9 +177,7 @@ pub fn derive_kb() -> TokenStream {
                 } else {
                     for consequent in rule.consequents{
                        let new_consequent = self.mpparser.substitute_fact(consequent, &rule.matched);
-                        if !self.facts.ask_fact_bool(&new_consequent) {
-                            queues.fact_queue.push_back(Activation::from_fact(new_consequent, query_rules));
-                        }
+                        queues.fact_queue.push_back(Activation::from_fact(new_consequent, query_rules));
                     }
                     if rule.output.is_some() {
                         let output = self.mpparser.substitute_fact(rule.output.unwrap(), &rule.matched);
@@ -268,10 +268,8 @@ pub fn derive_kb() -> TokenStream {
                         queues.rule_queue.push_back(act);
                     }
                     for fact in facts {
-                        if !self.facts.ask_fact_bool(&fact) {
-                            let act = Activation::from_fact(fact, false);
-                            queues.fact_queue.push_back(act);
-                        }
+                        let act = Activation::from_fact(fact, false);
+                        queues.fact_queue.push_back(act);
                     }
                 }
                 self.process_activations(queues);
