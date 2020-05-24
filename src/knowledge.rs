@@ -235,22 +235,24 @@ pub fn derive_kb() -> TokenStream {
                     if more_antecedents.len() == 0 {
                         return (MPRule {antecedents, more_antecedents, consequents, matched, output}, false, true);
                     } else {
-                        antecedents = more_antecedents.remove(0);
+                        antecedents = more_antecedents.pop_front().unwrap();
                     }
                 }
                 let new_antecedents = antecedents.facts.iter()
                                                  .map(|antecedent| self.mpparser.substitute_fact(antecedent, &matched))
                                                  .collect();
-                let mut new_more_antecedents = Vec::new();
+                let mut new_more_antecedents = VecDeque::new();
                 while more_antecedents.len() > 0 {
-                    let more_ants = more_antecedents.remove(0); 
-                    new_more_antecedents.push(Antecedents {
-                        facts: more_ants.facts.iter()
-                                              .map(|antecedent| self.mpparser.substitute_fact(antecedent, &matched))
-                                              .collect(),
-                        transforms: more_ants.transforms,
-                        conditions: more_ants.conditions,
-                    });
+                    let more_ants = more_antecedents.pop_front().unwrap(); 
+                    new_more_antecedents.push_back(
+                        Antecedents {
+                            facts: more_ants.facts.iter()
+                                                  .map(|antecedent| self.mpparser.substitute_fact(antecedent, &matched))
+                                                  .collect(),
+                            transforms: more_ants.transforms,
+                            conditions: more_ants.conditions,
+                        }
+                    );
                 }
                 let new_consequents = consequents.iter()
                                                  .map(|consequent| self.mpparser.substitute_fact(consequent, &matched))

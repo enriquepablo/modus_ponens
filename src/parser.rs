@@ -77,7 +77,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                             facts.push(fact);
                         },
                         kparser::Rule::rule => {
-                            let mut more_antecedents = Vec::new();
+                            let mut more_antecedents = VecDeque::new();
                             let mut consequents = vec![];
                             let mut output: Option<&Fact> = None;
                             for pairset in pair.into_inner() {
@@ -101,7 +101,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                                 _ => {}
                                             }
                                         }
-                                        more_antecedents.push(Antecedents {
+                                        more_antecedents.push_back(Antecedents {
                                             facts: ants,
                                             transforms: transforms,
                                             conditions: conditions,
@@ -124,7 +124,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                     _ => {}
                                 }
                             }
-                            let antecedents = more_antecedents.remove(0);
+                            let antecedents = more_antecedents.pop_front().unwrap();
                             let rule = MPRule {
                                 antecedents,
                                 more_antecedents,

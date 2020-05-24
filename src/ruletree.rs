@@ -18,7 +18,7 @@
 // If not, see <http://www.gnu.org/licenses/>.
 
 use std::clone::Clone;
-use std::collections::HashMap;
+use std::collections::{ HashMap, VecDeque };
 use std::fmt;
 //use std::collections::VecDeque;
 use std::cell::{ RefCell, Cell };
@@ -49,7 +49,7 @@ pub struct Antecedents<'a> {
 #[derive(Debug, Clone)]
 pub struct MPRule<'a> {
     pub antecedents: Antecedents<'a>,
-    pub more_antecedents: Vec<Antecedents<'a>>,
+    pub more_antecedents: VecDeque<Antecedents<'a>>,
     pub consequents: Vec<&'a Fact<'a>>,
     pub matched: MPMatching<'a>,
     pub output: Option<&'a Fact<'a>>,
