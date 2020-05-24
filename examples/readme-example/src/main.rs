@@ -35,9 +35,9 @@ mod kb;
 fn main() {
     env_logger::init();
     let kb = kb::KBGenerator::gen_kb();
-    kb.tell("<X0> ⊆ <X1> ∧ <X1> ⊆ <X2> → <X0> ⊆ <X2> ◊
-             <X0> ∈ <X1> ∧ <X1> ⊆ <X2> → <X0> ∈ <X2> ◊
-             human ⊆ primate ◊
+    kb.tell("<X0> ⊆ <X1> ∧ <X2> ⊆ <X0> → <X2> ⊆ <X1> ◊
+             <X0> ⊆ <X1> ∧ <X2> ∈ <X0> → <X2> ∈ <X1> ◊");
+    kb.tell("human ⊆ primate ◊
              primate ⊆ animal ◊
              susan ∈ human ◊");
 }

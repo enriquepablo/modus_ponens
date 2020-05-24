@@ -2,7 +2,10 @@ var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~
 
 fact       = _{ SOI ~ rfact ~ EOI }
 
-rfact        = { pred ~ decimal ~ decimal }
+rfact        = { pred ~ n ~ fib }
+
+n           = { decimal }
+fib           = { decimal }
 
 pred        = { "fib" }
 

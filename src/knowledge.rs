@@ -30,7 +30,9 @@ pub fn derive_kb() -> TokenStream {
             mpparser: &'a MPParser<'a>,
             facts: FactSet<'a>,
             rules: RuleSet<'a>,
-            queue: RefCell<VecDeque<Activation<'a>>>,
+            rule_queue: RefCell<VecDeque<Activation<'a>>>,
+            match_queue: RefCell<VecDeque<Activation<'a>>>,
+            fact_queue: RefCell<VecDeque<Activation<'a>>>,
         }
 
         impl<'a> KB<'a> {
@@ -42,7 +44,9 @@ pub fn derive_kb() -> TokenStream {
                     mpparser,
                     facts: FactSet::new(),
                     rules: RuleSet::new(root_path),
-                    queue: RefCell::new(VecDeque::new()),
+                    rule_queue: RefCell::new(VecDeque::new()),
+                    match_queue: RefCell::new(VecDeque::new()),
+                    fact_queue: RefCell::new(VecDeque::new()),
                 }
             }
 
@@ -50,10 +54,18 @@ pub fn derive_kb() -> TokenStream {
 
             fn process_activations(&'a self) {
                 loop {
-                    //debug!("Pending activations: {}", self.queue.borrow().len());
-                    let next_opt = self.queue.borrow_mut().pop_front();
+                    //debug!("LOOOPIIIIIIIIIING rule Activations left (consuming 1): {}", self.rule_queue.borrow().len());
+                    //debug!("                  match Activations left (consuming 1): {}", self.match_queue.borrow().len());
+                    //debug!("                  fact Activations left (consuming 1): {}", self.fact_queue.borrow().len());
+                    let mut next_opt = self.rule_queue.borrow_mut().pop_front();
                     if next_opt.is_none() {
-                        break
+                        next_opt = self.match_queue.borrow_mut().pop_front();
+                        if next_opt.is_none() {
+                            next_opt = self.fact_queue.borrow_mut().pop_front();
+                            if next_opt.is_none() {
+                                break
+                            }
+                        }
                     }
                     match next_opt.unwrap() {
                         Activation::Fact {
@@ -125,16 +137,18 @@ pub fn derive_kb() -> TokenStream {
                 info!("ADDING FACT: {}", fact);
                 let paths = fact.paths.as_slice();
                 let response = self.rules.query_paths(paths);
-                let mut queue = self.queue.borrow_mut();
-                debug!("Got responses: {}", response.len());
+                let mut queue = self.match_queue.borrow_mut();
+                //debug!("Got responses: {}", response.len());
                 for (rule_refs, matching) in response {
-                    debug!("Got rule_refs: {}", rule_refs.borrow().len());
+                    //debug!("Got rule_refs: {}", rule_refs.borrow().len());
                     for rule_ref in rule_refs.borrow().iter() {
                         let real_matching = get_real_matching(&matching, &rule_ref.varmap); 
+                        //debug!("Pushed MATCH to queue: {}\n\nmathing\n{:?}\n\nIn MATCH queue: {}\n\n", &rule_ref.rule, real_matching.clone(), queue.len() + 1);
                         queue.push_back(Activation::from_matching(rule_ref.rule.clone(), real_matching, query_rules));
                     }
                 }
                 self.facts.add_fact(&fact);
+                //debug!("ADDED FACT: {}", fact);
             }
             fn process_match(&'a self,
                              mut rule: MPRule<'a>,
@@ -154,12 +168,14 @@ pub fn derive_kb() -> TokenStream {
                     if query_rules {
                         self.query_rule(&rule, query_rules);
                     }
-                    self.queue.borrow_mut().push_back(Activation::from_rule(rule, query_rules));
+                    //debug!("Pushed RULE to RULE queue: {}\n\nmathing\n{:?}\n\nIn RULE queue: {}\n\n", &rule, &matching, self.rule_queue.borrow().len() + 1);
+                    self.rule_queue.borrow_mut().push_back(Activation::from_rule(rule, query_rules));
                 } else {
-                    let mut queue = self.queue.borrow_mut();
+                    let mut queue = self.fact_queue.borrow_mut();
                     for consequent in rule.consequents{
                        let new_consequent = self.mpparser.substitute_fact(&consequent, &rule.matched);
                         if !self.facts.ask_fact_bool(&new_consequent) {
+                            //debug!("Pushed FACT to queue: {}\n\nmathing\n{:?}\n\nIn FACT queue: {}\n\n", &new_consequent, &rule.matched, queue.len() + 1);
                             queue.push_back(Activation::from_fact(new_consequent, query_rules));
                         }
                     }
@@ -169,7 +185,7 @@ pub fn derive_kb() -> TokenStream {
                           rule: &MPRule<'a>,
                           query_rules: bool) {
 
-                let mut queue = self.queue.borrow_mut();
+                let mut queue = self.match_queue.borrow_mut();
                 for i in 0..rule.antecedents.facts.len() {
                     let mut new_ants = rule.antecedents.clone();
                     let ant = new_ants.facts.remove(i);
@@ -181,7 +197,8 @@ pub fn derive_kb() -> TokenStream {
                             consequents: rule.consequents.clone(),
                             matched: rule.matched.clone(),
                         };
-                        queue.push_back(Activation::from_matching(new_rule, resp, query_rules));
+                        //debug!("Pushed MATCH from QUERY RULE to queue: {}\n\nmathing\n{:?}\n\nIn MATCH queue: {}\n\n", &new_rule, &resp, queue.len() + 1);
+                        queue.push_back(Activation::from_matching(new_rule, resp, true));
                     }
                 }
             }
@@ -251,15 +268,18 @@ pub fn derive_kb() -> TokenStream {
                     panic!("Parsing problem! {}", result.err().unwrap());
                 } else {
                     let ParseResult { rules, facts } = result.ok().unwrap();
-                    let mut queue = self.queue.borrow_mut();
+                    let mut rule_queue = self.rule_queue.borrow_mut();
                     for rule in rules {
+                        //debug!("Pushed RULE fromTELL to rule_queue: {}\n\n\nIn rule_queue: {}\n\n", &rule, rule_queue.len() + 1);
                         let act = Activation::from_rule(rule, true);
-                        queue.push_back(act);
+                        rule_queue.push_back(act);
                     }
+                    let mut fact_queue = self.fact_queue.borrow_mut();
                     for fact in facts {
                         if !self.facts.ask_fact_bool(&fact) {
+                            //debug!("Pushed FACT fromTELL to fact_queue: {}\n\n\nIn fact_queue: {}\n\n", &fact, fact_queue.len() + 1);
                             let act = Activation::from_fact(fact, false);
-                            queue.push_back(act);
+                            fact_queue.push_back(act);
                         }
                     }
                 }

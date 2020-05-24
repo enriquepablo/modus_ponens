@@ -41,7 +41,7 @@ fn main() {
         {={
             <Snd> = <Fst> + 1
         }=} ∧ {?{
-            <Snd> < 40
+            <Snd> <= 400
         }?}
             →
         fib <Snd> <Val2> ∧

@@ -24,7 +24,7 @@ use std::fmt;
 use std::cell::{ RefCell, Cell };
 
 use bumpalo::{Bump};
-use log::debug;
+//use log::debug;
 
 use crate::constants;
 use crate::path::MPPath;
@@ -239,7 +239,6 @@ impl<'a> RSNode<'a> {
                  mut paths: &'a [MPPath<'a>],
                  mut response: Response<'a>,
                  mut matched: MPMatching<'a>) -> (Response<'a>, MPMatching<'a>) {
-        let parent = self;
         let mut finished = false;
         let mut next_path: Option<&MPPath> = None;
         let mut next_paths: Option<&'a [MPPath]> = None;
@@ -262,42 +261,41 @@ impl<'a> RSNode<'a> {
         if next_path.is_some(){
             let path = next_path.unwrap();
             let rest_paths = next_paths.unwrap();
-            let child_opt = parent.get_child(path);
+            let child_opt = self.get_child(path);
             if child_opt.is_some() {
                 let child = child_opt.unwrap();
-                let (new_response, new_matched) = child.climb(rest_paths, response, matched);
+                let (new_response, old_matched) = child.climb(rest_paths, response, matched);
                 response = new_response;
-                matched = new_matched;
+                matched = old_matched;
             }
-            for (vpath, varchild) in parent.var_children.borrow().iter() {
+            for (vpath, varchild) in self.var_children.borrow().iter() {
                 let (new_path_slice, new_value) = path.sub_slice(vpath.len());
                 let old_value = matched.get(vpath.value);
                 if old_value.is_some() {
                     if &new_value == old_value.unwrap() {
                         let new_paths = MPPath::paths_after_slice(new_path_slice, rest_paths);
-                        let (new_response, new_matched) = varchild.climb(new_paths, response, matched);
+                        let (new_response, old_matched) = varchild.climb(new_paths, response, matched);
                         response = new_response;
-                        matched = new_matched;
+                        matched = old_matched;
                         break;
                     }
                 }
             }
-            let var_child_opt = parent.get_var_child();
+            let var_child_opt = self.get_var_child();
             if var_child_opt.is_some() {
                 let var_child = var_child_opt.unwrap();
                 let (new_path_slice, new_value) = path.sub_slice(var_child.path.len());
                 let new_paths = MPPath::paths_after_slice(new_path_slice, rest_paths);
                 let mut new_matched = matched.clone();
                 new_matched.insert(var_child.path.value, new_value);
-                let (new_response, new_matched) = var_child.climb(new_paths, response, new_matched);
+                let (new_response, _) = var_child.climb(new_paths, response, new_matched);
                 response = new_response;
-                matched = new_matched;
             }
         }
-        if parent.end_node.get() {
-            debug!("Pushing to response: {}\n\n{:?} \n\n{:?}", &parent.rule_refs.borrow().first().unwrap().rule, &parent.rule_refs.borrow().first().unwrap().varmap, &matched);
+        if self.end_node.get() {
+            //debug!("Pushing to response: {}\n\n{:?} \n\n{:?}", &parent.rule_refs.borrow().len(), &parent.rule_refs.borrow().first().unwrap().varmap, &matched);
             // println!("Found rules: {}", parent_rule_refs.len());
-            response.push(( &parent.rule_refs, matched.clone() ));
+            response.push(( &self.rule_refs, matched.clone() ));
         }
         (response, matched)
     }
