@@ -2,12 +2,12 @@ var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~
 
 fact       = _{ SOI ~ rfact ~ EOI }
 
-rfact        = { pred ~ n ~ fib }
+rfact        = { (pred ~ n ~ fib | pred ~ n) }
 
 n           = { decimal }
 fib           = { decimal }
 
-pred        = { "fib" }
+pred        = @{ "fib" | "q" }
 
 decimal        = _{ v_decimal | var }
 

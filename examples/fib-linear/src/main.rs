@@ -25,6 +25,10 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
+use std::mem;
+use structopt::StructOpt;
+//use std::{thread, time};
+
 
 use crate::modus_ponens::kbase::KBGen;
 use crate::modus_ponens::kbase::KBase;
@@ -32,16 +36,27 @@ use crate::modus_ponens::kbase::KBase;
 mod kb;
 
 
+#[derive(Debug, StructOpt)]
+#[structopt(name = "fib-linear", about = "fibonacci.")]
+struct Opt {
+    /// number
+    #[structopt(short, long)]
+    n: usize,
+}
+
 fn main() {
     env_logger::init();
     let kb = kb::KBGenerator::gen_kb();
+    let opt = Opt::from_args();
     kb.tell("
 
+        q <N> 
+            →
         fib <Fst> <Val1> ∧
         {={
             <Snd> = <Fst> + 1
         }=} ∧ {?{
-            <Snd> < 20
+            <Snd> < <N>
         }?}
             →
         fib <Snd> <Val2> ∧
@@ -52,11 +67,15 @@ fn main() {
             →
         fib <Nxt> <NxtVal> ◊
 
-        fib 20 <Val>
+        q <N>
             →
-        {<{ fib 20 <Val> }>} ◊
+        fib <N> <Val>
+            →
+        {<{ fib <N> <Val> }>} ◊
 
     ");
+    let query = format!("q {} ◊", opt.n);
+    kb.tell( unsafe { mem::transmute( query.as_str() ) });
 
     kb.tell("fib 0 1 ◊");
     kb.tell("fib 1 1 ◊");
