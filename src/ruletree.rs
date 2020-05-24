@@ -52,6 +52,7 @@ pub struct MPRule<'a> {
     pub more_antecedents: Vec<Antecedents<'a>>,
     pub consequents: Vec<&'a Fact<'a>>,
     pub matched: MPMatching<'a>,
+    pub output: Option<&'a Fact<'a>>,
 }
 
 impl<'a> fmt::Display for MPRule<'a> {
@@ -82,6 +83,12 @@ impl<'a> fmt::Display for MPRule<'a> {
         for consequent in &self.consequents {
             string.push_str(&consequent.text);
             string.push_str(" ; ");
+        }
+
+        if self.output.is_some() {
+            string.push_str(" {!{ ");
+            string.push_str(self.output.unwrap().text);
+            string.push_str(" }!} <>");
         }
 
         string.push_str(&format!("\n\nmatching: {:?}", &self.matched));

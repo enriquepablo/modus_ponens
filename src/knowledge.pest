@@ -7,11 +7,11 @@ sentence    = _{ rule | fact }
 rule        = { antecedents+ ~ consequents }
 
 antecedents = { factset ~ transforms_section? ~ conditions_section? ~ ("->"|"→") }
-consequents = { factset }
+consequents = { factset | output_section }
 
 factset     = _{ fact ~ ((";"|"∧") ~ fact)* }
 
-fact        = { (!("<>"|"◊"|"->"|"→"|";"|"∧"|"{={"|"{?{") ~ ANY)+ }
+fact        = { (!("<>"|"◊"|"->"|"→"|";"|"∧"|"{={"|"{?{"|"{<{") ~ ANY)+ }
 
 COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 WHITESPACE  = { (" " | "\t" | NEWLINE)+ }
@@ -21,3 +21,6 @@ conditions_section   = _{ (";"|"∧") ~ "{?{" ~ conditions ~ "}?}" }
 
 transforms   = { (!"}=}" ~ ANY)+ }
 transforms_section   = _{ (";"|"∧") ~ "{={" ~ transforms ~ "}=}" }
+
+output               = { (!"}>}" ~ ANY)+ }
+output_section   = _{ "{<{" ~ output ~ "}>}" }

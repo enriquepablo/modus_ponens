@@ -79,6 +79,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                         kparser::Rule::rule => {
                             let mut more_antecedents = Vec::new();
                             let mut consequents = vec![];
+                            let mut output: Option<&Fact> = None;
                             for pairset in pair.into_inner() {
                                 match pairset.as_rule() {
                                     kparser::Rule::antecedents => {
@@ -113,6 +114,9 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                                     let consequent = self.parse_fact(factpair.as_str());
                                                     consequents.push(consequent);
                                                 },
+                                                kparser::Rule::output => {
+                                                    output = Some(self.parse_fact(factpair.as_str()));
+                                                },
                                                 _ => {}
                                             }
                                         }
@@ -126,6 +130,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                 more_antecedents,
                                 consequents,
                                 matched: HashMap::new(),
+                                output,
                             };
                             rules.push(rule);
                         },

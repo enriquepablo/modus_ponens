@@ -100,6 +100,7 @@ pub fn derive_kb() -> TokenStream {
                     more_antecedents,
                     consequents,
                     matched,
+                    output,
                 } = rule;
                 let n_ants = antecedents.facts.len();
                 for n in 0..n_ants {
@@ -122,7 +123,8 @@ pub fn derive_kb() -> TokenStream {
                         },
                         more_antecedents: new_more_ants,
                         consequents: new_conseqs,
-                        matched: matched.clone()
+                        matched: matched.clone(),
+                        output,
                     };
                     let (varmap, normal_ant) = self.mpparser.normalize_fact(&new_ant.unwrap());
                     let rule_ref = RuleRef {
@@ -172,10 +174,14 @@ pub fn derive_kb() -> TokenStream {
                     queues.rule_queue.push_back(Activation::from_rule(rule, query_rules));
                 } else {
                     for consequent in rule.consequents{
-                       let new_consequent = self.mpparser.substitute_fact(&consequent, &rule.matched);
+                       let new_consequent = self.mpparser.substitute_fact(consequent, &rule.matched);
                         if !self.facts.ask_fact_bool(&new_consequent) {
                             queues.fact_queue.push_back(Activation::from_fact(new_consequent, query_rules));
                         }
+                    }
+                    if rule.output.is_some() {
+                        let output = self.mpparser.substitute_fact(rule.output.unwrap(), &rule.matched);
+                        println!("{}", output.text);
                     }
                 }
                 queues
@@ -195,6 +201,7 @@ pub fn derive_kb() -> TokenStream {
                             more_antecedents: rule.more_antecedents.clone(),
                             consequents: rule.consequents.clone(),
                             matched: rule.matched.clone(),
+                            output: rule.output,
                         };
                         queues.match_queue.push_back(Activation::from_matching(new_rule, resp, true));
                     }
@@ -209,6 +216,7 @@ pub fn derive_kb() -> TokenStream {
                     mut more_antecedents,
                     consequents,
                     mut matched,
+                    output,
                 } = rule;
 
                 matched.extend(matching);
@@ -220,12 +228,12 @@ pub fn derive_kb() -> TokenStream {
                     if !antecedents.conditions.is_empty() {
                         let passed = CParser::check_conditions(antecedents.conditions, &matched, &self.mpparser.lexicon);
                         if !passed {
-                            return (MPRule {antecedents, more_antecedents, consequents, matched}, false, false);
+                            return (MPRule {antecedents, more_antecedents, consequents, matched, output}, false, false);
                         }
                     }
 
                     if more_antecedents.len() == 0 {
-                        return (MPRule {antecedents, more_antecedents, consequents, matched}, false, true);
+                        return (MPRule {antecedents, more_antecedents, consequents, matched, output}, false, true);
                     } else {
                         antecedents = more_antecedents.remove(0);
                     }
@@ -256,6 +264,7 @@ pub fn derive_kb() -> TokenStream {
                     more_antecedents: new_more_antecedents,
                     consequents: new_consequents,
                     matched,
+                    output,
                 }, true, true)
 
             }

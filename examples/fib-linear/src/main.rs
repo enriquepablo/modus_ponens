@@ -41,7 +41,7 @@ fn main() {
         {={
             <Snd> = <Fst> + 1
         }=} ∧ {?{
-            <Snd> <= 400
+            <Snd> < 20
         }?}
             →
         fib <Snd> <Val2> ∧
@@ -51,6 +51,10 @@ fn main() {
         }=}
             →
         fib <Nxt> <NxtVal> ◊
+
+        fib 20 <Val>
+            →
+        {<{ fib 20 <Val> }>} ◊
 
     ");
 
