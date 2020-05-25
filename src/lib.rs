@@ -65,7 +65,7 @@ pub fn derive_kbase(input: proc_macro::TokenStream) -> TokenStream {
         use std::cell::RefCell;
         use std::mem;
 
-        use log::{info, trace, debug};
+        use log::{info, trace};
 
         use pest::error::Error;
         use pest::Parser;
@@ -78,7 +78,7 @@ pub fn derive_kbase(input: proc_macro::TokenStream) -> TokenStream {
         use modus_ponens::lexicon::Lexicon;
         use modus_ponens::matching::{ MPMatching, get_real_matching};
         use modus_ponens::path::MPPath;
-        use modus_ponens::ruletree::{ Antecedents, MPRule, RuleSet, RuleRef };
+        use modus_ponens::ruletree::{ PreAntecedents, Antecedents, MPRule, RuleSet, RuleRef };
         use modus_ponens::segment::MPSegment;
         use modus_ponens::kparser;
         use modus_ponens::transform::TParser;

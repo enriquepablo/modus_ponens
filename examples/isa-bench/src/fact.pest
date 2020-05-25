@@ -1,6 +1,6 @@
 fact        = _{ SOI ~ rfact ~ EOI }
 
-rfact        = { value ~ pred ~ value }
+rfact        = { var_range ~ pred ~ var_range }
 
 var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
 
@@ -8,6 +8,6 @@ pred        = @{ "ISA" ~ ('0'..'9')+ | "IS" ~ ('0'..'9')+ }
 
 v_name      = @{ ASCII_ALPHANUMERIC+ }
 
-value       = _{ v_name | var }
+var_range       = _{ v_name | var }
 
 WHITESPACE  = { (" " | "\t" | NEWLINE)+ }

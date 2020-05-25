@@ -176,11 +176,12 @@ pub fn derive_kb() -> TokenStream {
                     queues.rule_queue.push_back(Activation::from_rule(rule, query_rules));
                 } else {
                     for consequent in rule.consequents{
-                       let new_consequent = self.mpparser.substitute_fact(consequent, &rule.matched);
+                       let (new_consequent, rule_matched) = self.mpparser.parse_fact(consequent, Some(rule.matched));
                         queues.fact_queue.push_back(Activation::from_fact(new_consequent, query_rules));
+                        rule.matched = rule_matched.unwrap();
                     }
                     if rule.output.is_some() {
-                        let output = self.mpparser.substitute_fact(rule.output.unwrap(), &rule.matched);
+                        let (output, _) = self.mpparser.parse_fact(rule.output.unwrap(), Some(rule.matched));
                         println!("{}", output.text);
                     }
                 }
@@ -221,31 +222,44 @@ pub fn derive_kb() -> TokenStream {
 
                 matched.extend(matching);
 
-                if antecedents.facts.len() == 0 {
-                    if !antecedents.transforms.is_empty() {
-                        matched = TParser::process_transforms(antecedents.transforms, matched, &self.mpparser.lexicon);
+                let mut new_antecedents: Vec<&Fact> = vec![];
+
+                let Antecedents { facts, mut transforms, mut conditions } = antecedents;
+
+                if facts.len() == 0 {
+                    if !transforms.is_empty() {
+                        matched = TParser::process_transforms(transforms, matched, &self.mpparser.lexicon);
                     }
-                    if !antecedents.conditions.is_empty() {
-                        let passed = CParser::check_conditions(antecedents.conditions, &matched, &self.mpparser.lexicon);
+                    if !conditions.is_empty() {
+                        let passed = CParser::check_conditions(conditions, &matched, &self.mpparser.lexicon);
                         if !passed {
-                            return (MPRule {antecedents, more_antecedents, consequents, matched, output}, false, false);
+                            return (MPRule {antecedents: Antecedents { facts, transforms, conditions }, more_antecedents, consequents, matched, output}, false, false);
                         }
                     }
 
                     if more_antecedents.len() == 0 {
-                        return (MPRule {antecedents, more_antecedents, consequents, matched, output}, false, true);
+                        return (MPRule {antecedents: Antecedents { facts, transforms, conditions }, more_antecedents, consequents, matched, output}, false, true);
                     } else {
-                        antecedents = more_antecedents.pop_front().unwrap();
+                        let pre_antecedents = more_antecedents.pop_front().unwrap();
+                        for ant in pre_antecedents.facts.iter(){
+                            let (ant_fact, old_matched) = self.mpparser.parse_fact(ant, Some(matched));
+                            matched = old_matched.unwrap();
+                            new_antecedents.push(ant_fact);
+                        }
+                        transforms = pre_antecedents.transforms;
+                        conditions = pre_antecedents.conditions;
+                    }
+                } else {
+                    for ant in facts.iter(){
+                        let ant_fact = self.mpparser.substitute_fact(ant, &matched);
+                        new_antecedents.push(ant_fact);
                     }
                 }
-                let new_antecedents = antecedents.facts.iter()
-                                                 .map(|antecedent| self.mpparser.substitute_fact(antecedent, &matched))
-                                                 .collect();
                 (MPRule {
                     antecedents: Antecedents {
                         facts: new_antecedents,
-                        transforms: antecedents.transforms,
-                        conditions: antecedents.conditions,
+                        transforms: transforms,
+                        conditions: conditions,
                     },
                     more_antecedents,
                     consequents,

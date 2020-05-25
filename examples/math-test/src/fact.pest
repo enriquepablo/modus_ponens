@@ -2,13 +2,13 @@ var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~
 
 fact       = _{ SOI ~ rfact ~ EOI }
 
-rfact        = { decimal ~ pred ~ set }
+rfact        = { var_range ~ pred ~ set }
 
 pred        = { "∈" }
 
 set         = { "N" }
 
-decimal        = _{ v_decimal | var }
+var_range        = _{ v_decimal | var }
 
 v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
 

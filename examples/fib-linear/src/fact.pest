@@ -4,12 +4,12 @@ fact       = _{ SOI ~ rfact ~ EOI }
 
 rfact        = { (pred ~ n ~ fib | pred ~ n) }
 
-n           = { decimal }
-fib           = { decimal }
+n           = { var_range }
+fib           = { var_range }
 
 pred        = @{ "fib" | "q" }
 
-decimal        = _{ v_decimal | var }
+var_range        = _{ v_decimal | var }
 
 v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
 

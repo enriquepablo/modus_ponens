@@ -40,6 +40,13 @@ pub fn new_response<'a>() -> Response<'a> {
 }
 
 #[derive(Debug, Clone)]
+pub struct PreAntecedents<'a> {
+    pub facts: Vec<&'a str>,
+    pub transforms: &'a str,
+    pub conditions: &'a str,
+}
+
+#[derive(Debug, Clone)]
 pub struct Antecedents<'a> {
     pub facts: Vec<&'a Fact<'a>>,
     pub transforms: &'a str,
@@ -49,10 +56,10 @@ pub struct Antecedents<'a> {
 #[derive(Debug, Clone)]
 pub struct MPRule<'a> {
     pub antecedents: Antecedents<'a>,
-    pub more_antecedents: VecDeque<Antecedents<'a>>,
-    pub consequents: Vec<&'a Fact<'a>>,
+    pub more_antecedents: VecDeque<PreAntecedents<'a>>,
+    pub consequents: Vec<&'a str>,
     pub matched: MPMatching<'a>,
-    pub output: Option<&'a Fact<'a>>,
+    pub output: Option<&'a str>,
 }
 
 impl<'a> fmt::Display for MPRule<'a> {
@@ -70,7 +77,7 @@ impl<'a> fmt::Display for MPRule<'a> {
         string.push_str("}?} ->\n");
         for more_ants in &self.more_antecedents {
             for fact in more_ants.facts.iter() {
-                string.push_str(&fact.text);
+                string.push_str(fact);
                 string.push_str(" ; ");
             }
             string.push_str("{={ ");
@@ -81,13 +88,13 @@ impl<'a> fmt::Display for MPRule<'a> {
         }
 
         for consequent in &self.consequents {
-            string.push_str(&consequent.text);
+            string.push_str(consequent);
             string.push_str(" ; ");
         }
 
         if self.output.is_some() {
             string.push_str(" {!{ ");
-            string.push_str(self.output.unwrap().text);
+            string.push_str(self.output.unwrap());
             string.push_str(" }!} <>");
         }
 

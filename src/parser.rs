@@ -27,11 +27,11 @@ use proc_macro2::TokenStream;
 pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
     quote! {
 
-        pub struct MathStrings(RefCell<HashSet<String>>);
+        pub struct StringCache(RefCell<HashSet<String>>);
 
-        impl MathStrings {
+        impl StringCache {
             fn new() -> Self {
-                MathStrings(RefCell::new(HashSet::new()))
+                StringCache(RefCell::new(HashSet::new()))
             }
 
             fn intern<'a>(&'a self, s: &str) -> &'a str {
@@ -49,7 +49,8 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
         pub struct MPParser<'a> {
             pub lexicon: Box<Lexicon>,
             pub flexicon: Box<FLexicon<'a>>,
-            pub math: MathStrings,
+            pub math: StringCache,
+            pub factstr: StringCache,
         }
 
         #[derive(Parser)]
@@ -62,7 +63,8 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 MPParser {
                     lexicon: Box::new(Lexicon::new()),
                     flexicon: Box::new(FLexicon::new()),
-                    math: MathStrings::new(),
+                    math: StringCache::new(),
+                    factstr: StringCache::new(),
                 }
             }
 
@@ -73,24 +75,33 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 for pair in parse_tree.into_inner() {
                     match pair.as_rule() {
                         kparser::Rule::fact => {
-                            let fact = self.parse_fact(pair.as_str());
+                            let (fact, _) = self.parse_fact(pair.as_str(), None);
                             facts.push(fact);
                         },
                         kparser::Rule::rule => {
                             let mut more_antecedents = VecDeque::new();
                             let mut consequents = vec![];
-                            let mut output: Option<&Fact> = None;
+                            let mut antecedents_facts: Vec<&Fact> = vec![];
+                            let mut antecedents_transforms: &str = "";
+                            let mut antecedents_conditions: &str = "";
+                            let mut output: Option<&str> = None;
+                            let mut antecedents_count = 0;
                             for pairset in pair.into_inner() {
                                 match pairset.as_rule() {
                                     kparser::Rule::antecedents => {
-                                        let mut ants = vec![];
+                                        antecedents_count += 1;
+                                        let mut pre_ants = vec![];
                                         let mut transforms = "";
                                         let mut conditions = "";
                                         for factpair in pairset.into_inner() {
                                             match factpair.as_rule() {
                                                 kparser::Rule::fact => {
-                                                    let antecedent = self.parse_fact(factpair.as_str());
-                                                    ants.push(antecedent);
+                                                    if antecedents_count == 1 {
+                                                        let (antecedent, _) = self.parse_fact(factpair.as_str(), None);
+                                                        antecedents_facts.push(antecedent);
+                                                    } else {
+                                                        pre_ants.push(self.factstr.intern(factpair.as_str()));
+                                                    }
                                                 },
                                                 kparser::Rule::transforms => {
                                                     transforms = self.math.intern(factpair.as_str());
@@ -101,21 +112,25 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                                 _ => {}
                                             }
                                         }
-                                        more_antecedents.push_back(Antecedents {
-                                            facts: ants,
-                                            transforms: transforms,
-                                            conditions: conditions,
-                                        });
+                                        if antecedents_count == 1 {
+                                            antecedents_transforms = transforms;
+                                            antecedents_conditions = conditions;
+                                        } else {
+                                            more_antecedents.push_back(PreAntecedents {
+                                                facts: pre_ants,
+                                                transforms: transforms,
+                                                conditions: conditions,
+                                            });
+                                        }
                                     },
                                     kparser::Rule::consequents => {
                                         for factpair in pairset.into_inner() {
                                             match factpair.as_rule() {
                                                 kparser::Rule::fact => {
-                                                    let consequent = self.parse_fact(factpair.as_str());
-                                                    consequents.push(consequent);
+                                                    consequents.push(self.factstr.intern(factpair.as_str()));
                                                 },
                                                 kparser::Rule::output => {
-                                                    output = Some(self.parse_fact(factpair.as_str()));
+                                                    output = Some(self.factstr.intern(factpair.as_str()));
                                                 },
                                                 _ => {}
                                             }
@@ -124,9 +139,12 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                     _ => {}
                                 }
                             }
-                            let antecedents = more_antecedents.pop_front().unwrap();
                             let rule = MPRule {
-                                antecedents,
+                                antecedents: Antecedents {
+                                    facts: antecedents_facts,
+                                    transforms: antecedents_transforms,
+                                    conditions: antecedents_conditions,
+                                },
                                 more_antecedents,
                                 consequents,
                                 matched: HashMap::new(),
@@ -140,21 +158,18 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 Ok(ParseResult { facts, rules })
             }
 
-            pub fn parse_fact(&'a self, text: &'a str) -> &'a Fact<'a> {
-                let result = FactParser::parse(Rule::fact, text);
-                if result.is_err() {
-                    panic!("This does not seem like a fact: \"{}\"\n\nerr: {}", text.trim(), result.err().unwrap());
-                }
-                let parse_tree = result.ok().expect("fact pairset").next().expect("fact pair");
-                self.build_fact(parse_tree)
+            pub fn parse_fact(&'a self, text: &'a str, matched: Option<MPMatching<'a>>) -> (&'a Fact<'a>, Option<MPMatching<'a>>) {
+                let parse_tree = FactParser::parse(Rule::fact, text).ok().expect("fact pairset").next().expect("fact pair");
+                self.build_fact(parse_tree, matched)
             }
             
-            pub fn build_fact(&'a self, parse_tree: Pair<'a, Rule>) -> &'a Fact<'a> {
-                let all_paths = self.visit_parse_node(parse_tree,
-                                                      vec![],
-                                                      Box::new(vec![]),
-                                                      0);
-                self.flexicon.from_paths(*all_paths)
+            pub fn build_fact(&'a self, parse_tree: Pair<'a, Rule>, matched: Option<MPMatching<'a>>) -> (&'a Fact<'a>, Option<MPMatching<'a>>) {
+                let (all_paths, matched) = self.visit_parse_node(parse_tree,
+                                                                 vec![],
+                                                                 Box::new(vec![]),
+                                                                 0,
+                                                                 matched);
+                (self.flexicon.from_paths(*all_paths), matched)
             }
 
             fn visit_parse_node(&'a self,
@@ -162,7 +177,8 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                 root_segments: Vec<&'a MPSegment>,
                                 mut all_paths: Box<Vec<MPPath<'a>>>,
                                 index: usize,
-                            ) -> Box<Vec<MPPath>> {
+                                mut matched: Option<MPMatching<'a>>,
+                            ) -> (Box<Vec<MPPath>>, Option<MPMatching<'a>>) {
                 let pretext = parse_tree.as_str();
                 let rule = parse_tree.as_rule();
                 let name = format!("{:?}", rule);
@@ -176,22 +192,44 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                     text = format!("{}", index);
                 }
                 let segment = self.lexicon.intern(&name, &text, is_leaf);
-                let mut new_root_segments = root_segments.to_vec();
-                new_root_segments.push(segment);
-                if can_be_var || is_leaf {
-                    let segments = new_root_segments.clone();
-                    let new_path = MPPath::new(segments);
-                    all_paths.push(new_path);
+                let mut pending = true;
+                if segment.is_var && matched.is_some() {
+                    let matching = matched.unwrap();
+                    let value = matching.get(segment);
+                    if value.is_some() {
+                        let val = value.unwrap();
+                        let parse_tree = FactParser::parse(Rule::var_range, &val.text).ok().unwrap().next().expect("a matched production");
+                        let (new_all_paths, _) = self.visit_parse_node(parse_tree,
+                                                                       root_segments.clone(),
+                                                                       all_paths,
+                                                                       0,
+                                                                       None);
+                        all_paths = new_all_paths;
+                        pending = false;
+                    }
+                    matched = Some(matching);
                 }
-                let mut new_index = 0;
-                for child in children {
-                    all_paths = self.visit_parse_node(child,
-                                                      new_root_segments.clone(),
-                                                      all_paths,
-                                                      new_index);
-                    new_index += 1;
+                if pending {
+                    let mut new_root_segments = root_segments.to_vec();
+                    new_root_segments.push(segment);
+                    if can_be_var || is_leaf {
+                        let segments = new_root_segments.clone();
+                        let new_path = MPPath::new(segments);
+                        all_paths.push(new_path);
+                    }
+                    let mut new_index = 0;
+                    for child in children {
+                        let (new_all_paths, old_matched) = self.visit_parse_node(child,
+                                                                                 new_root_segments.clone(),
+                                                                                 all_paths,
+                                                                                 new_index,
+                                                                                 matched);
+                        matched = old_matched;
+                        all_paths = new_all_paths;
+                        new_index += 1;
+                    }
                 }
-                all_paths
+                (all_paths, matched)
             }
             pub fn substitute_fact(&'a self, fact: &'a Fact<'a>, matching: &MPMatching<'a>) -> &'a Fact<'a> {
                 let new_paths = MPPath::substitute_paths(&fact.paths, matching);
@@ -203,16 +241,13 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 // XXX LEAK!
                 let stext = Box::leak(text.into_boxed_str());
                 
-                let parse_result = FactParser::parse(Rule::fact, stext);
-                if parse_result.is_err() {
-                    panic!("These does not seem like a fact: \"{}\"\n\nerr: {}\n\nmatching: {:?}", stext, parse_result.err().unwrap(), matching);
-                }
-                let parse_tree = parse_result.ok().unwrap().next().expect("2nd fact pair");
+                let parse_tree = FactParser::parse(Rule::fact, stext).ok().unwrap().next().expect("2nd fact pair");
                 let all_paths = Box::new(Vec::with_capacity(fact.paths.len()));
-                let all_paths = self.visit_parse_node(parse_tree,
-                                                                         vec![],
-                                                                         all_paths,
-                                                                         0);
+                let (all_paths, _) = self.visit_parse_node(parse_tree,
+                                                               vec![],
+                                                               all_paths,
+                                                               0,
+                                                               None);
                 self.flexicon.from_paths_and_string(stext, *all_paths)
             }
             pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: MPMatching<'a>) -> &'a Fact<'a> {

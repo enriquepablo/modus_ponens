@@ -2,12 +2,12 @@ var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~
 
 fact        = _{ SOI ~ rfact ~ EOI }
 
-rfact        = { name ~ pred ~ name }
+rfact        = { var_range ~ pred ~ var_range }
 
 pred        = @{ "∈" | "⊆" }
 
 v_name      = @{ ASCII_ALPHANUMERIC+ }
 
-name        = _{ v_name | var }
+var_range        = _{ v_name | var }
 
 WHITESPACE  = { (" " | "\t" | NEWLINE)+ }
