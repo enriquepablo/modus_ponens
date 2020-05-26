@@ -37,10 +37,10 @@ fn main() {
     let kb = kb::KBGenerator::gen_kb();
     kb.tell("
 
-        <X0> ∈ N ∧
+        <X0> ∈ N
             {={
                 <X1> = <X0> + 1
-            }=} ∧ {?{
+            }=} {?{
                 <X1> <= 5
             }?}
             → <X1> ∈ N ◊

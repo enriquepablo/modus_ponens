@@ -80,62 +80,62 @@ pub fn derive_kb() -> TokenStream {
                             }
                         },
                         Activation::MPRule {
-                            rule, ..
+                            rule,
+                            query_rules,
                         } => {
-                            self.process_rule(rule);
+                            queues = self.process_rule(rule, query_rules, queues);
                         },
                         Activation::Match {
                             rule,
-                            matched,
-                            query_rules, ..
+                            matched: Some(matched),
+                            query_rules,
                         } => {
-                            queues = self.process_match(rule, &matched, query_rules, queues);
-                        }
+                            queues = self.process_match(rule, Some(&matched), query_rules, queues);
+                        },
+                        Activation::Match {
+                            rule,
+                            matched: None,
+                            query_rules,
+                        } => {
+                            queues = self.process_match(rule, None, query_rules, queues);
+                        },
                     }
                 }
             }
-            fn process_rule(&'a self, rule: MPRule<'a>) {
+            fn process_rule(&'a self, rule: MPRule<'a>, query_rules: bool, mut queues: Queues<'a>) -> Queues<'a> {
                 
                 trace!("ADDING RULE {}", rule);
-                let MPRule {
-                    antecedents,
-                    more_antecedents,
-                    consequents,
-                    matched,
-                    output,
-                } = rule;
-                let n_ants = antecedents.facts.len();
-                for n in 0..n_ants {
-                    let mut new_ants = vec![];
-                    let mut new_ant: Option<&Fact> = None;
-                    for (i, ant) in antecedents.facts.iter().enumerate() {
-                        if n == i {
-                            new_ant = Some(*ant);
-                        } else {
-                            new_ants.push(*ant);
-                        }
-                    }
-                    let new_conseqs = consequents.clone();
-                    let new_more_ants = more_antecedents.clone();
+
+                if rule.antecedents.fact.is_some() {
+                    let MPRule {
+                        antecedents,
+                        more_antecedents,
+                        consequents,
+                        matched,
+                        output,
+                    } = rule;
                     let new_rule = MPRule {
                         antecedents: Antecedents {
-                            facts: new_ants,
+                            fact: None,
                             transforms: antecedents.transforms,
                             conditions: antecedents.conditions,
                         },
-                        more_antecedents: new_more_ants,
-                        consequents: new_conseqs,
-                        matched: matched.clone(),
+                        more_antecedents,
+                        consequents,
+                        matched,
                         output,
                     };
-                    let (varmap, normal_ant) = self.mpparser.normalize_fact(&new_ant.unwrap());
+                    let (varmap, normal_ant) = self.mpparser.normalize_fact(&antecedents.fact.unwrap());
                     let rule_ref = RuleRef {
                         rule: new_rule,
                         varmap,
                     };
                     let normal_leaf_paths = normal_ant.paths.as_slice();
                     self.rules.follow_and_create_paths(normal_leaf_paths, rule_ref, 1);
+                } else {
+                    queues.match_queue.push_back(Activation::from_matching(rule, None, query_rules));
                 }
+                queues
             }
             fn process_fact(&'a self,
                             fact: &'a Fact<'a>,
@@ -148,7 +148,7 @@ pub fn derive_kb() -> TokenStream {
                 for (rule_refs, matching) in response {
                     for rule_ref in rule_refs.borrow().iter() {
                         let real_matching = get_real_matching(&matching, &rule_ref.varmap); 
-                        queues.match_queue.push_back(Activation::from_matching(rule_ref.rule.clone(), real_matching, query_rules));
+                        queues.match_queue.push_back(Activation::from_matching(rule_ref.rule.clone(), Some(real_matching), query_rules));
                     }
                 }
                 self.facts.add_fact(&fact);
@@ -156,7 +156,7 @@ pub fn derive_kb() -> TokenStream {
             }
             fn process_match(&'a self,
                              mut rule: MPRule<'a>,
-                             matching: &MPMatching<'a>,
+                             matching: Option<&MPMatching<'a>>,
                              mut query_rules: bool,
                              mut queues: Queues<'a>) -> Queues<'a> {
                 let old_len = rule.more_antecedents.len();
@@ -192,25 +192,20 @@ pub fn derive_kb() -> TokenStream {
                           query_rules: bool,
                           mut queues: Queues<'a>) -> Queues<'a> {
 
-                for i in 0..rule.antecedents.facts.len() {
-                    let mut new_ants = rule.antecedents.clone();
-                    let ant = new_ants.facts.remove(i);
-                    let resps = self.facts.ask_fact(ant);
+                if rule.antecedents.fact.is_some() {
+                    let resps = self.facts.ask_fact(&rule.antecedents.fact.unwrap());
                     for resp in resps {
-                        let new_rule = MPRule {
-                            antecedents: new_ants.clone(),
-                            more_antecedents: rule.more_antecedents.clone(),
-                            consequents: rule.consequents.clone(),
-                            matched: rule.matched.clone(),
-                            output: rule.output,
-                        };
-                        queues.match_queue.push_back(Activation::from_matching(new_rule, resp, true));
+                        let mut new_rule = rule.clone();
+                        new_rule.antecedents.fact = None;
+                        queues.match_queue.push_back(Activation::from_matching(new_rule, Some(resp), true));
                     }
+                } else {
+                    queues.match_queue.push_back(Activation::from_matching(rule.clone(), None, true));
                 }
                 queues
             }
             fn preprocess_matched_rule(&'a self,
-                                       matching: &MPMatching<'a>,
+                                       matching: Option<&MPMatching<'a>>,
                                        rule: MPRule<'a>) -> (MPRule<'a>, bool, bool) {
                 let MPRule {
                     mut antecedents,
@@ -220,46 +215,37 @@ pub fn derive_kb() -> TokenStream {
                     output,
                 } = rule;
 
-                matched.extend(matching);
+                if matching.is_some() {
+                    matched.extend(matching.unwrap());
+                }
+                let Antecedents { mut fact, mut transforms, mut conditions } = antecedents;
 
-                let mut new_antecedents: Vec<&Fact> = vec![];
-
-                let Antecedents { facts, mut transforms, mut conditions } = antecedents;
-
-                if facts.len() == 0 {
-                    if !transforms.is_empty() {
-                        matched = TParser::process_transforms(transforms, matched, &self.mpparser.lexicon);
-                    }
-                    if !conditions.is_empty() {
-                        let passed = CParser::check_conditions(conditions, &matched, &self.mpparser.lexicon);
-                        if !passed {
-                            return (MPRule {antecedents: Antecedents { facts, transforms, conditions }, more_antecedents, consequents, matched, output}, false, false);
-                        }
-                    }
-
-                    if more_antecedents.len() == 0 {
-                        return (MPRule {antecedents: Antecedents { facts, transforms, conditions }, more_antecedents, consequents, matched, output}, false, true);
-                    } else {
-                        let pre_antecedents = more_antecedents.pop_front().unwrap();
-                        for ant in pre_antecedents.facts.iter(){
-                            let (ant_fact, old_matched) = self.mpparser.parse_fact(ant, Some(matched));
-                            matched = old_matched.unwrap();
-                            new_antecedents.push(ant_fact);
-                        }
-                        transforms = pre_antecedents.transforms;
-                        conditions = pre_antecedents.conditions;
-                    }
-                } else {
-                    for ant in facts.iter(){
-                        let ant_fact = self.mpparser.substitute_fact(ant, &matched);
-                        new_antecedents.push(ant_fact);
+                if !transforms.is_empty() {
+                    matched = TParser::process_transforms(transforms, matched, &self.mpparser.lexicon);
+                }
+                if !conditions.is_empty() {
+                    let passed = CParser::check_conditions(conditions, &matched, &self.mpparser.lexicon);
+                    if !passed {
+                        return (MPRule {antecedents: Antecedents { fact, transforms, conditions }, more_antecedents, consequents, matched, output}, false, false);
                     }
                 }
+
+                if more_antecedents.len() == 0 {
+                    return (MPRule {antecedents: Antecedents { fact, transforms, conditions }, more_antecedents, consequents, matched, output}, false, true);
+                } else {
+                    let pre_antecedents = more_antecedents.pop_front().unwrap();
+                    let (ant_fact, old_matched) = self.mpparser.parse_fact(&pre_antecedents.fact, Some(matched));
+                    matched = old_matched.unwrap();
+                    fact = Some(ant_fact);
+                    transforms = pre_antecedents.transforms;
+                    conditions = pre_antecedents.conditions;
+                }
+
                 (MPRule {
                     antecedents: Antecedents {
-                        facts: new_antecedents,
-                        transforms: transforms,
-                        conditions: conditions,
+                        fact,
+                        transforms,
+                        conditions,
                     },
                     more_antecedents,
                     consequents,

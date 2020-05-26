@@ -41,14 +41,14 @@ pub fn new_response<'a>() -> Response<'a> {
 
 #[derive(Debug, Clone)]
 pub struct PreAntecedents<'a> {
-    pub facts: Vec<&'a str>,
+    pub fact: &'a str,
     pub transforms: &'a str,
     pub conditions: &'a str,
 }
 
 #[derive(Debug, Clone)]
 pub struct Antecedents<'a> {
-    pub facts: Vec<&'a Fact<'a>>,
+    pub fact: Option<&'a Fact<'a>>,
     pub transforms: &'a str,
     pub conditions: &'a str,
 }
@@ -66,39 +66,38 @@ impl<'a> fmt::Display for MPRule<'a> {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut string = String::from("rule\n\n");
-        for fact in self.antecedents.facts.iter() {
-            string.push_str(&fact.text);
-            string.push_str(" ; ");
-        }
-        string.push_str("{={ ");
-        string.push_str(self.antecedents.transforms);
-        string.push_str("}=} ; {?{ ");
-        string.push_str(self.antecedents.conditions);
-        string.push_str("}?} ->\n");
-        for more_ants in &self.more_antecedents {
-            for fact in more_ants.facts.iter() {
-                string.push_str(fact);
-                string.push_str(" ; ");
+        string.push_str(
+            match self.antecedents.fact {
+                Some(fact) => fact.text,
+                None => "Empty",
             }
-            string.push_str("{={ ");
+        );
+        string.push_str("{={\n");
+        string.push_str(self.antecedents.transforms);
+        string.push_str("}=}\n{?{\n");
+        string.push_str(self.antecedents.conditions);
+        string.push_str("}?}\n->\n");
+        for more_ants in &self.more_antecedents {
+            string.push_str(more_ants.fact);
+            string.push_str("{={\n");
             string.push_str(more_ants.transforms);
-            string.push_str("}=} ; {?{ ");
+            string.push_str("}=}\n{?{\n");
             string.push_str(more_ants.conditions);
-            string.push_str("}?} ->\n");
+            string.push_str("}?}\n->\n");
         }
 
         for consequent in &self.consequents {
             string.push_str(consequent);
-            string.push_str(" ; ");
+            string.push_str(" ;\n");
         }
 
         if self.output.is_some() {
             string.push_str(" {!{ ");
             string.push_str(self.output.unwrap());
-            string.push_str(" }!} <>");
+            string.push_str(" }!}\n<>");
         }
 
-        string.push_str(&format!("\n\nmatching: {:?}", &self.matched));
+        string.push_str(&format!("\n\nmatching:\n{:?}", &self.matched));
 
         write!(f, "{}", string)
     }

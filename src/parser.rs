@@ -81,26 +81,25 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                         kparser::Rule::rule => {
                             let mut more_antecedents = VecDeque::new();
                             let mut consequents = vec![];
-                            let mut antecedents_facts: Vec<&Fact> = vec![];
-                            let mut antecedents_transforms: &str = "";
-                            let mut antecedents_conditions: &str = "";
+                            let mut antecedents: Option<Antecedents> = None;
                             let mut output: Option<&str> = None;
                             let mut antecedents_count = 0;
                             for pairset in pair.into_inner() {
                                 match pairset.as_rule() {
                                     kparser::Rule::antecedents => {
                                         antecedents_count += 1;
-                                        let mut pre_ants = vec![];
+                                        let mut ant: Option<&Fact> = None;
+                                        let mut pre_ant = "";
                                         let mut transforms = "";
                                         let mut conditions = "";
                                         for factpair in pairset.into_inner() {
                                             match factpair.as_rule() {
                                                 kparser::Rule::fact => {
                                                     if antecedents_count == 1 {
-                                                        let (antecedent, _) = self.parse_fact(factpair.as_str(), None);
-                                                        antecedents_facts.push(antecedent);
+                                                        let (ant_fact, _) = self.parse_fact(factpair.as_str(), None);
+                                                        ant = Some(ant_fact);
                                                     } else {
-                                                        pre_ants.push(self.factstr.intern(factpair.as_str()));
+                                                        pre_ant = self.factstr.intern(factpair.as_str());
                                                     }
                                                 },
                                                 kparser::Rule::transforms => {
@@ -113,13 +112,16 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                             }
                                         }
                                         if antecedents_count == 1 {
-                                            antecedents_transforms = transforms;
-                                            antecedents_conditions = conditions;
+                                            antecedents = Some(Antecedents {
+                                                fact: ant,
+                                                transforms,
+                                                conditions,
+                                            });
                                         } else {
                                             more_antecedents.push_back(PreAntecedents {
-                                                facts: pre_ants,
-                                                transforms: transforms,
-                                                conditions: conditions,
+                                                fact: pre_ant,
+                                                transforms,
+                                                conditions,
                                             });
                                         }
                                     },
@@ -140,11 +142,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                 }
                             }
                             let rule = MPRule {
-                                antecedents: Antecedents {
-                                    facts: antecedents_facts,
-                                    transforms: antecedents_transforms,
-                                    conditions: antecedents_conditions,
-                                },
+                                antecedents: antecedents.unwrap(),
                                 more_antecedents,
                                 consequents,
                                 matched: HashMap::new(),

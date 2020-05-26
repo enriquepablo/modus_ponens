@@ -39,7 +39,7 @@ pub enum Activation<'a> {
     },
     Match {
         rule: MPRule<'a>,
-        matched: MPMatching<'a>,
+        matched: Option<MPMatching<'a>>,
         query_rules: bool,
     },
 }
@@ -48,20 +48,20 @@ impl<'a> Activation<'a> {
 
     pub fn from_fact(fact: &'a Fact, query_rules: bool) -> Activation<'a> {
         Activation::Fact {
-            fact: fact,
+            fact,
             query_rules,
         }
     }
     pub fn from_rule(rule: MPRule, query_rules: bool) -> Activation {
         Activation::MPRule {
-            rule: rule,
+            rule,
             query_rules,
         }
     }
-    pub fn from_matching(rule: MPRule<'a>, matched: MPMatching<'a>, query_rules: bool) -> Activation<'a> {
+    pub fn from_matching(rule: MPRule<'a>, matched: Option<MPMatching<'a>>, query_rules: bool) -> Activation<'a> {
         Activation::Match {
-            rule: rule,
-            matched: matched,
+            rule,
+            matched,
             query_rules,
         }
     }

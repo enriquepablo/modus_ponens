@@ -52,14 +52,14 @@ fn main() {
 
         q <N> 
             →
-        fib <Fst> <Val1> ∧
+        fib <Fst> <Val1>
         {={
             <Snd> = <Fst> + 1
-        }=} ∧ {?{
+        }=} {?{
             <Snd> < <N>
         }?}
             →
-        fib <Snd> <Val2> ∧
+        fib <Snd> <Val2>
         {={
             <Nxt> = <Snd> + 1 ∧
             <NxtVal> = <Val1> + <Val2>
