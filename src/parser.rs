@@ -75,7 +75,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 for pair in parse_tree.into_inner() {
                     match pair.as_rule() {
                         kparser::Rule::fact => {
-                            let (fact, _) = self.parse_fact(pair.as_str(), None);
+                            let fact = self.parse_fact(pair.as_str());
                             facts.push(fact);
                         },
                         kparser::Rule::rule => {
@@ -96,7 +96,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                             match factpair.as_rule() {
                                                 kparser::Rule::fact => {
                                                     if antecedents_count == 1 {
-                                                        let (ant_fact, _) = self.parse_fact(factpair.as_str(), None);
+                                                        let ant_fact = self.parse_fact(factpair.as_str());
                                                         ant = Some(ant_fact);
                                                     } else {
                                                         pre_ant = self.factstr.intern(factpair.as_str());
@@ -156,18 +156,17 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 Ok(ParseResult { facts, rules })
             }
 
-            pub fn parse_fact(&'a self, text: &'a str, matched: Option<MPMatching<'a>>) -> (&'a Fact<'a>, Option<MPMatching<'a>>) {
+            pub fn parse_fact(&'a self, text: &'a str) -> &'a Fact<'a> {
                 let parse_tree = FactParser::parse(Rule::fact, text).ok().expect("fact pairset").next().expect("fact pair");
-                self.build_fact(parse_tree, matched)
+                self.build_fact(parse_tree)
             }
             
-            pub fn build_fact(&'a self, parse_tree: Pair<'a, Rule>, matched: Option<MPMatching<'a>>) -> (&'a Fact<'a>, Option<MPMatching<'a>>) {
-                let (all_paths, matched) = self.visit_parse_node(parse_tree,
+            pub fn build_fact(&'a self, parse_tree: Pair<'a, Rule>) -> &'a Fact<'a> {
+                let all_paths = self.visit_parse_node(parse_tree,
                                                                  vec![],
                                                                  Box::new(vec![]),
-                                                                 0,
-                                                                 matched);
-                (self.flexicon.from_paths(*all_paths), matched)
+                                                                 0);
+                self.flexicon.from_paths(*all_paths)
             }
 
             fn visit_parse_node(&'a self,
@@ -175,8 +174,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                                 root_segments: Vec<&'a MPSegment>,
                                 mut all_paths: Box<Vec<MPPath<'a>>>,
                                 index: usize,
-                                mut matched: Option<MPMatching<'a>>,
-                            ) -> (Box<Vec<MPPath>>, Option<MPMatching<'a>>) {
+                            ) -> Box<Vec<MPPath>> {
                 let pretext = parse_tree.as_str();
                 let rule = parse_tree.as_rule();
                 let name = format!("{:?}", rule);
@@ -190,46 +188,28 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                     text = format!("{}", index);
                 }
                 let segment = self.lexicon.intern(&name, &text, is_leaf);
-                let mut pending = true;
-                if segment.is_var && matched.is_some() {
-                    let matching = matched.unwrap();
-                    let value = matching.get(segment);
-                    if value.is_some() {
-                        let val = value.unwrap();
-                        let parse_tree = FactParser::parse(Rule::var_range, &val.text).ok().unwrap().next().expect("a matched production");
-                        let (new_all_paths, _) = self.visit_parse_node(parse_tree,
-                                                                       root_segments.clone(),
-                                                                       all_paths,
-                                                                       0,
-                                                                       None);
-                        all_paths = new_all_paths;
-                        pending = false;
-                    }
-                    matched = Some(matching);
+                let mut new_root_segments = root_segments.to_vec();
+                new_root_segments.push(segment);
+                if can_be_var || is_leaf {
+                    let segments = new_root_segments.clone();
+                    let new_path = MPPath::new(segments);
+                    all_paths.push(new_path);
                 }
-                if pending {
-                    let mut new_root_segments = root_segments.to_vec();
-                    new_root_segments.push(segment);
-                    if can_be_var || is_leaf {
-                        let segments = new_root_segments.clone();
-                        let new_path = MPPath::new(segments);
-                        all_paths.push(new_path);
-                    }
-                    let mut new_index = 0;
-                    for child in children {
-                        let (new_all_paths, old_matched) = self.visit_parse_node(child,
-                                                                                 new_root_segments.clone(),
-                                                                                 all_paths,
-                                                                                 new_index,
-                                                                                 matched);
-                        matched = old_matched;
-                        all_paths = new_all_paths;
-                        new_index += 1;
-                    }
+                let mut new_index = 0;
+                for child in children {
+                    all_paths = self.visit_parse_node(child,
+                                                      new_root_segments.clone(),
+                                                      all_paths,
+                                                      new_index);
+                    new_index += 1;
                 }
-                (all_paths, matched)
+                all_paths
             }
             pub fn substitute_fact(&'a self, fact: &'a Fact<'a>, matching: &MPMatching<'a>) -> &'a Fact<'a> {
+                if matching.len() == 0 {
+                    return fact;
+                }
+
                 let new_paths = MPPath::substitute_paths(&fact.paths, matching);
                 let text = new_paths.iter()
                                     .map(|path| path.value.text.as_str())
@@ -241,14 +221,16 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 
                 let parse_tree = FactParser::parse(Rule::fact, stext).ok().unwrap().next().expect("2nd fact pair");
                 let all_paths = Box::new(Vec::with_capacity(fact.paths.len()));
-                let (all_paths, _) = self.visit_parse_node(parse_tree,
+                let all_paths = self.visit_parse_node(parse_tree,
                                                                vec![],
                                                                all_paths,
-                                                               0,
-                                                               None);
+                                                               0);
                 self.flexicon.from_paths_and_string(stext, *all_paths)
             }
             pub fn substitute_fact_fast(&'a self, fact: &'a Fact, matching: MPMatching<'a>) -> &'a Fact<'a> {
+                if matching.len() == 0 {
+                    return fact;
+                }
                 let new_paths = MPPath::substitute_paths_owning(&fact.paths, matching);
                 self.flexicon.from_paths(new_paths)
             }

@@ -176,12 +176,13 @@ pub fn derive_kb() -> TokenStream {
                     queues.rule_queue.push_back(Activation::from_rule(rule, query_rules));
                 } else {
                     for consequent in rule.consequents{
-                       let (new_consequent, rule_matched) = self.mpparser.parse_fact(consequent, Some(rule.matched));
+                       let pre_consequent = self.mpparser.parse_fact(consequent);
+                       let new_consequent = self.mpparser.substitute_fact(pre_consequent, &rule.matched);
                         queues.fact_queue.push_back(Activation::from_fact(new_consequent, query_rules));
-                        rule.matched = rule_matched.unwrap();
                     }
                     if rule.output.is_some() {
-                        let (output, _) = self.mpparser.parse_fact(rule.output.unwrap(), Some(rule.matched));
+                        let pre_output = self.mpparser.parse_fact(rule.output.unwrap());
+                       let output = self.mpparser.substitute_fact(pre_output, &rule.matched);
                         println!("{}", output.text);
                     }
                 }
@@ -234,8 +235,8 @@ pub fn derive_kb() -> TokenStream {
                     return (MPRule {antecedents: Antecedents { fact, transforms, conditions }, more_antecedents, consequents, matched, output}, false, true);
                 } else {
                     let pre_antecedents = more_antecedents.pop_front().unwrap();
-                    let (ant_fact, old_matched) = self.mpparser.parse_fact(&pre_antecedents.fact, Some(matched));
-                    matched = old_matched.unwrap();
+                    let pre_ant_fact = self.mpparser.parse_fact(&pre_antecedents.fact);
+                    let ant_fact = self.mpparser.substitute_fact(pre_ant_fact, &matched);
                     fact = Some(ant_fact);
                     transforms = pre_antecedents.transforms;
                     conditions = pre_antecedents.conditions;
