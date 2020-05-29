@@ -44,7 +44,7 @@ impl<'a> CarryOver<'a> {
 
 #[derive(Debug, PartialEq)]
 pub struct FSNode<'a> {
-    children: RefCell<HashMap<MPPath<'a>, &'a FSNode<'a>>>,  // XXX try putting keys and vals in boxes
+    children: RefCell<HashMap<MPPath<'a>, &'a FSNode<'a>>>,
     lchildren: RefCell<HashMap<MPPath<'a>, &'a FSNode<'a>>>,
 }
 
@@ -65,13 +65,16 @@ impl<'a> FactSet<'a> {
         let carry = CarryOver(HashMap::new());
         self.follow_and_create_paths(&self.root, fact, 1, carry);
     }
-    pub fn ask_fact (&'a self, fact: &'a [MPPath<'a>]) -> Vec<MPMatching<'a>> {
-        let response: Vec<MPMatching<'a>> = vec![];
+    pub fn ask_fact (&'a self, fact: Vec<MPPath<'a>>) -> (Vec<MPMatching<'a>>, Vec<MPPath<'a>>) {
+        let mut response: Vec<MPMatching> = vec![];
         let matching: MPMatching = HashMap::new();
-        self.root.query_paths(fact, matching, response)
+        let paths: &[MPPath] = unsafe { mem::transmute( fact.as_slice() ) };
+        response = self.root.query_paths(paths, matching, response);
+        (response, fact)
     }
-    pub fn ask_fact_bool (&'a self, fact: &'a [MPPath<'a>]) -> bool {
-        self.ask_fact(fact).len() > 0
+    pub fn ask_fact_bool (&'a self, fact: Vec<MPPath<'a>>) -> (bool, Vec<MPPath<'a>>) {
+        let (resp, fact) = self.ask_fact(fact);
+        (resp.len() > 1, fact)
     }
     pub fn follow_and_create_paths(&'a self,
                                    mut parent: &'a FSNode<'a>,
@@ -83,6 +86,7 @@ impl<'a> FactSet<'a> {
         while paths.len() > 0 {
             let path = paths.remove(0);
             if path.value.is_empty {
+                path_index += 1;
                 continue;
             }
             depth += 1;
@@ -93,9 +97,11 @@ impl<'a> FactSet<'a> {
                     child = opt_child.expect("node");
                     if !path.value.is_leaf {
                         carry = carry.add(reindex, child);
+                        path_index += 1;
                         continue;
                     }
                 } else if path.value.is_leaf {
+                    paths.insert(0, path);
                     self.create_paths(parent, paths, depth, carry, path_index);
                     return;
                 } else {
@@ -105,11 +111,13 @@ impl<'a> FactSet<'a> {
                     carry = new_carry;
 
                     carry = carry.add(reindex, child);
+                    path_index += 1;
                     continue;
                 }
             } else {
-                let (opt_child, _) = parent.get_child(path);
+                let (opt_child, path) = parent.get_child(path);
                 if opt_child.is_none() {
+                    paths.insert(0, path);
                     self.create_paths(parent, paths, depth, carry, path_index);
                     return;
                 } else {
@@ -132,6 +140,7 @@ impl<'a> FactSet<'a> {
         while paths.len() > 0 {
             let path = paths.remove(0);
             if path.value.is_empty {
+                path_index += 1;
                 continue;
             }
             depth += 1;
@@ -151,6 +160,7 @@ impl<'a> FactSet<'a> {
             };
             if logic_node && !is_leaf {
                 carry = carry.add(reindex, child);
+                path_index += 1;
                 continue;
             }
             parent = child;

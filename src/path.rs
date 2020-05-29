@@ -147,7 +147,7 @@ impl<'a> MPPath<'a> {
         }
     }
 
-    pub fn substitute_paths(paths: Vec<MPPath<'a>>, matching: &'a MPMatching) -> Vec<MPPath<'a>> {
+    pub fn substitute_paths(paths: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> (Vec<MPPath<'a>>, MPMatching<'a>) {
         let mut new_paths:Vec<MPPath> = Vec::with_capacity(paths.len());
         let mut old_paths:Vec<MPPath> = Vec::with_capacity(paths.len());
         for path in paths.iter() {
@@ -169,7 +169,8 @@ impl<'a> MPPath<'a> {
             }
         }
         new_paths.shrink_to_fit();
-        unsafe { mem::transmute(new_paths) }
+        (unsafe { mem::transmute(new_paths) },
+        matching)
     }
 
     pub fn substitute_paths_owning(paths: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> Vec<MPPath<'a>> {

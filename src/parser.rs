@@ -16,6 +16,7 @@
 // You should have received a copy of the GNU General Public License    
 // along with any part of the modus_ponens project.    
 // If not, see <http://www.gnu.org/licenses/>.
+//
 
 extern crate proc_macro;
 extern crate proc_macro2;
@@ -185,9 +186,9 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 }
                 all_paths
             }
-            pub fn substitute_fact(&'a self, fact: Vec<MPPath<'a>>, matching: &'a MPMatching<'a>) -> Vec<MPPath<'a>> {
+            pub fn substitute_fact(&'a self, fact: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> (Vec<MPPath<'a>>, MPMatching<'a>) {
                 if matching.len() == 0 {
-                    return fact;
+                    return (fact, matching);
                 }
                 MPPath::substitute_paths(fact, matching)
             }

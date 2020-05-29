@@ -206,7 +206,7 @@ impl<'a> RuleSet<'a> {
     pub fn query_paths(&'a self, paths: Vec<MPPath<'a>>) -> (Response, Vec<MPPath<'a>>) {
         let response = new_response();
         let matched: MPMatching = HashMap::new();
-        let paths_slice = unsafe { mem::transmute(paths.as_slice()) };
+        let paths_slice: &[MPPath] = unsafe { mem::transmute( paths.as_slice() ) };
         let (response, _) = self.root.climb(paths_slice, response, matched);
         (response, paths)
     }

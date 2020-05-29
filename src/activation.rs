@@ -34,7 +34,7 @@ pub enum Activation<'a> {
     },
     Fact {
         fact: &'a str,
-        matched: Option<&'a MPMatching<'a>>,
+        matched: Option<MPMatching<'a>>,
         query_rules: bool,
     },
     Match {
@@ -46,7 +46,7 @@ pub enum Activation<'a> {
 
 impl<'a> Activation<'a> {
 
-    pub fn from_fact(fact: &'a str, matched: Option<&'a MPMatching<'a>>, query_rules: bool) -> Activation<'a> {
+    pub fn from_fact(fact: &'a str, matched: Option<MPMatching<'a>>, query_rules: bool) -> Activation<'a> {
         Activation::Fact {
             fact,
             matched,
