@@ -18,11 +18,10 @@
 // If not, see <http://www.gnu.org/licenses/>.
 
 use crate::ruletree::MPRule;
-use crate::fact::Fact;
 use crate::matching::MPMatching;
 
 pub struct ParseResult<'a> {
-    pub facts: Vec<&'a Fact<'a>>,
+    pub facts: Vec<&'a str>,
     pub rules: Vec<MPRule<'a>>,
 }
 
@@ -34,7 +33,8 @@ pub enum Activation<'a> {
         query_rules: bool,
     },
     Fact {
-        fact: &'a Fact<'a>,
+        fact: &'a str,
+        matched: Option<&'a MPMatching<'a>>,
         query_rules: bool,
     },
     Match {
@@ -46,9 +46,10 @@ pub enum Activation<'a> {
 
 impl<'a> Activation<'a> {
 
-    pub fn from_fact(fact: &'a Fact, query_rules: bool) -> Activation<'a> {
+    pub fn from_fact(fact: &'a str, matched: Option<&'a MPMatching<'a>>, query_rules: bool) -> Activation<'a> {
         Activation::Fact {
             fact,
+            matched,
             query_rules,
         }
     }

@@ -25,7 +25,6 @@ use std::mem;
 use bumpalo::{Bump};
 
 use crate::constants;
-use crate::fact::Fact;
 use crate::path::MPPath;
 use crate::matching::MPMatching;
 
@@ -45,8 +44,8 @@ impl<'a> CarryOver<'a> {
 
 #[derive(Debug, PartialEq)]
 pub struct FSNode<'a> {
-    children: RefCell<HashMap<&'a MPPath<'a>, &'a FSNode<'a>>>,  // XXX try putting keys and vals in boxes
-    lchildren: RefCell<HashMap<&'a MPPath<'a>, &'a FSNode<'a>>>,
+    children: RefCell<HashMap<MPPath<'a>, &'a FSNode<'a>>>,  // XXX try putting keys and vals in boxes
+    lchildren: RefCell<HashMap<MPPath<'a>, &'a FSNode<'a>>>,
 }
 
 pub struct FactSet<'a> {
@@ -62,34 +61,34 @@ impl<'a> FactSet<'a> {
             nodes: Bump::new(),
          }
     }
-    pub fn add_fact (&'a self, fact: &'a Fact<'a>) {
-        let paths = fact.paths.as_slice();
+    pub fn add_fact (&'a self, fact: Vec<MPPath<'a>>) {
         let carry = CarryOver(HashMap::new());
-        self.follow_and_create_paths(&self.root, paths, 1, carry);
+        self.follow_and_create_paths(&self.root, fact, 1, carry);
     }
-    pub fn ask_fact (&'a self, fact: &'a Fact) -> Vec<MPMatching<'a>> {
+    pub fn ask_fact (&'a self, fact: &'a [MPPath<'a>]) -> Vec<MPMatching<'a>> {
         let response: Vec<MPMatching<'a>> = vec![];
-        let paths = fact.paths.as_slice();
         let matching: MPMatching = HashMap::new();
-        self.root.query_paths(paths, matching, response)
+        self.root.query_paths(fact, matching, response)
     }
-    pub fn ask_fact_bool (&'a self, fact: &'a Fact) -> bool {
+    pub fn ask_fact_bool (&'a self, fact: &'a [MPPath<'a>]) -> bool {
         self.ask_fact(fact).len() > 0
     }
     pub fn follow_and_create_paths(&'a self,
                                    mut parent: &'a FSNode<'a>,
-                                   paths: &'a [MPPath],
+                                   mut paths: Vec<MPPath<'a>>,
                                    mut depth: usize,
                                    mut carry: CarryOver<'a>,) {
         let mut child: &FSNode;
-        for (path_index, path) in paths.iter().enumerate() {
+        let mut path_index = 0;
+        while paths.len() > 0 {
+            let path = paths.remove(0);
             if path.value.is_empty {
                 continue;
             }
             depth += 1;
             if path.value.in_var_range {
-                let opt_child = parent.get_lchild(path);
-                let reindex = path.paths_after(paths);
+                let (opt_child, path) = parent.get_lchild(path);
+                let reindex = path.paths_after(&paths);
                 if opt_child.is_some() {
                     child = opt_child.expect("node");
                     if !path.value.is_leaf {
@@ -97,7 +96,7 @@ impl<'a> FactSet<'a> {
                         continue;
                     }
                 } else if path.value.is_leaf {
-                    self.create_paths(parent, &paths[path_index..], depth, carry, path_index);
+                    self.create_paths(parent, paths, depth, carry, path_index);
                     return;
                 } else {
                     let child_node = FSNode::new(depth);
@@ -109,26 +108,29 @@ impl<'a> FactSet<'a> {
                     continue;
                 }
             } else {
-                let opt_child = parent.get_child(path);
+                let (opt_child, _) = parent.get_child(path);
                 if opt_child.is_none() {
-                    self.create_paths(parent, &paths[path_index..], depth, carry, path_index);
+                    self.create_paths(parent, paths, depth, carry, path_index);
                     return;
                 } else {
                     child = opt_child.expect("node");
                 }
             }
             parent = child;
+            path_index += 1;
         }
     }
 
     fn create_paths(&'a self,
                     mut parent: &'a FSNode<'a>,
-                    paths: &'a [MPPath],
+                    mut paths: Vec<MPPath<'a>>,
                     mut depth: usize,
                     mut carry: CarryOver<'a>,
                     offset: usize,) {
         let mut child: &FSNode;
-        for (path_index, path) in paths.iter().enumerate() {
+        let mut path_index = 0;
+        while paths.len() > 0 {
+            let path = paths.remove(0);
             if path.value.is_empty {
                 continue;
             }
@@ -136,6 +138,8 @@ impl<'a> FactSet<'a> {
             let child_node = FSNode::new(depth);
             let logic_node = path.value.in_var_range;
             let real_index = path_index + offset;
+            let reindex = path.paths_after(&paths);
+            let is_leaf = path.value.is_leaf;
             if logic_node {
                 let (new_child, new_carry) = self.intern_lchild(parent, path, child_node, carry, real_index);
                 child = new_child;
@@ -145,17 +149,17 @@ impl<'a> FactSet<'a> {
                 child = new_child;
                 carry = new_carry;
             };
-            let reindex = path.paths_after(&paths);
-            if path.value.in_var_range && !path.value.is_leaf {
+            if logic_node && !is_leaf {
                 carry = carry.add(reindex, child);
                 continue;
             }
             parent = child;
+            path_index += 1;
         }
     }
     pub fn intern_child(&'a self,
                         parent: &'a FSNode<'a>,
-                        path: &'a MPPath<'a>,
+                        path: MPPath<'a>,
                         child: FSNode<'a>,
                         mut carry: CarryOver<'a>,
                         index: usize,
@@ -165,14 +169,14 @@ impl<'a> FactSet<'a> {
         let (new_carry, more) = carry.node(index);
         carry = new_carry;
         if more.is_some() {
-            more.unwrap().children.borrow_mut().insert(path, child_ref);
+            more.unwrap().children.borrow_mut().insert(path.clone(), child_ref);
         }
         parent.children.borrow_mut().insert(path, child_ref);
         (child_ref, carry)
     }
     pub fn intern_lchild(&'a self,
                          parent: &'a FSNode<'a>,
-                         path: &'a MPPath<'a>,
+                         path: MPPath<'a>,
                          child: FSNode<'a>,
                          mut carry: CarryOver<'a>,
                          index: usize,
@@ -181,7 +185,7 @@ impl<'a> FactSet<'a> {
         let (new_carry, more) = carry.node(index);
         carry = new_carry;
         if more.is_some() {
-            more.unwrap().lchildren.borrow_mut().insert(path, child_ref);
+            more.unwrap().lchildren.borrow_mut().insert(path.clone(), child_ref);
         }
         parent.lchildren.borrow_mut().insert(path, child_ref);
         (child_ref, carry)
@@ -196,14 +200,28 @@ impl<'a> FSNode<'a> {
             lchildren: RefCell::new(HashMap::with_capacity(capacity)),
         }
     }
-    pub fn get_child(&'a self, path: &'a MPPath) -> Option<&'a Self> {
+    pub fn get_child(&'a self, path: MPPath<'a>) -> (Option<&'a Self>, MPPath<'a>) {
+        let children = self.children.borrow();
+        match children.get(&path) {
+            None => (None, path),
+            Some(child_ref) => (Some(*child_ref), path)
+        }
+    }
+    pub fn get_lchild(&'a self, path: MPPath<'a>) -> (Option<&'a Self>, MPPath<'a>) {
+        let children = self.lchildren.borrow();
+        match children.get(&path) {
+            None => (None, path),
+            Some(child_ref) => (Some(*child_ref), path)
+        }
+    }
+    pub fn get_child_r(&'a self, path: &'a MPPath<'a>) -> Option<&'a Self> {
         let children = self.children.borrow();
         match children.get(path) {
             None => None,
             Some(child_ref) => Some(*child_ref)
         }
     }
-    pub fn get_lchild(&'a self, path: &'a MPPath) -> Option<&'a Self> {
+    pub fn get_lchild_r(&'a self, path: &'a MPPath<'a>) -> Option<&'a Self> {
         let children = self.lchildren.borrow();
         match children.get(path) {
             None => None,
@@ -261,9 +279,9 @@ impl<'a> FSNode<'a> {
                 new_path = path;
             }
             if new_path.value.in_var_range {
-                next = self.get_lchild(new_path);
+                next = self.get_lchild_r(new_path);
             } else {
-                next = self.get_child(new_path);
+                next = self.get_child_r(new_path);
             }
             if next.is_some() {
                 let next_node = next.unwrap();
@@ -275,59 +293,3 @@ impl<'a> FSNode<'a> {
         resp
     }
 }
-
-//#[cfg(test)]
-//mod tests {
-//    use super::*;
-//    use crate::segment::MPSegment;
-//
-//    #[test]
-//    fn factset_1() {
-//        let mut factset = FSNode::new();
-//
-//        let segm11 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-//        let segms1 = vec![&segm11];
-//        let path1 = MPPath::new(segms1);
-//        let cpath1 = path1.clone();
-//
-//        let node1 = FSNode::new();
-//        
-//        factset.children.borrow_mut().insert(cpath1, node1);
-//
-//        let segm21 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-//        let segm22 = MPSegment::new("rule-name2".to_string(), "(".to_string(), true);
-//        let segms2 = vec![&segm21, &segm22];
-//        let path2 = MPPath::new(segms2);
-//        let cpath2 = path2.clone();
-//
-//        let node2 = FSNode::new();
-//        let rnode1 = factset.children.borrow().get_mut(&path1).expect("path");
-//        rnode1.children.borrow_mut().insert(cpath2, node2);
-//
-//        let segm31 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-//        let segm32 = MPSegment::new("rule-name3".to_string(), "text".to_string(), true);
-//        let segms3 = vec![&segm31, &segm32];
-//        let path3 = MPPath::new(segms3);
-//        let cpath3 = path3.clone();
-//
-//        let node3 = FSNode::new();
-//        let rnode2 = rnode1.children.borrow().get_mut(&path2).expect("path");
-//        rnode2.children.insert(cpath3, node3);
-//
-//        let segm41 = MPSegment::new("rule-name1".to_string(), "(text)".to_string(), false);
-//        let segm42 = MPSegment::new("rule-name4".to_string(), ")".to_string(), true);
-//        let segms4 = vec![&segm41, &segm42];
-//        let path4 = MPPath::new(segms4);
-//        let cpath4 = path4.clone();
-//
-//        let node4 = FSNode::new();
-//        let rnode3 = rnode2.children.get_mut(&path3).expect("path");
-//        rnode3.children.insert(cpath4, node4);
-//
-//        let paths = vec![&path1, &path2, &path3, &path4];
-//
-//        let leaf = factset.get_leaf(&paths);
-//
-//        assert!(!leaf.is_none());
-//    }
-//}

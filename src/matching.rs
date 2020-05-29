@@ -63,36 +63,3 @@ pub fn get_real_matching<'a>(matching: &MPMatching<'a>, varmap: &MPMatching<'a>)
     }
     real_matching
 }
-
-//#[cfg(test)]
-//mod tests {
-//    use super::*;
-//
-//    #[test]
-//    fn matching_invert_1() {
-//        let segm1 = MPSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
-//        let segm2 = MPSegment::new("rule-name3".to_string(), "text".to_string(), true);
-//
-//        let mut matching: MPMatching = HashMap::new();
-//        matching.insert(&segm1, &segm2);
-//        let inverted = invert(&matching);
-//
-//        assert_eq!(*inverted.get(&segm2).expect("segment"), &segm1);
-//    }
-//
-//
-//    #[test]
-//    fn matching_getorkey_1() {
-//        let segm1 = MPSegment::new("rule-name1".to_string(), "(text )".to_string(), false);
-//        let segm2 = MPSegment::new("rule-name3".to_string(), "text".to_string(), true);
-//
-//        let mut matching: MPMatching = HashMap::new();
-//        matching.insert(&segm1, &segm2);
-//
-//        let new_segm = get_or_key(&matching, &segm2);
-//        assert_eq!(new_segm, &segm2);
-//        let new_segm = get_or_key(&matching, &segm1);
-//        assert_eq!(new_segm, &segm2);
-//    }
-//}
-//

@@ -72,12 +72,11 @@ pub fn derive_kb() -> TokenStream {
                     }
                     match next_opt.unwrap() {
                         Activation::Fact {
-                            fact,
-                            query_rules,
+                                fact,
+                                matched,
+                                query_rules,
                         } => {
-                            if !self.facts.ask_fact_bool(fact) {
-                                queues = self.process_fact(fact, query_rules, queues);
-                            }
+                            queues = self.process_fact(fact, matched, query_rules, queues);
                         },
                         Activation::MPRule {
                             rule,
@@ -107,56 +106,53 @@ pub fn derive_kb() -> TokenStream {
                 trace!("ADDING RULE {}", rule);
 
                 if rule.antecedents.fact.is_some() {
-                    let MPRule {
-                        antecedents,
-                        more_antecedents,
-                        consequents,
-                        matched,
-                        output,
-                    } = rule;
-                    let new_rule = MPRule {
-                        antecedents: Antecedents {
-                            fact: None,
-                            transforms: antecedents.transforms,
-                            conditions: antecedents.conditions,
-                        },
-                        more_antecedents,
-                        consequents,
-                        matched,
-                        output,
-                    };
-                    let (varmap, normal_ant) = self.mpparser.normalize_fact(&antecedents.fact.unwrap());
+                    let antecedent = rule.antecedents.fact.unwrap();
+                    rule.antecedents.fact = None;
+
+                    let mut new_antecedent = self.mpparser.parse_fact(antecedent);
+                    if rule.matched.len() > 0 {
+                        new_antecedent = self.mpparser.substitute_fact(new_antecedent, &rule.matched);
+                    }
+                    let (varmap, normal_ant) = self.mpparser.normalize_fact(new_antecedent);
                     let rule_ref = RuleRef {
-                        rule: new_rule,
+                        rule: rule,
                         varmap,
                     };
-                    let normal_leaf_paths = normal_ant.paths.as_slice();
-                    self.rules.follow_and_create_paths(normal_leaf_paths, rule_ref, 1);
+                    self.rules.follow_and_create_paths(normal_ant, rule_ref, 1);
                 } else {
                     queues.match_queue.push_back(Activation::from_matching(rule, None, query_rules));
                 }
                 queues
             }
             fn process_fact(&'a self,
-                            fact: &'a Fact<'a>,
+                            fact: &'a str,
+                            matching: Option<&'a MPMatching<'a>>,
                             query_rules: bool,
                             mut queues: Queues<'a>) -> Queues<'a> {
-                
+
                 info!("ADDING FACT: {}", fact);
-                let paths = fact.paths.as_slice();
-                let response = self.rules.query_paths(paths);
+
+                let mut fact_paths = self.mpparser.parse_fact(fact);
+                if matching.is_some() {
+                    fact_paths = self.mpparser.substitute_fact(fact_paths, matching.unwrap());
+                }
+                if self.facts.ask_fact_bool(&fact_paths) {
+                    return queues;
+                }
+                let (response, paths) = self.rules.query_paths(fact_paths);
+                fact_paths = paths;
                 for (rule_refs, matching) in response {
                     for rule_ref in rule_refs.borrow().iter() {
                         let real_matching = get_real_matching(&matching, &rule_ref.varmap); 
                         queues.match_queue.push_back(Activation::from_matching(rule_ref.rule.clone(), Some(real_matching), query_rules));
                     }
                 }
-                self.facts.add_fact(&fact);
+                self.facts.add_fact(fact_paths);
                 queues
             }
             fn process_match(&'a self,
                              mut rule: MPRule<'a>,
-                             matching: Option<&MPMatching<'a>>,
+                             matching: Option<&'a MPMatching<'a>>,
                              mut query_rules: bool,
                              mut queues: Queues<'a>) -> Queues<'a> {
                 let old_len = rule.more_antecedents.len();
@@ -176,14 +172,12 @@ pub fn derive_kb() -> TokenStream {
                     queues.rule_queue.push_back(Activation::from_rule(rule, query_rules));
                 } else {
                     for consequent in rule.consequents{
-                       let pre_consequent = self.mpparser.parse_fact(consequent);
-                       let new_consequent = self.mpparser.substitute_fact(pre_consequent, &rule.matched);
-                        queues.fact_queue.push_back(Activation::from_fact(new_consequent, query_rules));
+                        queues.fact_queue.push_back(Activation::from_fact(consequent, Some(&rule.matched), query_rules));
                     }
                     if rule.output.is_some() {
                         let pre_output = self.mpparser.parse_fact(rule.output.unwrap());
-                       let output = self.mpparser.substitute_fact(pre_output, &rule.matched);
-                        println!("{}", output.text);
+                        let output = self.mpparser.substitute_fact(pre_output, &rule.matched);
+                        println!("{:?}", output);
                     }
                 }
                 queues
@@ -194,7 +188,12 @@ pub fn derive_kb() -> TokenStream {
                           mut queues: Queues<'a>) -> Queues<'a> {
 
                 if rule.antecedents.fact.is_some() {
-                    let resps = self.facts.ask_fact(&rule.antecedents.fact.unwrap());
+                    let fact_str = rule.antecedents.fact.as_ref().unwrap();
+                    let mut pre_ant = self.mpparser.parse_fact(fact_str);
+                    if rule.matched.len() > 0 {
+                        let pre_ant = self.mpparser.substitute_fact(pre_ant, &rule.matched);
+                    } // XXX this can be carried over  to the activation cloning - better than parsing
+                    let resps = self.facts.ask_fact(&pre_ant);
                     for resp in resps {
                         let mut new_rule = rule.clone();
                         new_rule.antecedents.fact = None;
@@ -206,7 +205,7 @@ pub fn derive_kb() -> TokenStream {
                 queues
             }
             fn preprocess_matched_rule(&'a self,
-                                       matching: Option<&MPMatching<'a>>,
+                                       matching: Option<&'a MPMatching<'a>>,
                                        rule: MPRule<'a>) -> (MPRule<'a>, bool, bool) {
                 let MPRule {
                     mut antecedents,
@@ -234,20 +233,11 @@ pub fn derive_kb() -> TokenStream {
                 if more_antecedents.len() == 0 {
                     return (MPRule {antecedents: Antecedents { fact, transforms, conditions }, more_antecedents, consequents, matched, output}, false, true);
                 } else {
-                    let pre_antecedents = more_antecedents.pop_front().unwrap();
-                    let pre_ant_fact = self.mpparser.parse_fact(&pre_antecedents.fact);
-                    let ant_fact = self.mpparser.substitute_fact(pre_ant_fact, &matched);
-                    fact = Some(ant_fact);
-                    transforms = pre_antecedents.transforms;
-                    conditions = pre_antecedents.conditions;
+                    antecedents = more_antecedents.pop_front().unwrap();
                 }
 
                 (MPRule {
-                    antecedents: Antecedents {
-                        fact,
-                        transforms,
-                        conditions,
-                    },
+                    antecedents,
                     more_antecedents,
                     consequents,
                     matched,
@@ -269,7 +259,7 @@ pub fn derive_kb() -> TokenStream {
                         queues.rule_queue.push_back(act);
                     }
                     for fact in facts {
-                        let act = Activation::from_fact(fact, false);
+                        let act = Activation::from_fact(fact, None, false);
                         queues.fact_queue.push_back(act);
                     }
                 }
@@ -278,7 +268,8 @@ pub fn derive_kb() -> TokenStream {
             fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>> {
                 let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().expect("parse result");
                 let fact = facts.pop().unwrap();
-                self.facts.ask_fact(&fact)
+                let q = self.mpparser.parse_fact(fact);
+                self.facts.ask_fact(&q)
             }
         }
     }

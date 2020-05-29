@@ -20,6 +20,7 @@
 use std::clone::Clone;
 use std::collections::{ HashMap, VecDeque };
 use std::fmt;
+use std::mem;
 //use std::collections::VecDeque;
 use std::cell::{ RefCell, Cell };
 
@@ -30,7 +31,6 @@ use crate::constants;
 use crate::path::MPPath;
 use crate::segment::MPSegment;
 use crate::matching::MPMatching;
-use crate::fact::Fact;
 
 
 pub type Response<'a> = Vec<(&'a RefCell<Vec<RuleRef<'a>>>, MPMatching<'a>)>;
@@ -40,15 +40,8 @@ pub fn new_response<'a>() -> Response<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct PreAntecedents<'a> {
-    pub fact: &'a str,
-    pub transforms: &'a str,
-    pub conditions: &'a str,
-}
-
-#[derive(Debug, Clone)]
 pub struct Antecedents<'a> {
-    pub fact: Option<&'a Fact<'a>>,
+    pub fact: Option<&'a str>,
     pub transforms: &'a str,
     pub conditions: &'a str,
 }
@@ -56,7 +49,7 @@ pub struct Antecedents<'a> {
 #[derive(Debug, Clone)]
 pub struct MPRule<'a> {
     pub antecedents: Antecedents<'a>,
-    pub more_antecedents: VecDeque<PreAntecedents<'a>>,
+    pub more_antecedents: VecDeque<Antecedents<'a>>,
     pub consequents: Vec<&'a str>,
     pub matched: MPMatching<'a>,
     pub output: Option<&'a str>,
@@ -68,17 +61,19 @@ impl<'a> fmt::Display for MPRule<'a> {
         let mut string = String::from("rule\n\n");
         string.push_str(
             match self.antecedents.fact {
-                Some(fact) => fact.text,
+                Some(fact) => fact,
                 None => "Empty",
             }
         );
-        string.push_str("{={\n");
+        string.push_str("\n{={\n");
         string.push_str(self.antecedents.transforms);
         string.push_str("}=}\n{?{\n");
         string.push_str(self.antecedents.conditions);
-        string.push_str("}?}\n->\n");
+        string.push_str("\n}?}\n->\n");
         for more_ants in &self.more_antecedents {
-            string.push_str(more_ants.fact);
+            if more_ants.fact.is_some() {
+                string.push_str(more_ants.fact.unwrap());
+            }
             string.push_str("{={\n");
             string.push_str(more_ants.transforms);
             string.push_str("}=}\n{?{\n");
@@ -128,6 +123,7 @@ struct UVarChild<'a> {
 pub struct RuleSet<'a> {
     pub root: RSNode<'a>,
     nodes: Bump,
+    paths: Bump,
 }
 
 impl<'a> RuleSet<'a> {
@@ -138,36 +134,42 @@ impl<'a> RuleSet<'a> {
         RuleSet {
             root,
             nodes: Bump::new(),
+            paths: Bump::new(),
         }
     }
-    pub fn follow_and_create_paths(&'a self, paths: &'a [MPPath], rule_ref: RuleRef<'a>, mut depth: usize) {
+    pub fn follow_and_create_paths(&'a self, mut paths: Vec<MPPath<'a>>, rule_ref: RuleRef<'a>, mut depth: usize) {
         let mut parent: &RSNode = &self.root; 
         let mut child: Option<&RSNode>; 
         let mut visited_vars: Vec<&MPSegment> = vec![];
-        for (i, new_path) in paths.iter().enumerate() {
+        // XXX probably just a for loop?
+        while paths.len() > 0 {
+            let mut new_path = paths.remove(0);
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
             depth += 1;
             if new_path.value.is_var {
-                child = parent.get_vchild(new_path);
+                let (new_child, old_path) = parent.get_vchild_o(new_path);
+                new_path = old_path;
+                child = new_child;
                 if child.is_none() {
                     let var_child_opt = parent.get_var_child();
                     if var_child_opt.is_some() {
                         let var_child =  var_child_opt.unwrap();
-                        if var_child.path == new_path {
+                        if var_child.path == &new_path {
                             visited_vars.push(new_path.value);
                             child = Some(var_child);
                         }
                     }
                 }
             } else {
-                child = parent.get_child(new_path);
+                let (new_child, _) = parent.get_child_o(new_path);
+                child = new_child;
             }
             if child.is_some() {
                 parent = child.unwrap();
             } else {
-                parent = self.create_paths(parent, &paths[i..], visited_vars, depth);
+                parent = self.create_paths(parent, paths, visited_vars, depth);
                 break;
             }
         }
@@ -176,33 +178,37 @@ impl<'a> RuleSet<'a> {
         parent.rule_refs.borrow_mut().push(rule_ref);
     }
 
-    fn create_paths(&'a self, mut parent: &'a RSNode<'a>, paths: &'a [MPPath], mut visited: Vec<&'a MPSegment>, mut depth: usize) -> &'a RSNode {
-        for new_path in paths {
+    fn create_paths(&'a self, mut parent: &'a RSNode<'a>, mut paths: Vec<MPPath<'a>>, mut visited: Vec<&'a MPSegment>, mut depth: usize) -> &'a RSNode {
+        while paths.len() > 0 {
+            let new_path = paths.remove(0);
             if new_path.value.is_empty || !new_path.value.is_leaf {
                 continue;
             }
             depth += 1;
-            let child_ref = self.nodes.alloc(RSNode::new(new_path, depth));
-            if new_path.value.is_var {
-                if visited.contains(&new_path.value) {
-                    parent.var_children.borrow_mut().insert(new_path, child_ref);
+            let val = new_path.value;
+            let path_ref = self.paths.alloc(new_path);
+            let child_ref = self.nodes.alloc(RSNode::new(path_ref, depth));
+            if val.is_var {
+                if visited.contains(&val) {
+                    parent.var_children.borrow_mut().insert(path_ref, child_ref);
                 } else {
-                    visited.push(new_path.value);
+                    visited.push(val);
                     parent.var_child.borrow_mut().node = Some(child_ref);
                 }
             } else {
-                parent.children.borrow_mut().insert(new_path, child_ref);
+                parent.children.borrow_mut().insert(path_ref, child_ref);
             }
             parent = child_ref;
         }
         parent.end_node.set(true);
         parent
     }
-    pub fn query_paths(&'a self, paths: &'a [MPPath<'a>]) -> Response {
+    pub fn query_paths(&'a self, paths: Vec<MPPath<'a>>) -> (Response, Vec<MPPath<'a>>) {
         let response = new_response();
         let matched: MPMatching = HashMap::new();
-        let (response, _) = self.root.climb(paths, response, matched);
-        response
+        let paths_slice = unsafe { mem::transmute(paths.as_slice()) };
+        let (response, _) = self.root.climb(paths_slice, response, matched);
+        (response, paths)
     }
 }
 
@@ -228,12 +234,30 @@ impl<'a> RSNode<'a> {
             }
         }
     }
+    pub fn get_child_o(&'a self, path: MPPath<'a>) -> (Option<&'a Self>, MPPath<'a>) {
+        let children = self.children.borrow();
+        match children.get(&path) {
+            None => (None, path),
+            Some(child_ref) => {
+                (Some(*child_ref), path)
+            }
+        }
+    }
     pub fn get_vchild(&'a self, path: &'a MPPath) -> Option<&'a Self> {
         let vchildren = self.var_children.borrow();
         match vchildren.get(path) {
             None => None,
             Some(child_ref) => {
                 Some(*child_ref)
+            }
+        }
+    }
+    pub fn get_vchild_o(&'a self, path: MPPath<'a>) -> (Option<&'a Self>, MPPath<'a>) {
+        let vchildren = self.var_children.borrow();
+        match vchildren.get(&path) {
+            None => (None, path),
+            Some(child_ref) => {
+                (Some(*child_ref), path)
             }
         }
     }
@@ -313,149 +337,3 @@ impl<'a> RSNode<'a> {
         (response, matched)
     }
 }
-
-//
-//#[cfg(test)]
-//mod tests {
-//    use super::*;
-//    use crate::fact::Fact;
-//    use crate::parser::Grammar;
-//
-//
-//    pub struct PremSet<'a> {
-//        pub root: Box<RSNode<'a>>,
-//    }
-//
-//
-//    impl<'a> PremSet<'a> {
-//        fn new (root_path: MPPath<'a>) -> PremSet<'a> {
-//            PremSet { root: Box::new(RSNode::new(root_path)) }
-//        }
-//        fn add_fact (self, fact: &'a Fact<'a>) -> PremSet {
-//            let PremSet { mut root } = self;
-//            let zipper = root.zipper(None);
-//            let paths = fact.get_leaf_paths();
-//            root = zipper.follow_and_create_paths(paths);
-//            PremSet { root }
-//        }
-//        fn ask_fact (&'a self, fact: &'a Fact) -> usize {
-//            let mut qzipper = self.root.izipper();
-//            let paths = fact.get_leaf_paths();
-//            qzipper = qzipper.climb(&paths);
-//            let response = qzipper.finish();
-//            response.len()
-//        }
-//    }
-//
-//
-//    pub struct Fakeledge<'a> {
-//        pub factset: PremSet<'a>,
-//        grammar: Grammar<'a>,
-//    }
-//
-//
-//    impl<'a> Fakeledge<'a> {
-//        pub fn new () -> Fakeledge<'a> {
-//            let grammar = Grammar::new();
-//            let root_path = grammar.lexicon.empty_path();
-//            Fakeledge {
-//                grammar: grammar,
-//                factset: PremSet::new(root_path),
-//            }
-//        }
-//        fn tell(self, k: &'a str) -> Fakeledge<'a> {
-//            let Fakeledge {
-//                mut factset,
-//                grammar,
-//            } = self;
-//            let parsed = grammar.parse_text(k);
-//            let facts = parsed.ok().unwrap().facts;
-//            for fact in facts {
-//                factset = factset.add_fact(fact);
-//            }
-//            Fakeledge {
-//                grammar,
-//                factset,
-//            }
-//        }
-//        fn ask(&'a self, q: &'a str) -> usize {
-//            let parsed = self.grammar.parse_text(q);
-//            let mut facts = parsed.ok().unwrap().facts;
-//            let fact = facts.pop().unwrap();
-//            self.factset.ask_fact(&fact)
-//        }
-//    }
-//    
-//    #[test]
-//    fn test_1() {
-//        let mut kb = Fakeledge::new();
-//        kb = kb.tell("susan ISA person. john ISA person.");
-//        let resp1 = kb.ask("susan ISA person.");
-//        assert_eq!(resp1, 1);
-//        let resp2 = kb.ask("pepe ISA person.");
-//        assert_eq!(resp2, 0);
-//        let resp3 = kb.ask("john ISA person.");
-//        assert_eq!(resp3, 1);
-//    }
-//    #[test]
-//    fn test_2() {
-//        let mut kb = Fakeledge::new();
-//        kb = kb.tell("<X0> ISA person. john ISA <X0>.");
-//        let resp1 = kb.ask("susan ISA person.");
-//        assert_eq!(resp1, 1);
-//        let resp3 = kb.ask("john ISA person.");
-//        assert_eq!(resp3, 2);
-//        let resp3 = kb.ask("john ISA animal.");
-//        assert_eq!(resp3, 1);
-//        let resp1 = kb.ask("susan ISA animal.");
-//        assert_eq!(resp1, 0);
-//    }
-//    #[test]
-//    fn test_3() {
-//        let mut kb = Fakeledge::new();
-//        kb = kb.tell("\
-//            susan ISA person.\
-//            john ISA person.\
-//            <X0> IS animal.\
-//            (say: <X0>, what: (<X1>: <X0>, what: (love: <X2>, who: <X0>))) ISA fact.\
-//            (<X0>: <X1>, what: (love: <X1>, who: <X2>)) ISA fact.\
-//            (say: <X0>, what: <X1>) ISA fact.");
-//        let mut resp = kb.ask("susan ISA person.");
-//        assert_eq!(resp, 1);
-//        resp = kb.ask("pepe ISA person.");
-//        assert_eq!(resp, 0);
-//        resp = kb.ask("(say: susan, what: (want: susan, what: (love: john, who: susan))) ISA fact.");
-//        assert_eq!(resp, 2);  // XXX should be 2
-//        resp = kb.ask("(say: susan, what: (want: susan, what: (love: john, who: pepe))) ISA fact.");
-//        assert_eq!(resp, 1);
-//        resp = kb.ask("(want: john, what: (love: john, who: susan)) ISA fact.");
-//        assert_eq!(resp, 1);
-//        resp = kb.ask("(want: pepe, what: (love: john, who: susan)) ISA fact.");
-//        assert_eq!(resp, 0);
-//        resp = kb.ask("(say: susan, what: (love: susan)) ISA fact.");
-//        assert_eq!(resp, 1);
-//        resp = kb.ask("(say: susan, whit: (love: susan)) ISA fact.");
-//        assert_eq!(resp, 0);
-//    }
-//    #[test]
-//    fn test_4() {
-//        let mut kb = Fakeledge::new();
-//        kb = kb.tell("(say: <X0>, what: (<X1>: <X0>, what: (love: <X2>, who: <X0>))) ISA fact.");
-//        let resp = kb.ask("(say: susan, what: (want: susan, what: (love: john, who: susan))) ISA fact.");
-//        assert_eq!(resp, 1);
-//    }
-//    #[test]
-//    fn test_5() {
-//        let mut kb = Fakeledge::new();
-//        kb = kb.tell("(say: <X0>, what: <X1>) ISA fact.");
-//        let resp = kb.ask("(say: susan, what: (want: susan, what: (love: john, who: susan))) ISA fact.");
-//        assert_eq!(resp, 1);
-//    }
-//    #[test]
-//    fn test_6() {
-//        let mut kb = Fakeledge::new();
-//        kb = kb.tell("(fn: (fn: <X1>, on: <X4>), on: <X6>) EQ <X7>.");
-//        let resp = kb.ask("(fn: (fn: pr, on: s1), on: (s: 0)) EQ (s: (s: 0)).");
-//        assert_eq!(resp, 1);
-//    }
-//}
