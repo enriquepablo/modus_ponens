@@ -22,8 +22,6 @@ use std::collections::HashMap;
 use std::cell::{ RefCell };
 use std::mem;
 
-use bumpalo::{Bump};
-
 use crate::constants;
 use crate::path::MPPath;
 use crate::matching::MPMatching;
@@ -50,7 +48,6 @@ pub struct FSNode<'a> {
 
 pub struct FactSet<'a> {
     pub root: Box<FSNode<'a>>,
-    nodes: Bump,
 }
 
 
@@ -58,7 +55,6 @@ impl<'a> FactSet<'a> {
     pub fn new () -> FactSet<'a> {
         FactSet {
             root: Box::new(FSNode::new(1)),
-            nodes: Bump::new(),
          }
     }
     pub fn add_fact (&'a self, fact: Vec<MPPath<'a>>) {
@@ -175,7 +171,7 @@ impl<'a> FactSet<'a> {
                         index: usize,
                     ) -> (&'a FSNode<'a>, CarryOver<'a>) {
 
-        let child_ref = self.nodes.alloc(child);
+        let child_ref = Box::leak(Box::new(child));
         let (new_carry, more) = carry.node(index);
         carry = new_carry;
         if more.is_some() {
@@ -191,7 +187,7 @@ impl<'a> FactSet<'a> {
                          mut carry: CarryOver<'a>,
                          index: usize,
                         ) -> (&'a FSNode<'a>, CarryOver<'a>) {
-        let child_ref = self.nodes.alloc(child);
+        let child_ref = Box::leak(Box::new(child));
         let (new_carry, more) = carry.node(index);
         carry = new_carry;
         if more.is_some() {
@@ -276,7 +272,8 @@ impl<'a> FSNode<'a> {
                     }
                     return resp;
                 } else {
-                    let (new_path, _) = path.substitute_owning(matching.clone());
+                    let matching_ref: &MPMatching = unsafe { mem::transmute( &matching ) };
+                    let new_path = path.substitute(matching_ref);
                     let new_path_ref = unsafe { mem::transmute(&new_path) };
                     subs_path = Some(new_path_ref);
                 }

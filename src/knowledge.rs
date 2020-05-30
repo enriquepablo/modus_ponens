@@ -201,9 +201,10 @@ pub fn derive_kb() -> TokenStream {
                     }
                     let mut paths: Option<Vec<MPPath>> = None;
                     if query_rules {
-                        let (new_queues, new_paths) = self.query_rule(&rule, queues);
+                        let (new_queues, new_paths, old_rule) = self.query_rule(rule, queues);
                         paths = new_paths;
                         queues = new_queues;
+                        rule = old_rule;
                     }
                     queues.rule_queue.push_back(Activation::from_rule(rule, paths, query_rules));
                 } else {
@@ -223,17 +224,32 @@ pub fn derive_kb() -> TokenStream {
                 queues
             }
             fn query_rule(&'a self,
-                          rule: &MPRule<'a>,
-                          mut queues: Queues<'a>) -> (Queues<'a>, Option<Vec<MPPath<'a>>>) {
+                          mut rule: MPRule<'a>,
+                          mut queues: Queues<'a>) -> (Queues<'a>, Option<Vec<MPPath<'a>>>, MPRule<'a>) {
 
                 let mut paths: Option<Vec<MPPath>> = None;
                 if rule.antecedents.fact.is_some() {
-                    let fact_str = rule.antecedents.fact.as_ref().unwrap();
+                    let MPRule {
+                        mut antecedents,
+                        mut more_antecedents,
+                        consequents,
+                        mut matched,
+                        output,
+                    } = rule;
+                    let fact_str = antecedents.fact.as_ref().unwrap();
                     let mut pre_ant = self.mpparser.parse_fact(fact_str);
-                    if rule.matched.len() > 0 {
-                        let (new_pre_ant, _, _) = self.mpparser.substitute_fact(pre_ant, rule.matched.clone());
+                    if matched.len() > 0 {
+                        let (new_pre_ant, old_matched, _) = self.mpparser.substitute_fact(pre_ant, matched);
                         pre_ant = new_pre_ant;
+                        matched = old_matched;
                     }
+                    rule = MPRule {
+                        antecedents,
+                        more_antecedents,
+                        consequents,
+                        matched,
+                        output,
+                    };
                     let (resps, old_paths) = self.facts.ask_fact(pre_ant);
                     paths = Some(old_paths);
                     for resp in resps {
@@ -242,7 +258,7 @@ pub fn derive_kb() -> TokenStream {
                         queues.match_queue.push_back(Activation::from_matching(new_rule, Some(resp), true));
                     }
                 }
-                (queues, paths)
+                (queues, paths, rule)
             }
             fn preprocess_matched_rule(&'a self,
                                        rule: MPRule<'a>,

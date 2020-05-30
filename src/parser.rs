@@ -187,20 +187,14 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 if matching.len() == 0 {
                     return (fact, matching, None);
                 }
-                let (paths, matching) = MPPath::substitute_paths(fact, matching);
-
-                let text = paths.iter()
-                               .map(|path| path.value.text.as_str())
-                               .collect::<Vec<&str>>()
-                               .concat();
+                let (text, matching) = MPPath::substitute_paths_to_string(fact, matching);
 
                 let stext = unsafe { mem::transmute( text.as_str() ) };
                 
                 let parse_tree = FactParser::parse(Rule::fact, stext).ok().unwrap().next().expect("2nd fact pair");
-                let all_paths = Vec::with_capacity(paths.len());
                 (self.visit_parse_node(parse_tree,
                                        vec![],
-                                       all_paths,
+                                       vec![],
                                        0),
                 matching, Some(text))
 

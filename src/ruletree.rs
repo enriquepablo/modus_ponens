@@ -24,7 +24,6 @@ use std::mem;
 //use std::collections::VecDeque;
 use std::cell::{ RefCell, Cell };
 
-use bumpalo::{Bump};
 //use log::debug;
 
 use crate::constants;
@@ -122,8 +121,6 @@ struct UVarChild<'a> {
 
 pub struct RuleSet<'a> {
     pub root: RSNode<'a>,
-    nodes: Bump,
-    paths: Bump,
 }
 
 impl<'a> RuleSet<'a> {
@@ -133,8 +130,6 @@ impl<'a> RuleSet<'a> {
         let root = RSNode::new(root_path_ref, 1);
         RuleSet {
             root,
-            nodes: Bump::new(),
-            paths: Bump::new(),
         }
     }
     pub fn follow_and_create_paths(&'a self, mut paths: Vec<MPPath<'a>>, rule_ref: RuleRef<'a>, mut depth: usize) {
@@ -188,8 +183,8 @@ impl<'a> RuleSet<'a> {
             }
             depth += 1;
             let val = new_path.value;
-            let path_ref = self.paths.alloc(new_path);
-            let child_ref = self.nodes.alloc(RSNode::new(path_ref, depth));
+            let path_ref = Box::leak(Box::new(new_path));
+            let child_ref = Box::leak(Box::new(RSNode::new(path_ref, depth)));
             if val.is_var {
                 if visited.contains(&val) {
                     parent.var_children.borrow_mut().insert(path_ref, child_ref);

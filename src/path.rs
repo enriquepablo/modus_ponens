@@ -99,27 +99,38 @@ impl<'a> MPPath<'a> {
         &paths[i as usize..]
     }
 
-    pub fn substitute(&'a self, matching: &'a MPMatching) -> (MPPath, Option<MPPath>) {
+    pub fn substitute(&'a self, matching: &'a MPMatching) -> MPPath {
         let mut new_segments = Vec::with_capacity(self.segments.len());
+        for segment in self.segments.iter() {
+            let new_segment = get_or_key(&matching, &segment);
+            new_segments.push(new_segment);
+            if &new_segment != segment {
+                break;
+            }
+        }
+        MPPath::new(new_segments)
+    }
+
+    pub fn substitute_to_string(&'a self, matching: &'a MPMatching) -> (&str, bool, Option<MPPath>) {
+        let mut last_text = "";
+        let mut is_leaf = false;
         let mut old_segments = Vec::with_capacity(self.segments.len());
         let mut is_new = false;
         for segment in self.segments.iter() {
             let new_segment = get_or_key(&matching, &segment);
             is_new = &new_segment != segment;
-            new_segments.push(new_segment);
+            last_text = new_segment.text.as_str();
+            is_leaf = new_segment.is_leaf;
             old_segments.push(*segment);
             if is_new {
                 break;
             }
         }
         if is_new {
-            new_segments.shrink_to_fit();
-            old_segments.shrink_to_fit();
-            let new_path = MPPath::new(new_segments);
             let old_path = MPPath::new(old_segments);
-            (new_path, Some(old_path))
+            (last_text, is_leaf, Some(old_path))
         } else {
-            (MPPath::new(new_segments), None)
+            (last_text, is_leaf, None)
         }
     }
 
@@ -147,8 +158,8 @@ impl<'a> MPPath<'a> {
         }
     }
 
-    pub fn substitute_paths(paths: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> (Vec<MPPath<'a>>, MPMatching<'a>) {
-        let mut new_paths:Vec<MPPath> = Vec::with_capacity(paths.len());
+    pub fn substitute_paths_to_string(paths: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> (String, MPMatching<'a>) {
+        let mut fact = String::with_capacity(paths.len());
         let mut old_paths:Vec<MPPath> = Vec::with_capacity(paths.len());
         for path in paths.iter() {
             let mut seen = false;
@@ -159,18 +170,16 @@ impl<'a> MPPath<'a> {
                 }
             }
             if !seen {
-                let (new_path, old_path) = path.substitute(&matching);
+                let (new_text, is_leaf, old_path) = path.substitute_to_string(&matching);
                 if old_path.is_some() {
                     old_paths.push(old_path.unwrap());
-                    new_paths.push(new_path);
-                } else if new_path.value.is_leaf {
-                    new_paths.push(new_path);
+                    fact.push_str(new_text);
+                } else if is_leaf {
+                    fact.push_str(new_text);
                 }
             }
         }
-        new_paths.shrink_to_fit();
-        (unsafe { mem::transmute(new_paths) },
-        matching)
+        (fact, matching)
     }
 
     pub fn substitute_paths_owning(paths: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> Vec<MPPath<'a>> {
