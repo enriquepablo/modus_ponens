@@ -186,11 +186,28 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 }
                 all_paths
             }
-            pub fn substitute_fact(&'a self, fact: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> (Vec<MPPath<'a>>, MPMatching<'a>) {
+            pub fn substitute_fact(&'a self, fact: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> (Vec<MPPath<'a>>, MPMatching<'a>, Option<String>) {
                 if matching.len() == 0 {
-                    return (fact, matching);
+                    return (fact, matching, None);
                 }
-                MPPath::substitute_paths(fact, matching)
+                let (paths, matching) = MPPath::substitute_paths(fact, matching);
+
+                let text = paths.iter()
+                               .map(|path| path.value.text.as_str())
+                               .collect::<Vec<&str>>()
+                               .concat();
+
+                let stext = unsafe { mem::transmute( text.as_str() ) };
+                
+                let parse_tree = FactParser::parse(Rule::fact, stext).ok().unwrap().next().expect("2nd fact pair");
+                let all_paths = Vec::with_capacity(paths.len());
+                (self.visit_parse_node(parse_tree,
+                                       vec![],
+                                       all_paths,
+                                       0),
+                matching, Some(text))
+
+
             }
             pub fn substitute_fact_fast(&'a self, fact: Vec<MPPath<'a>>, matching: MPMatching<'a>) -> Vec<MPPath<'a>> {
                 if matching.len() == 0 {

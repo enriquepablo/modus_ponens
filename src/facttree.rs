@@ -74,7 +74,7 @@ impl<'a> FactSet<'a> {
     }
     pub fn ask_fact_bool (&'a self, fact: Vec<MPPath<'a>>) -> (bool, Vec<MPPath<'a>>) {
         let (resp, fact) = self.ask_fact(fact);
-        (resp.len() > 1, fact)
+        (resp.len() > 0, fact)
     }
     pub fn follow_and_create_paths(&'a self,
                                    mut parent: &'a FSNode<'a>,

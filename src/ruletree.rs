@@ -163,12 +163,14 @@ impl<'a> RuleSet<'a> {
                     }
                 }
             } else {
-                let (new_child, _) = parent.get_child_o(new_path);
+                let new_path_ref = unsafe { mem::transmute( &new_path ) };
+                let new_child = parent.get_child(new_path_ref);
                 child = new_child;
             }
             if child.is_some() {
                 parent = child.unwrap();
             } else {
+                paths.insert(0, new_path);
                 parent = self.create_paths(parent, paths, visited_vars, depth);
                 break;
             }

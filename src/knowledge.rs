@@ -115,7 +115,7 @@ pub fn derive_kb() -> TokenStream {
 
                     let mut new_antecedent = self.mpparser.parse_fact(ant);
                     if matched.len() > 0 {
-                        let (new_ant, old_matched) = self.mpparser.substitute_fact(new_antecedent, matched);
+                        let (new_ant, old_matched, _) = self.mpparser.substitute_fact(new_antecedent, matched);
                         new_antecedent = new_ant;
                         matched = old_matched;
                     }
@@ -148,12 +148,13 @@ pub fn derive_kb() -> TokenStream {
                             query_rules: bool,
                             mut queues: Queues<'a>) -> Queues<'a> {
 
-                info!("ADDING FACT: {}", fact);
 
                 let mut fact_paths = self.mpparser.parse_fact(fact);
+                let mut fact_string: Option<String> = None;
                 if matching.is_some() {
-                    let (new_fact_paths, _) = self.mpparser.substitute_fact(fact_paths, matching.unwrap());
+                    let (new_fact_paths, _, fact_str) = self.mpparser.substitute_fact(fact_paths, matching.unwrap());
                     fact_paths = new_fact_paths;
+                    fact_string = fact_str;
                 }
                 let (exists, paths) = self.facts.ask_fact_bool(fact_paths);
                 fact_paths = paths;
@@ -167,6 +168,11 @@ pub fn derive_kb() -> TokenStream {
                         let real_matching = get_real_matching(&matching, &rule_ref.varmap); 
                         queues.match_queue.push_back(Activation::from_matching(rule_ref.rule.clone(), Some(real_matching), query_rules));
                     }
+                }
+                if fact_string.is_some() {
+                    info!("ADDING FACT: {}", &fact_string.unwrap());
+                } else {
+                    info!("ADDING FACT: {}", &fact);
                 }
                 self.facts.add_fact(fact_paths);
                 queues
@@ -197,8 +203,12 @@ pub fn derive_kb() -> TokenStream {
                     }
                     if rule.output.is_some() {
                         let pre_output = self.mpparser.parse_fact(rule.output.unwrap());
-                        let (output, _) = self.mpparser.substitute_fact(pre_output, rule.matched);
-                        println!("{:?}", output);
+                        let (_, _, output) = self.mpparser.substitute_fact(pre_output, rule.matched);
+                        if output.is_some() {
+                            println!("ADDING FACT: {}", &output.unwrap());
+                        } else {
+                            println!("ADDING FACT: {}", rule.output.as_ref().unwrap());
+                        }
                     }
                 }
                 queues
@@ -211,7 +221,7 @@ pub fn derive_kb() -> TokenStream {
                     let fact_str = rule.antecedents.fact.as_ref().unwrap();
                     let mut pre_ant = self.mpparser.parse_fact(fact_str);
                     if rule.matched.len() > 0 {
-                        let (new_pre_ant, _) = self.mpparser.substitute_fact(pre_ant, rule.matched.clone());
+                        let (new_pre_ant, _, _) = self.mpparser.substitute_fact(pre_ant, rule.matched.clone());
                         pre_ant = new_pre_ant;
                     }
                     let (resps, _) = self.facts.ask_fact(pre_ant);  // XXX keep the vec and pass it in the activation
@@ -220,6 +230,8 @@ pub fn derive_kb() -> TokenStream {
                         new_rule.antecedents.fact = None;
                         queues.match_queue.push_back(Activation::from_matching(new_rule, Some(resp), true));
                     }
+                } else {
+                    queues.match_queue.push_back(Activation::from_matching(rule.clone(), None, true));
                 }
                 queues
             }
