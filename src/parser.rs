@@ -152,29 +152,31 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
 
             fn visit_parse_node(&'a self,
                                 parse_tree: Pair<'a, Rule>,
-                                root_segments: Vec<&'a MPSegment>,
+                                mut root_segments: Vec<&'a MPSegment>,
                                 mut all_paths: Vec<MPPath<'a>>,
                                 index: usize,
                             ) -> Vec<MPPath> {
-                let pretext = parse_tree.as_str();
+                let text = parse_tree.as_str();
+                if text.is_empty() {
+                    return all_paths;
+                }
                 let rule = parse_tree.as_rule();
                 let name = format!("{:?}", rule);
                 let can_be_var = name.starts_with(constants::VAR_RANGE_PREFIX);
-                let children: Vec<_> = parse_tree.into_inner().collect();
-                let is_leaf = children.len() == 0;
-                let text: String;
-                let segment = self.lexicon.intern_with_name(name, pretext, is_leaf);
-                let mut new_root_segments = root_segments.to_vec();
-                new_root_segments.push(segment);
+                let mut children = parse_tree.into_inner().peekable();
+                let is_leaf = children.peek().is_none();
+                let segment = self.lexicon.intern_with_name(name, text, is_leaf);
+                root_segments.push(segment);
+                let root_ref: &Vec<&MPSegment> = unsafe { mem::transmute( &root_segments ) };
                 if can_be_var || is_leaf {
-                    let segments = new_root_segments.clone();
+                    let segments = root_segments;
                     let new_path = MPPath::new(segments);
                     all_paths.push(new_path);
                 }
                 let mut new_index = 0;
                 for child in children {
                     all_paths = self.visit_parse_node(child,
-                                                      new_root_segments.clone(),
+                                                      root_ref.clone(),
                                                       all_paths,
                                                       new_index);
                     new_index += 1;
