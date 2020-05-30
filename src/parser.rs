@@ -163,12 +163,7 @@ pub fn derive_parser(attr: &syn::Attribute) -> TokenStream {
                 let children: Vec<_> = parse_tree.into_inner().collect();
                 let is_leaf = children.len() == 0;
                 let text: String;
-                if can_be_var || is_leaf {
-                    text = format!("{}", pretext);
-                } else {
-                    text = format!("{}", index);
-                }
-                let segment = self.lexicon.intern(&name, &text, is_leaf);
+                let segment = self.lexicon.intern_with_name(name, pretext, is_leaf);
                 let mut new_root_segments = root_segments.to_vec();
                 new_root_segments.push(segment);
                 if can_be_var || is_leaf {

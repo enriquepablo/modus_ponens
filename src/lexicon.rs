@@ -17,7 +17,7 @@
 // along with any part of the modus_ponens project.    
 // If not, see <http://www.gnu.org/licenses/>.
 
-use std::{cell::RefCell, collections::{ HashMap }, mem};
+use std::{cell::RefCell, collections::{ HashMap, HashSet }, mem};
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -30,12 +30,14 @@ use crate::path::MPPath;
 
 pub struct Lexicon {
     segments: RefCell<HashMap<u64, Box<MPSegment>>>,
+    names: RefCell<HashSet<String>>,
 }
 
 impl Lexicon {
     pub fn new() -> Self {
         Lexicon { 
             segments: RefCell::new(HashMap::new()),
+            names: RefCell::new(HashSet::new()),
         }
     }
     fn calculate_hash(&self, name: &str, text: &str, is_leaf: bool) -> u64 {
@@ -46,14 +48,17 @@ impl Lexicon {
         s.finish()
     }
     pub fn intern(&self, name: &str, text: &str, is_leaf: bool) -> &MPSegment {
+        self.intern_with_name(name.to_string(), text, is_leaf)
+    }
+    pub fn intern_with_name(&self, name: String, text: &str, is_leaf: bool) -> &MPSegment {
         let is_var = name == constants::VAR_RULE_NAME;
         let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
 
         let mut map = self.segments.borrow_mut();
-        let key = self.calculate_hash(name, text, is_leaf);
+        let key = self.calculate_hash(&name, text, is_leaf);
 
         if !map.contains_key(&key) {
-            let segment = MPSegment::new(name.to_string(),
+            let segment = MPSegment::new(name,
                                          text.to_string(),
                                          is_leaf,
                                          is_var,
