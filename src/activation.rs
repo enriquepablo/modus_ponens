@@ -19,6 +19,7 @@
 
 use crate::ruletree::MPRule;
 use crate::matching::MPMatching;
+use crate::path::MPPath;
 
 pub struct ParseResult<'a> {
     pub facts: Vec<&'a str>,
@@ -30,6 +31,7 @@ pub struct ParseResult<'a> {
 pub enum Activation<'a> {
     MPRule {
         rule: MPRule<'a>,
+        paths: Option<Vec<MPPath<'a>>>,
         query_rules: bool,
     },
     Fact {
@@ -53,9 +55,10 @@ impl<'a> Activation<'a> {
             query_rules,
         }
     }
-    pub fn from_rule(rule: MPRule, query_rules: bool) -> Activation {
+    pub fn from_rule(rule: MPRule<'a>, paths: Option<Vec<MPPath<'a>>>, query_rules: bool) -> Activation<'a> {
         Activation::MPRule {
             rule,
+            paths,
             query_rules,
         }
     }
