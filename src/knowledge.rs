@@ -45,6 +45,7 @@ pub fn derive_kb() -> TokenStream {
 
         pub struct KB<'a> {
             mpparser: &'a MPParser<'a>,
+            tparser: TParser<'a>,
             facts: FactSet<'a>,
             rules: RuleSet<'a>,
         }
@@ -53,8 +54,10 @@ pub fn derive_kb() -> TokenStream {
             pub fn new () -> KB<'a> {
                 let mpparser = Box::leak(Box::new(MPParser::new()));
                 let root_path = mpparser.lexicon.empty_path();
+                let tparser = TParser::new(&mpparser.lexicon);
                 Self {
                     mpparser,
+                    tparser,
                     facts: FactSet::new(),
                     rules: RuleSet::new(root_path),
                 }
@@ -279,7 +282,7 @@ pub fn derive_kb() -> TokenStream {
                 let Antecedents { fact, transforms, conditions } = antecedents;
 
                 if !transforms.is_empty() {
-                    matched = TParser::process_transforms(transforms, matched, &self.mpparser.lexicon);
+                    matched = self.tparser.process_transforms(transforms, matched);
                 }
                 if !conditions.is_empty() {
                     let passed = CParser::check_conditions(conditions, &matched, &self.mpparser.lexicon);

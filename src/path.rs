@@ -18,6 +18,7 @@
 // If not, see <http://www.gnu.org/licenses/>.
 
 use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::mem;
 
@@ -28,17 +29,18 @@ use crate::matching::{ MPMatching, get_or_key, get_or_key_owning };
 pub struct MPPath<'a> {
     pub value: &'a MPSegment,
     pub segments: Vec<&'a MPSegment>,
-    identity: String,
+    identity: u64,
 }
 
 impl<'a> MPPath<'a> {
     pub fn new(segments: Vec<&'a MPSegment>) -> MPPath {
         let value = *segments.last().expect("no empty paths");
-        let mut identity = String::with_capacity(segments.len());
+        let mut hasher = DefaultHasher::new();
         for &segment in segments.iter() {
-            identity.push_str(&segment.name);
+            segment.name.hash(&mut hasher);
         }
-        identity.push_str(&value.text);
+        value.text.hash(&mut hasher);
+        let identity = hasher.finish();
         MPPath { value, segments, identity }
     }
     pub fn len(&self) -> usize {

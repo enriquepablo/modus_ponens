@@ -7,11 +7,19 @@ use crate::segment::MPSegment;
 
 #[derive(Parser)]
 #[grammar = "transform.pest"]
-pub struct TParser;
+pub struct TParser<'a> {
+    lexicon: &'a Lexicon,
+}
 
-impl<'a> TParser {
+impl<'a> TParser<'a> {
 
-    pub fn process_transforms(source: &str, mut matching: MPMatching<'a>, lexicon: &'a Lexicon) -> MPMatching<'a> {
+    pub fn new(lexicon: &'a Lexicon) -> TParser<'a> {
+        TParser {
+            lexicon
+        }
+    }
+
+    pub fn process_transforms(&self, source: &str, mut matching: MPMatching<'a>) -> MPMatching<'a> {
         let mut var: &MPSegment;
         let mut val: &MPSegment;
 
@@ -24,42 +32,42 @@ impl<'a> TParser {
         for pair in pairs.next().unwrap().into_inner() {
             let mut asspair = pair.into_inner();
             let varpair = asspair.next().expect("dos");
-            var = lexicon.intern("var", varpair.as_str(), true);
+            var = self.lexicon.intern("var", varpair.as_str(), true);
             let exprpair = asspair.next().expect("tre");
-            let new_val = TParser::compile_expr(exprpair, &matching, lexicon);
+            let new_val = self.compile_expr(exprpair, &matching);
             let new_str = format!("{}", new_val);
-            val = lexicon.intern("v_decimal", new_str.as_str(), true);
+            val = self.lexicon.intern("v_decimal", new_str.as_str(), true);
             matching.insert(var, val);
         }
         matching
     }
 
-    fn compile_expr(pair: pest::iterators::Pair<Rule>, matching: &MPMatching<'a>, lexicon: &Lexicon) -> f64 {
+    fn compile_expr(&self, pair: pest::iterators::Pair<Rule>, matching: &MPMatching<'a>) -> f64 {
         match pair.as_rule() {
             Rule::v_expr => {
-                TParser::compile_expr(pair.into_inner().next().expect("cua"), matching, lexicon)
+                self.compile_expr(pair.into_inner().next().expect("cua"), matching)
             },
             Rule::monadicExpr => {
                 let mut pair = pair.into_inner();
                 let op = pair.next().expect("cin");
                 let termpair = pair.next().expect("sei");
-                let term = TParser::compile_expr(termpair, matching, lexicon);
+                let term = self.compile_expr(termpair, matching);
                 parse_monadic_op(op, term)
             },
             Rule::dyadicExpr => {
                 let mut pair = pair.into_inner();
                 let lhspair = pair.next().expect("sie");
-                let lhs = TParser::compile_expr(lhspair, matching, lexicon);
+                let lhs = self.compile_expr(lhspair, matching);
                 let op = pair.next().expect("och");
                 let rhspair = pair.next().expect("nue");
-                let rhs = TParser::compile_expr(rhspair, matching, lexicon);
+                let rhs = self.compile_expr(rhspair, matching);
                 parse_dyadic_op(op, lhs, rhs)
             },
             Rule::v_decimal => {
                 pair.as_str().parse::<f64>().ok().expect("die")
             },
             Rule::var => {
-                let var = lexicon.intern("var", pair.as_str(), true);
+                let var = self.lexicon.intern("var", pair.as_str(), true);
                 let number = matching.get(var).expect("number segment");
                 let result = number.text.parse::<f64>();
                 if result.is_err() {

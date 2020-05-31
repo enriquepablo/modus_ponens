@@ -42,12 +42,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bumpalo"
-version = "3.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5356f1d23ee24a1f785a56d1d1a5f0fd5b0f6a0c0fb2412ce11da71649ab78f6"
-
-[[package]]
 name = "byte-tools"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -157,7 +151,6 @@ checksum = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
 name = "modus_ponens"
 version = "0.11.3"
 dependencies = [
- "bumpalo",
  "env_logger",
  "log",
  "pest",
