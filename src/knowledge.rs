@@ -49,6 +49,34 @@ pub fn derive_kb() -> TokenStream {
             facts: FactSet<'a>,
             rules: RuleSet<'a>,
         }
+        impl<'a> KBase<'a> for KB<'a> {
+            fn tell(&'a self, knowledge: &'a str) {
+                let result = self.mpparser.parse_text(knowledge.trim());
+                let mut queues = Queues::new();
+                if result.is_err() {
+                    panic!("Parsing problem! {}", result.err().unwrap());
+                } else {
+                    let ParseResult { rules, facts } = result.ok().unwrap();
+                    for rule in rules {
+                        let act = Activation::from_rule(rule, None, true);
+                        queues.rule_queue.push_back(act);
+                        queues = self.process_activations(queues);
+                    }
+                    for fact in facts {
+                        let act = Activation::from_fact(fact, None, false);
+                        queues.fact_queue.push_back(act);
+                        queues = self.process_activations(queues);
+                    }
+                }
+            }
+            fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>> {
+                let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().expect("parse result");
+                let fact = facts.pop().unwrap();
+                let q = self.mpparser.parse_fact(fact);
+                let (resp, _) = self.facts.ask_fact(q);
+                resp
+            }
+        }
         impl<'a> KB<'a> {
 
             pub fn new () -> KB<'a> {
@@ -62,7 +90,7 @@ pub fn derive_kb() -> TokenStream {
                     rules: RuleSet::new(root_path),
                 }
             }
-            fn process_activations(&'a self, mut queues: Queues<'a>) {
+            fn process_activations(&'a self, mut queues: Queues<'a>) -> Queues<'a> {
                 loop {
                     let mut next_opt = queues.rule_queue.pop_front();
                     if next_opt.is_none() {
@@ -98,6 +126,7 @@ pub fn derive_kb() -> TokenStream {
                         },
                     }
                 }
+                queues
             }
             fn process_rule(&'a self, rule: MPRule<'a>, paths: Option<Vec<MPPath<'a>>>, query_rules: bool, mut queues: Queues<'a>) -> Queues<'a> {
                 
@@ -305,33 +334,6 @@ pub fn derive_kb() -> TokenStream {
                     output,
                 }, true, true, matching)
 
-            }
-        }
-        impl<'a> KBase<'a> for KB<'a> {
-            fn tell(&'a self, knowledge: &'a str) {
-                let result = self.mpparser.parse_text(knowledge.trim());
-                let mut queues = Queues::new();
-                if result.is_err() {
-                    panic!("Parsing problem! {}", result.err().unwrap());
-                } else {
-                    let ParseResult { rules, facts } = result.ok().unwrap();
-                    for rule in rules {
-                        let act = Activation::from_rule(rule, None, true);
-                        queues.rule_queue.push_back(act);
-                    }
-                    for fact in facts {
-                        let act = Activation::from_fact(fact, None, false);
-                        queues.fact_queue.push_back(act);
-                    }
-                }
-                self.process_activations(queues);
-            }
-            fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>> {
-                let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().expect("parse result");
-                let fact = facts.pop().unwrap();
-                let q = self.mpparser.parse_fact(fact);
-                let (resp, _) = self.facts.ask_fact(q);
-                resp
             }
         }
 
