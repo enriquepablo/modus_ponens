@@ -31,8 +31,8 @@ These properties should make it very appropriate for knowledge representation an
 
 However, it must also be said that
 
-* It is a work in progress. At the moment it doesn't even have arithmetic facilities,
-  nor some form of persistance. If I publish this now it's because the results below show promise,
+* It is a work in progress. For example at the moment it doesn't even have some form of persistance.
+  If I publish this now it's because the results below show promise,
   and perhaps they might convince someone else into supporting the project.
 
 Below, I will try to substantiate the claims I have made above.
@@ -55,13 +55,13 @@ Different engines provide different syntax for their facts.
 For example, CLIPS uses [lisp style s-expressions][8],
 and Drools uses some own ad-hoc syntax.
 
-Rules are essentially made up of a number of conditions and a number of actions,
+Rules are essentially made up of a number of conditions and an action,
 where conditions are facts that can contain quantified, bound variables,
 and actions can be anything to be triggered when the conditions of a rule are matched;
-though here for our purposes we will only consider as actions assertions of new facts,
+though here for our purposes it is enough to only consider as actions assertions of new facts,
 possibly containing variables used in the conditions.
 
-from a logical pow, what these systems provide is, first, a syntax for facts
+from a logical point of view, what these systems provide is, first, a syntax for facts
 and for [Horn clauses][9]; and then, on top of that, an implementation of conjunction,
 implication, and quantified variables, such as they appear in the Horn clauses.
 This allows these systems to extend any set of facts and Horn clauses to its completion,
@@ -76,11 +76,9 @@ For modus\_ponens, a fact is just a parse tree produced by the [Pest][11] PEG pa
 Thus, the user of the library can provide whatever PEG she chooses to define her space of facts.
 In a sense, the user of the library provides the grammar for the facts,
 and modus\_ponens provides the grammar to build rules out of those facts.
-So, the provided PEG must include productions accounting for the logical connectives
-and for variables, prescribed by modus\_ponens.
 As a bridge between what modus\_ponens prescribes and what the user ad-libs,
 the user needs to mark which of the productions that compose her facts
-can match the variables prescribed by modus\_ponens.
+can be  in the range of the variables prescribed by modus\_ponens.
 Otherwise, there is no restriction in the structure of the productions providing the facts.
 
 ## Example
@@ -122,17 +120,6 @@ We also need names for the individuals and taxons,
 for which we'll use strings of lower case latin letters.
 
 ```pest
-knowledge   = { (sentence ~ ".")+ }
-
-sentence    = _{ rule | fact }
-
-rule        = { antecedents+ ~ consequents }
-
-antecedents = { factset ~ "→" }
-consequents = { factset }
-
-factset     = _{ fact ~ ("∧" ~ fact)* }
-
 var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
 
 fact        = { name ~ pred ~ name }
@@ -148,9 +135,8 @@ WHITESPACE  = { " " | "\t" | "\r" | "\n" }
 &nbsp;
 &nbsp;
 
-In this grammar, the productions `WHITESPACE`, `knowledge`, `sentence`, `rule`,
-`antecedents`, `consequents`, `factset`, and `var` are prescribed by modus\_ponens.
-On top of these, the user must provide a production for `fact`.
+In this grammar, the productions WHITESPACE and  `var` is prescribed by modus\_ponens.
+On top of them, the user must provide a production for `fact`.
 So we, as "user", are providing `name`, `v_name`, and `pred`, to compose `fact`.
 Here we allow for very simple facts, just triples subject-predicate-object.
 
@@ -295,7 +281,7 @@ had no effect on the cost of adding new facts or rules,
 for any of the systems.
 In fact, in the case of modus\_ponens the above graph can be taken as evidence that the cost
 does not depend on the number of facts,
-since for each trial with more rules, the number of facts increased accordingly.
+since the number of facts increases with th number of rules.
 
 The next results show the effect that increasing the total number of rules
 had on the cost of adding a new rule. Again, in CLIPS the cost seems to increase continuously,
@@ -313,9 +299,9 @@ that adding facts.
 
 I also measured the peak memory allocated by the process as measured by [heaptrack][17],
 with different numbers of facts and rules. I don't have enough data to plot it,
-but preliminary results show a constant spatial cost per fact of around 2KB,
-independently of the number of favts and rules already in the system.
-There is room for improvement in this sense, as 2KB / fact is way more
+but preliminary results show a constant spatial cost per fact of around a KB,
+independently of the number of facts and rules already in the system.
+There is room for improvement in this sense, as a KB / fact is way more
 than strictly needed.
 
 [0]:http://www.modus-ponens.net/
