@@ -19,7 +19,6 @@ monadicOp = {
 }
 dyadicOp = {
     "index_of" |
-    "contains" |
     "concat"
 }
 

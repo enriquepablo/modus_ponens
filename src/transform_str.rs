@@ -105,15 +105,6 @@ impl<'a> TSParser<'a> {
                     Some(i) => self.lexicon.intern_with_text("v_decimal", format!("{}", i), true),
                 }
             },
-            "contains" => {
-                let fst_str = &fst.text;
-                let snd_str = &snd.text;
-                let result = match fst_str.contains(snd_str) {
-                    false => format!("{}", 0),
-                    true => format!("{}", 1)
-                };
-                self.lexicon.intern_with_text("v_decimal", result, true)
-            },
             "concat" => {
                 let mut fst_str = fst.text.clone();
                 fst_str.push_str(&snd.text);
