@@ -54,6 +54,7 @@ fn main() {
         ◊
     ");
     kb.tell( "number john 1 ◊" );
+    kb.tell( "person john ◊" );
     kb.tell( "person susan ◊" );
     kb.tell( "person joe ◊" );
     kb.tell( "person tim ◊" );
