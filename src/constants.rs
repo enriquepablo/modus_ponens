@@ -18,5 +18,6 @@
 // If not, see <http://www.gnu.org/licenses/>.
 pub const VAR_RULE_NAME: &str = "var";
 pub const VAR_RANGE_PREFIX: &str = "v_";
+pub const UNIQUE_PREFIX: &str = "v_u_";
 
 pub const NODE_MAP_CAPACITY: usize = 3;

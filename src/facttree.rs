@@ -193,7 +193,11 @@ impl<'a> FactSet<'a> {
         if more.is_some() {
             more.unwrap().lchildren.borrow_mut().insert(path.clone(), child_ref);
         }
-        parent.lchildren.borrow_mut().insert(path, child_ref);
+        let mut map = parent.lchildren.borrow_mut();
+        if path.value.unique {
+            map.clear();
+        }
+        map.insert(path, child_ref);
         (child_ref, carry)
     }
 }

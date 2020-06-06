@@ -29,15 +29,16 @@ pub struct MPSegment {
     pub is_var: bool,
     pub in_var_range: bool,
     pub is_empty: bool,
+    pub unique: bool,
 }
 
 impl MPSegment {
-    pub fn new(name: String, text: String, is_leaf: bool, is_var: bool, in_var_range: bool) -> MPSegment {
+    pub fn new(name: String, text: String, is_leaf: bool, is_var: bool, in_var_range: bool, unique: bool) -> MPSegment {
         let is_empty = text.trim().is_empty();
         MPSegment {
             name, text,
             is_leaf, is_var,
-            in_var_range, is_empty,
+            in_var_range, is_empty, unique,
         }
     }
 }

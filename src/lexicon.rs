@@ -53,6 +53,7 @@ impl Lexicon {
     pub fn intern_with_name(&self, name: String, text: &str, is_leaf: bool) -> &MPSegment {
         let is_var = name == constants::VAR_RULE_NAME;
         let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
+        let unique = name.starts_with(constants::UNIQUE_PREFIX);
 
         let mut map = self.segments.borrow_mut();
         let key = self.calculate_hash(&name, text, is_leaf);
@@ -62,7 +63,8 @@ impl Lexicon {
                                          text.to_string(),
                                          is_leaf,
                                          is_var,
-                                         in_var_range);
+                                         in_var_range,
+                                         unique);
             map.insert(key, Box::new(segment));
         }
 
@@ -73,6 +75,7 @@ impl Lexicon {
     pub fn intern_with_text(&self, name: &str, text: String, is_leaf: bool) -> &MPSegment {
         let is_var = name == constants::VAR_RULE_NAME;
         let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
+        let unique = name.starts_with(constants::UNIQUE_PREFIX);
 
         let mut map = self.segments.borrow_mut();
         let key = self.calculate_hash(name, &text, is_leaf);
@@ -82,7 +85,8 @@ impl Lexicon {
                                          text,
                                          is_leaf,
                                          is_var,
-                                         in_var_range);
+                                         in_var_range,
+                                         unique);
             map.insert(key, Box::new(segment));
         }
         let interned = map.get(&key).unwrap();
