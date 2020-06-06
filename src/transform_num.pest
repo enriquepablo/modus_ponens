@@ -1,0 +1,26 @@
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
+
+expr = {
+      monadicExpr
+    | dyadicExpr
+}
+
+monadicExpr = { monadicOp ~ term }
+
+dyadicExpr = { term ~ dyadicOp ~ term }
+
+term = _{ v_decimal | var | "(" ~ expr ~ ")" }
+
+monadicOp = {
+    "-" | "log"  | "exp" | "sin" | "cos" | "tan"
+  | "floor"  | "ceil" | "asin" | "acos" | "atan"
+}
+
+dyadicOp = {
+    "-" | "+" | "**" | "*" | "/" | "%"
+}
+
+v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
+
+WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }
+

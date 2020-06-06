@@ -35,6 +35,8 @@ pub mod lexicon;
 pub mod kbase;
 pub mod kparser;
 pub mod transform;
+pub mod transform_num;
+pub mod transform_str;
 pub mod condition;
 
 

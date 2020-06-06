@@ -70,6 +70,25 @@ impl Lexicon {
 
         unsafe { mem::transmute(interned.as_ref()) }
     }
+    pub fn intern_with_text(&self, name: &str, text: String, is_leaf: bool) -> &MPSegment {
+        let is_var = name == constants::VAR_RULE_NAME;
+        let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
+
+        let mut map = self.segments.borrow_mut();
+        let key = self.calculate_hash(name, &text, is_leaf);
+
+        if !map.contains_key(&key) {
+            let segment = MPSegment::new(name.to_string(),
+                                         text,
+                                         is_leaf,
+                                         is_var,
+                                         in_var_range);
+            map.insert(key, Box::new(segment));
+        }
+        let interned = map.get(&key).unwrap();
+
+        unsafe { mem::transmute(interned.as_ref()) }
+    }
 
     pub fn make_var(&self, n: usize) -> &MPSegment {
         let text = format!("<X{}>", &n);

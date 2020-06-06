@@ -1,0 +1,34 @@
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
+
+expr = {
+      monadicExpr
+    | dyadicExpr
+    | triadicExpr
+}
+
+monadicExpr = { monadicOp ~ term }
+
+dyadicExpr = { dyadicOp ~ term ~ term }
+
+triadicExpr = { triadicOp ~ term ~ term ~ term }
+
+term = _{ v_string | v_decimal | var }
+
+monadicOp = {
+    "len"
+}
+dyadicOp = {
+    "index_of" |
+    "contains" |
+    "concat"
+}
+
+triadicOp = {
+    "substring"
+}
+
+v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
+v_string = @{ ( LETTER+ | SYMBOL ) }
+
+WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }
+

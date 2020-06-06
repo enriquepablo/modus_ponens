@@ -2,30 +2,14 @@ transforms       = _{ SOI ~ rtransforms ~ EOI }
 
 rtransforms  = { transform ~ ((";"|"∧") ~ transform)* }
 
-transform   = { var ~ "=" ~ v_expr }
+transform     = _{ (num_transform | str_transform) }
+
+num_transform   = { var ~ "n=" ~ expr }
+
+str_transform   = { var ~ "s=" ~ expr }
+
+expr           = { (!(";"|"∧") ~ ANY )+ }
 
 var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
-
-v_expr = {
-      monadicExpr
-    | dyadicExpr
-}
-
-monadicExpr = { monadicOp ~ term }
-
-dyadicExpr = { term ~ dyadicOp ~ term }
-
-term = _{ v_decimal | var | "(" ~ v_expr ~ ")" }
-
-monadicOp = {
-    "-" | "log"  | "exp" | "sin" | "cos" | "tan"
-  | "floor"  | "ceil" | "asin" | "acos" | "atan"
-}
-
-dyadicOp = {
-    "-" | "+" | "**" | "*" | "/" | "%"
-}
-
-v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
 
 WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }
