@@ -12,9 +12,32 @@ http://www.modus-ponens.net/
 
 ## Introduction
 
-[Modus_ponens][0] is a [rust][1] library that can be used to build [forward chaining][2] [inference engines][3],
-a.k.a. [production rule systems][4]. If you need such a system, these are the reasons that might make
-modus\_ponens interesting to you:
+modus_ponens allows you to deal with your data, whatever its structure.
+It allows you to query, analyse and massage your data
+at whatever level of structural detail you may need to do so,
+and to do so efficiently (the performance of modus_ponens
+is independent of the size of your dataset).
+
+The essence of modus_ponens is that you describe the structure of your data
+in the form of a Parsing Expression Grammar (PEG),
+and modus_ponens provides an inference engine that deals with sentences
+compliant with the provided PEG.
+
+So your data will take the form of a knowledge base,
+i.e. a database of sentences with the internal structure prescribed by the PEG,
+to which you can add rules (implications) according to your analysis and transformation needs.
+
+We might approach modus_ponens from 3 different traditional, established perspectives:
+
+* modus_ponens can be understood from the perspective of logic programming,
+  and be compared to the likes of Prolog or CLIPS;
+* It can also be seen as a tool for data analysis,
+  and be compared to SQL engines and other data structuring schemes;
+* And it can be compared to the rules engines behind bussiness rules systems,
+  such as Drools or JRules.
+
+If we look at it from the perspective of logic programming,
+we might note that:
 
 * It is fast. With hundreds or thousands of rules loaded in the system,
   it is the same order of magnitude fast as the [CLIPS][5] programming language,
@@ -22,18 +45,19 @@ modus\_ponens interesting to you:
   of magnitude faster than CLIPS (e.g., with 200 000 rules in the system, modus\_ponens
   is 4 orders of magnitude faster adding another rule, see the results below).
 * It is customizable. There is total freedom in the syntax of the facts that
-  can be fed to inference engines produced with modus\_ponens.
+  can be fed to inference engines produced with modus\_ponens,
+  since that syntax is provided by the user in the form of a PEG.
 * It is scalable. The algorithmic cost (time and space) of adding
   both new facts and new rules to the system is independent of the amount of them already there.
   In this sense it must be noted that it uses a novel algorithm with little resemblance to [RETE][6].
 
-These properties should make it very appropriate for knowledge representation and reasoning.
+These properties should make it very appropriate for knowledge representation and reasoning,
+i.e. for logistic AI. 
 
-However, it must also be said that
-
-* It is a work in progress. For example at the moment it doesn't even have some form of persistance.
-  If I publish this now it's because the results below show promise,
-  and perhaps they might convince someone else into supporting the project.
+However, it must also be said that It is a work in progress. For example at the
+moment it doesn't even have some form of persistance.  If I publish this now
+it's because the results below show promise, and perhaps they might convince
+someone else into supporting the project.
 
 Below, I will try to substantiate the claims I have made above.
 
@@ -222,8 +246,13 @@ $ RUST_LOG=trace ./target/release/readme-example
 `RUST_LOG=trace` will log to stdout all facts and rules added in the system;
 `RUST_LOG=info` will only log facts.
 
+## API
+
+TODO
+
 TODO: document queries with variables,
 TODO: document consecutive sets of conditions.
+TODO: document arithmetic and string conditions and transformations.
 
 ## Complexity
 
