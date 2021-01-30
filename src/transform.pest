@@ -1,0 +1,15 @@
+transforms       = _{ SOI ~ rtransforms ~ EOI }
+
+rtransforms  = { transform ~ ((";"|"∧") ~ transform)* }
+
+transform     = _{ (num_transform | str_transform) }
+
+num_transform   = { var ~ "n=" ~ expr }
+
+str_transform   = { var ~ "s=" ~ expr }
+
+expr           = { (!(";"|"∧") ~ ANY )+ }
+
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
+
+WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }

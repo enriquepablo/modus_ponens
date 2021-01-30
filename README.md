@@ -12,9 +12,32 @@ http://www.modus-ponens.net/
 
 ## Introduction
 
-[Modus_ponens][0] is a [rust][1] library that can be used to build [forward chaining][2] [inference engines][3],
-a.k.a. [production rule systems][4]. If you need such a system, these are the reasons that might make
-modus\_ponens interesting to you:
+modus_ponens allows you to deal with your data, whatever its structure.
+It allows you to query, analyse and massage your data
+at whatever level of structural detail you may need to do so,
+and to do so efficiently (the performance of modus_ponens
+is independent of the size of your dataset).
+
+The essence of modus_ponens is that you describe the structure of your data
+in the form of a Parsing Expression Grammar (PEG),
+and modus_ponens provides an inference engine that deals with sentences
+compliant with the provided PEG.
+
+So your data will take the form of a knowledge base,
+i.e. a database of sentences with the internal structure prescribed by the PEG,
+to which you can add rules (implications) according to your analysis and transformation needs.
+
+We might approach modus_ponens from 3 different traditional, established perspectives:
+
+* modus_ponens can be understood from the perspective of logic programming,
+  and be compared to the likes of Prolog or CLIPS;
+* It can also be seen as a tool for data analysis,
+  and be compared to SQL engines and other data structuring schemes;
+* And it can be compared to the rules engines behind bussiness rules systems,
+  such as Drools or JRules.
+
+If we look at it from the perspective of logic programming,
+we might note that:
 
 * It is fast. With hundreds or thousands of rules loaded in the system,
   it is the same order of magnitude fast as the [CLIPS][5] programming language,
@@ -22,18 +45,19 @@ modus\_ponens interesting to you:
   of magnitude faster than CLIPS (e.g., with 200 000 rules in the system, modus\_ponens
   is 4 orders of magnitude faster adding another rule, see the results below).
 * It is customizable. There is total freedom in the syntax of the facts that
-  can be fed to inference engines produced with modus\_ponens.
+  can be fed to inference engines produced with modus\_ponens,
+  since that syntax is provided by the user in the form of a PEG.
 * It is scalable. The algorithmic cost (time and space) of adding
   both new facts and new rules to the system is independent of the amount of them already there.
   In this sense it must be noted that it uses a novel algorithm with little resemblance to [RETE][6].
 
-These properties should make it very appropriate for large and expresive expert systems.
+These properties should make it very appropriate for knowledge representation and reasoning,
+i.e. for logistic AI. 
 
-However, it must also be said that
-
-* It is a work in progress. At the moment it doesn't even have arithmetic facilities,
-  nor some form of persistance. If I publish this now it's because the results below show promise,
-  and perhaps they might convince someone else into supporting the project.
+However, it must also be said that It is a work in progress. For example at the
+moment it doesn't even have some form of persistance.  If I publish this now
+it's because the results below show promise, and perhaps they might convince
+someone else into supporting the project.
 
 Below, I will try to substantiate the claims I have made above.
 
@@ -55,13 +79,13 @@ Different engines provide different syntax for their facts.
 For example, CLIPS uses [lisp style s-expressions][8],
 and Drools uses some own ad-hoc syntax.
 
-Rules are essentially made up of a number of conditions and a number of actions,
+Rules are essentially made up of a number of conditions and an action,
 where conditions are facts that can contain quantified, bound variables,
 and actions can be anything to be triggered when the conditions of a rule are matched;
-though here for our purposes we will only consider as actions assertions of new facts,
+though here for our purposes it is enough to only consider as actions assertions of new facts,
 possibly containing variables used in the conditions.
 
-from a logical pow, what these systems provide is, first, a syntax for facts
+from a logical point of view, what these systems provide is, first, a syntax for facts
 and for [Horn clauses][9]; and then, on top of that, an implementation of conjunction,
 implication, and quantified variables, such as they appear in the Horn clauses.
 This allows these systems to extend any set of facts and Horn clauses to its completion,
@@ -76,11 +100,9 @@ For modus\_ponens, a fact is just a parse tree produced by the [Pest][11] PEG pa
 Thus, the user of the library can provide whatever PEG she chooses to define her space of facts.
 In a sense, the user of the library provides the grammar for the facts,
 and modus\_ponens provides the grammar to build rules out of those facts.
-So, the provided PEG must include productions accounting for the logical connectives
-and for variables, prescribed by modus\_ponens.
 As a bridge between what modus\_ponens prescribes and what the user ad-libs,
 the user needs to mark which of the productions that compose her facts
-can match the variables prescribed by modus\_ponens.
+can be  in the range of the variables prescribed by modus\_ponens.
 Otherwise, there is no restriction in the structure of the productions providing the facts.
 
 ## Example
@@ -122,17 +144,6 @@ We also need names for the individuals and taxons,
 for which we'll use strings of lower case latin letters.
 
 ```pest
-knowledge   = { (sentence ~ ".")+ }
-
-sentence    = _{ rule | fact }
-
-rule        = { antecedents+ ~ consequents }
-
-antecedents = { factset ~ "→" }
-consequents = { factset }
-
-factset     = _{ fact ~ ("∧" ~ fact)* }
-
 var         = @{ "<" ~ "__"? ~ "X" ~ ('0'..'9')+ ~ ">" }
 
 fact        = { name ~ pred ~ name }
@@ -148,9 +159,8 @@ WHITESPACE  = { " " | "\t" | "\r" | "\n" }
 &nbsp;
 &nbsp;
 
-In this grammar, the productions `WHITESPACE`, `knowledge`, `sentence`, `rule`,
-`antecedents`, `consequents`, `factset`, and `var` are prescribed by modus\_ponens.
-On top of these, the user must provide a production for `fact`.
+In this grammar, the productions WHITESPACE and  `var` is prescribed by modus\_ponens.
+On top of them, the user must provide a production for `fact`.
 So we, as "user", are providing `name`, `v_name`, and `pred`, to compose `fact`.
 Here we allow for very simple facts, just triples subject-predicate-object.
 
@@ -236,8 +246,13 @@ $ RUST_LOG=trace ./target/release/readme-example
 `RUST_LOG=trace` will log to stdout all facts and rules added in the system;
 `RUST_LOG=info` will only log facts.
 
+## API
+
+TODO
+
 TODO: document queries with variables,
 TODO: document consecutive sets of conditions.
+TODO: document arithmetic and string conditions and transformations.
 
 ## Complexity
 
@@ -295,7 +310,7 @@ had no effect on the cost of adding new facts or rules,
 for any of the systems.
 In fact, in the case of modus\_ponens the above graph can be taken as evidence that the cost
 does not depend on the number of facts,
-since for each trial with more rules, the number of facts increased accordingly.
+since the number of facts increases with th number of rules.
 
 The next results show the effect that increasing the total number of rules
 had on the cost of adding a new rule. Again, in CLIPS the cost seems to increase continuously,
@@ -313,9 +328,9 @@ that adding facts.
 
 I also measured the peak memory allocated by the process as measured by [heaptrack][17],
 with different numbers of facts and rules. I don't have enough data to plot it,
-but preliminary results show a constant spatial cost per fact of around 2KB,
-independently of the number of favts and rules already in the system.
-There is room for improvement in this sense, as 2KB / fact is way more
+but preliminary results show a constant spatial cost per fact of around a KB,
+independently of the number of facts and rules already in the system.
+There is room for improvement in this sense, as a KB / fact is way more
 than strictly needed.
 
 [0]:http://www.modus-ponens.net/

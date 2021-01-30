@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     def print_batch(start):
         for n in range(args.i):
-            time.sleep(.5)
+            # time.sleep(.5)
             t_rs = []
             t_fs = []
             for x in range(20):

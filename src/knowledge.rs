@@ -26,214 +26,323 @@ use proc_macro2::TokenStream;
 
 pub fn derive_kb() -> TokenStream {
     quote! {
-        pub struct KB<'a> {
-            mpparser: &'a MPParser<'a>,
-            facts: FactSet<'a>,
-            rules: RuleSet<'a>,
-            queue: RefCell<VecDeque<Activation<'a>>>,
+
+        pub struct Queues<'a> {
+            rule_queue: VecDeque<Activation<'a>>,
+            match_queue: VecDeque<Activation<'a>>,
+            fact_queue: VecDeque<Activation<'a>>,
+        }
+        impl<'a> Queues<'a> {
+
+            pub fn new () -> Queues<'a> {
+                Self {
+                    rule_queue: VecDeque::new(),
+                    match_queue: VecDeque::new(),
+                    fact_queue: VecDeque::new(),
+                }
+            }
         }
 
+        pub struct KB<'a> {
+            mpparser: &'a MPParser<'a>,
+            tparser: TParser<'a>,
+            facts: FactSet<'a>,
+            rules: RuleSet<'a>,
+        }
+        impl<'a> KBase<'a> for KB<'a> {
+            fn tell(&'a self, knowledge: &'a str) {
+                let result = self.mpparser.parse_text(knowledge.trim());
+                let mut queues = Queues::new();
+                if result.is_err() {
+                    panic!("Parsing problem! {}", result.err().unwrap());
+                } else {
+                    let ParseResult { rules, facts } = result.ok().unwrap();
+                    for rule in rules {
+                        let act = Activation::from_rule(rule, None, true);
+                        queues.rule_queue.push_back(act);
+                        queues = self.process_activations(queues);
+                    }
+                    for fact in facts {
+                        let act = Activation::from_fact(fact, None, false);
+                        queues.fact_queue.push_back(act);
+                        queues = self.process_activations(queues);
+                    }
+                }
+            }
+            fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>> {
+                let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().expect("parse result");
+                let fact = facts.pop().unwrap();
+                let q = self.mpparser.parse_fact(fact);
+                let (resp, _, _) = self.facts.ask_fact(q);
+                resp
+            }
+        }
         impl<'a> KB<'a> {
 
             pub fn new () -> KB<'a> {
                 let mpparser = Box::leak(Box::new(MPParser::new()));
                 let root_path = mpparser.lexicon.empty_path();
+                let tparser = TParser::new(&mpparser.lexicon);
                 Self {
                     mpparser,
+                    tparser,
                     facts: FactSet::new(),
                     rules: RuleSet::new(root_path),
-                    queue: RefCell::new(VecDeque::new()),
                 }
             }
-
-
-
-            fn process_activations(&'a self) {
-                while !self.queue.borrow().is_empty() {
-                    let next = self.queue.borrow_mut().pop_front().unwrap();
-                    match next {
+            fn process_activations(&'a self, mut queues: Queues<'a>) -> Queues<'a> {
+                loop {
+                    let mut next_opt = queues.rule_queue.pop_front();
+                    if next_opt.is_none() {
+                        next_opt = queues.match_queue.pop_front();
+                        if next_opt.is_none() {
+                            next_opt = queues.fact_queue.pop_front();
+                            if next_opt.is_none() {
+                                break
+                            }
+                        }
+                    }
+                    match next_opt.unwrap() {
                         Activation::Fact {
-                            fact,
-                            query_rules,
+                                fact,
+                                matched,
+                                query_rules,
                         } => {
-                            self.process_fact(fact, query_rules);
+                            queues = self.process_fact(fact, matched, query_rules, queues);
                         },
                         Activation::MPRule {
-                            rule, ..
+                            rule,
+                            paths,
+                            query_rules,
                         } => {
-                            self.process_rule(rule);
+                            queues = self.process_rule(rule, paths, query_rules, queues);
                         },
                         Activation::Match {
                             rule,
                             matched,
-                            query_rules, ..
+                            query_rules,
                         } => {
-                            self.process_match(rule, &matched, query_rules);
-                        }
+                            queues = self.process_match(rule, matched, query_rules, queues);
+                        },
                     }
                 }
+                queues
             }
-            fn process_rule(&'a self, rule: MPRule<'a>) {
+            fn process_rule(&'a self, rule: MPRule<'a>, paths: Option<Vec<MPPath<'a>>>, query_rules: bool, mut queues: Queues<'a>) -> Queues<'a> {
                 
                 trace!("ADDING RULE {}", rule);
-                let MPRule {
-                    antecedents,
-                    more_antecedents,
-                    consequents
-                } = rule;
-                let n_ants = antecedents.len();
-                for n in 0..n_ants {
-                    let mut new_ants = vec![];
-                    let mut new_ant: Option<&Fact> = None;
-                    for (i, ant) in antecedents.iter().enumerate() {
-                        if n == i {
-                            new_ant = Some(*ant);
-                        } else {
-                            new_ants.push(*ant);
+
+                if rule.antecedents.fact.is_some() {
+                    let MPRule {
+                        antecedents: Antecedents {
+                            fact,
+                            transforms,
+                            conditions,
+                        },
+                        more_antecedents,
+                        consequents,
+                        mut matched,
+                        output,
+                    } = rule;
+                    let ant = fact.unwrap();
+
+                    let mut new_antecedent: Vec<MPPath<'a>>;
+                    if paths.is_none() {
+                        new_antecedent = self.mpparser.parse_fact(ant);
+                        if matched.len() > 0 {
+                            let (new_ant, old_matched, _) = self.mpparser.substitute_fact(new_antecedent, matched);
+                            new_antecedent = new_ant;
+                            matched = old_matched;
                         }
+                    } else {
+                        new_antecedent = paths.unwrap();
                     }
-                    let new_conseqs = consequents.clone();
-                    let new_more_ants = more_antecedents.clone();
-                    let new_rule = MPRule {
-                        antecedents: new_ants,
-                        more_antecedents: new_more_ants,
-                        consequents: new_conseqs
+                    let (varmap, normal_ant) = self.mpparser.normalize_fact(new_antecedent);
+
+                    let rule = MPRule {
+                        antecedents: Antecedents {
+                            fact: None,
+                            transforms,
+                            conditions,
+                        },
+                        more_antecedents,
+                        consequents,
+                        matched,
+                        output,
                     };
-                    let (varmap, normal_ant) = self.mpparser.normalize_fact(&new_ant.unwrap());
                     let rule_ref = RuleRef {
-                        rule: new_rule,
+                        rule: rule,
                         varmap,
                     };
-                    let normal_leaf_paths = normal_ant.paths.as_slice();
-                    self.rules.follow_and_create_paths(normal_leaf_paths, rule_ref, 1);
+                    self.rules.follow_and_create_paths(normal_ant, rule_ref, 1);
+                } else {
+                    queues.match_queue.push_back(Activation::from_matching(rule, None, query_rules));
                 }
-                MPRule {
-                    antecedents,
-                    more_antecedents,
-                    consequents
-                };
+                queues
             }
             fn process_fact(&'a self,
-                            fact: &'a Fact<'a>,
-                            query_rules: bool) {
-                
-                info!("ADDING FACT: {}", fact);
-                let paths = fact.paths.as_slice();
-                let response = self.rules.query_paths(paths);
+                            fact: &'a str,
+                            matching: Option<MPMatching<'a>>,
+                            query_rules: bool,
+                            mut queues: Queues<'a>) -> Queues<'a> {
+
+
+                let mut fact_paths = self.mpparser.parse_fact(fact);
+                let mut fact_string: Option<String> = None;
+                if matching.is_some() {
+                    let (new_fact_paths, _, fact_str) = self.mpparser.substitute_fact(fact_paths, matching.unwrap());
+                    fact_paths = new_fact_paths;
+                    fact_string = fact_str;
+                }
+                let (exists, paths) = self.facts.ask_fact_bool(fact_paths);
+                fact_paths = paths;
+                if  exists {
+                    return queues;
+                }
+                let (response, paths) = self.rules.query_paths(fact_paths);
+                fact_paths = paths;
                 for (rule_refs, matching) in response {
-                    for rule_ref in rule_refs {
-                        let real_matching = get_real_matching_owning(matching.clone(), rule_ref.varmap.clone()); 
-                        self.queue.borrow_mut().push_back(Activation::from_matching(rule_ref.rule.clone(), real_matching, query_rules));
+                    for rule_ref in rule_refs.borrow().iter() {
+                        let real_matching = get_real_matching(&matching, &rule_ref.varmap); 
+                        queues.match_queue.push_back(Activation::from_matching(rule_ref.rule.clone(), Some(real_matching), query_rules));
                     }
                 }
-                self.facts.add_fact(&fact);
+                if fact_string.is_some() {
+                    info!("ADDING FACT: {}", &fact_string.unwrap());
+                } else {
+                    info!("ADDING FACT: {}", &fact);
+                }
+                self.facts.add_fact(fact_paths);
+                queues
             }
             fn process_match(&'a self,
                              mut rule: MPRule<'a>,
-                             matching: &MPMatching<'a>,
-                             mut query_rules: bool) {
+                             matching: Option<MPMatching<'a>>,
+                             mut query_rules: bool,
+                             mut queues: Queues<'a>) -> Queues<'a> {
                 let old_len = rule.more_antecedents.len();
-                let (nrule, new) = self.preprocess_matched_rule(matching, rule);
+                let (nrule, new, passed, _) = self.preprocess_matched_rule(rule, matching);
+                if !passed {
+                    return queues;
+                }
                 rule = nrule;
 
                 if new {
                     if rule.more_antecedents.len() < old_len {
                         query_rules = true;
                     }
+                    let mut paths: Option<Vec<MPPath>> = None;
+                    let mut add_rule = true;
                     if query_rules {
-                        let nrule = self.query_rule(rule, query_rules);
-                        rule = nrule;
+                        let (new_queues, new_paths, old_rule, unique) = self.query_rule(rule, queues);
+                        paths = new_paths;
+                        queues = new_queues;
+                        rule = old_rule;
+                        add_rule = !unique;
                     }
-                    self.queue.borrow_mut().push_back(Activation::from_rule(rule, query_rules));
+                    if add_rule {
+                        queues.rule_queue.push_back(Activation::from_rule(rule, paths, query_rules));
+                    }
                 } else {
-                   for consequent in rule.consequents{
-                       let new_consequent = self.mpparser.substitute_fact(&consequent, matching);
-                        if !self.facts.ask_fact_bool(&new_consequent) {
-                            self.queue.borrow_mut().push_back(Activation::from_fact(new_consequent, query_rules));
+                    for consequent in rule.consequents{
+                        queues.fact_queue.push_back(Activation::from_fact(consequent, Some(rule.matched.clone()), query_rules));
+                    }
+                    if rule.output.is_some() {
+                        let pre_output = self.mpparser.parse_fact(rule.output.unwrap());
+                        let (_, _, output) = self.mpparser.substitute_fact(pre_output, rule.matched);
+                        if output.is_some() {
+                            println!("ADDING FACT: {}", &output.unwrap());
+                        } else {
+                            println!("ADDING FACT: {}", rule.output.as_ref().unwrap());
                         }
-                   }
+                    }
                 }
+                queues
             }
             fn query_rule(&'a self,
-                          rule: MPRule<'a>,
-                          query_rules: bool) -> MPRule {
+                          mut rule: MPRule<'a>,
+                          mut queues: Queues<'a>) -> (Queues<'a>, Option<Vec<MPPath<'a>>>, MPRule<'a>, bool) {
 
-                for i in 0..rule.antecedents.len() {
-                    let mut new_ants = rule.antecedents.clone();
-                    let ant = new_ants.remove(i);
-                    let resps = self.facts.ask_fact(ant);
+                let mut paths: Option<Vec<MPPath>> = None;
+                let mut unique = false;
+                if rule.antecedents.fact.is_some() {
+                    let MPRule {
+                        mut antecedents,
+                        mut more_antecedents,
+                        consequents,
+                        mut matched,
+                        output,
+                    } = rule;
+                    let fact_str = antecedents.fact.as_ref().unwrap();
+                    let mut pre_ant = self.mpparser.parse_fact(fact_str);
+                    if matched.len() > 0 {
+                        let (new_pre_ant, old_matched, _) = self.mpparser.substitute_fact(pre_ant, matched);
+                        pre_ant = new_pre_ant;
+                        matched = old_matched;
+                    }
+                    rule = MPRule {
+                        antecedents,
+                        more_antecedents,
+                        consequents,
+                        matched,
+                        output,
+                    };
+                    let (resps, old_paths, new_unique) = self.facts.ask_fact(pre_ant);
+                    unique = new_unique;
+                    paths = Some(old_paths);
                     for resp in resps {
-                        let new_rule = MPRule {
-                            antecedents: new_ants.clone(),
-                            more_antecedents: rule.more_antecedents.clone(),
-                            consequents: rule.consequents.clone(),
-                        };
-                        self.process_match(new_rule, &resp, query_rules);
+                        let mut new_rule = rule.clone();
+                        new_rule.antecedents.fact = None;
+                        queues.match_queue.push_back(Activation::from_matching(new_rule, Some(resp), true));
                     }
                 }
-                rule
+                (queues, paths, rule, unique)
             }
             fn preprocess_matched_rule(&'a self,
-                                       matching: &MPMatching<'a>,
-                                       rule: MPRule<'a>) -> (MPRule<'a>, bool) {
+                                       rule: MPRule<'a>,
+                                       mut matching: Option<MPMatching<'a>>) -> (MPRule<'a>, bool, bool, Option<MPMatching<'a>>) {
                 let MPRule {
                     mut antecedents,
                     mut more_antecedents,
-                    consequents
+                    consequents,
+                    mut matched,
+                    output,
                 } = rule;
-                if antecedents.len() == 0 {
-                    if more_antecedents.len() == 0 {
-                        return (MPRule {antecedents, more_antecedents, consequents}, false);
-                    } else {
-                        antecedents = more_antecedents.remove(0);
+
+                if matching.is_some() {
+                    let m = matching.unwrap();
+                    matched.extend(&m);
+                    matching = Some(m);
+                }
+                let Antecedents { fact, transforms, conditions } = antecedents;
+
+                if !transforms.is_empty() {
+                    matched = self.tparser.process_transforms(transforms, matched);
+                }
+                if !conditions.is_empty() {
+                    let passed = CParser::check_conditions(conditions, &matched, &self.mpparser.lexicon);
+                    if !passed {
+                        return (MPRule {antecedents: Antecedents { fact, transforms, conditions }, more_antecedents, consequents, matched, output}, false, false, matching);
                     }
                 }
-                let new_antecedents = antecedents.iter()
-                                                 .map(|antecedent| self.mpparser.substitute_fact(antecedent, matching))
-                                                 .collect();
-                let mut new_more_antecedents = Vec::new();
-                while more_antecedents.len() > 0 {
-                    let more_ants = more_antecedents.remove(0); 
-                    new_more_antecedents.push(more_ants.iter()
-                                                       .map(|antecedent| self.mpparser.substitute_fact(antecedent, matching))
-                                                       .collect());
+
+                if more_antecedents.len() == 0 {
+                    return (MPRule {antecedents: Antecedents { fact, transforms, conditions }, more_antecedents, consequents, matched, output}, false, true, matching);
+                } else {
+                    antecedents = more_antecedents.pop_front().unwrap();
                 }
-                let new_consequents = consequents.iter()
-                                                 .map(|consequent| self.mpparser.substitute_fact(consequent, matching))
-                                                 .collect();
+
                 (MPRule {
-                    antecedents: new_antecedents,
-                    more_antecedents: new_more_antecedents,
-                    consequents: new_consequents
-                }, true)
+                    antecedents,
+                    more_antecedents,
+                    consequents,
+                    matched,
+                    output,
+                }, true, true, matching)
 
             }
         }
-        impl<'a> KBase<'a> for KB<'a> {
-            fn tell(&'a self, knowledge: &'a str) {
-                let result = self.mpparser.parse_text(knowledge);
-                if result.is_err() {
-                    panic!("Parsing problem! {}", result.err().unwrap());
-                }
-                let ParseResult { rules, facts } = result.ok().unwrap();
-                for rule in rules {
-                    let act = Activation::from_rule(rule, true);
-                    self.queue.borrow_mut().push_back(act);
-                    self.process_activations();
-                }
-                for fact in facts {
-                    if !self.facts.ask_fact_bool(&fact) {
-                        let act = Activation::from_fact(fact, false);
-                        self.queue.borrow_mut().push_back(act);
-                        self.process_activations();
-                    }
-                }
-            }
-            fn ask(&'a self, knowledge: &'a str) -> Vec<MPMatching<'a>> {
-                let ParseResult { mut facts, .. } = self.mpparser.parse_text(knowledge).ok().unwrap();
-                let fact = facts.pop().unwrap();
-                self.facts.ask_fact(&fact)
-            }
-        }
+
+
     }
 }

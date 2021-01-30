@@ -18,11 +18,11 @@
 // If not, see <http://www.gnu.org/licenses/>.
 
 use crate::ruletree::MPRule;
-use crate::fact::Fact;
 use crate::matching::MPMatching;
+use crate::path::MPPath;
 
 pub struct ParseResult<'a> {
-    pub facts: Vec<&'a Fact<'a>>,
+    pub facts: Vec<&'a str>,
     pub rules: Vec<MPRule<'a>>,
 }
 
@@ -31,37 +31,41 @@ pub struct ParseResult<'a> {
 pub enum Activation<'a> {
     MPRule {
         rule: MPRule<'a>,
+        paths: Option<Vec<MPPath<'a>>>,
         query_rules: bool,
     },
     Fact {
-        fact: &'a Fact<'a>,
+        fact: &'a str,
+        matched: Option<MPMatching<'a>>,
         query_rules: bool,
     },
     Match {
         rule: MPRule<'a>,
-        matched: MPMatching<'a>,
+        matched: Option<MPMatching<'a>>,
         query_rules: bool,
     },
 }
 
 impl<'a> Activation<'a> {
 
-    pub fn from_fact(fact: &'a Fact, query_rules: bool) -> Activation<'a> {
+    pub fn from_fact(fact: &'a str, matched: Option<MPMatching<'a>>, query_rules: bool) -> Activation<'a> {
         Activation::Fact {
-            fact: fact,
+            fact,
+            matched,
             query_rules,
         }
     }
-    pub fn from_rule(rule: MPRule, query_rules: bool) -> Activation {
+    pub fn from_rule(rule: MPRule<'a>, paths: Option<Vec<MPPath<'a>>>, query_rules: bool) -> Activation<'a> {
         Activation::MPRule {
-            rule: rule,
+            rule,
+            paths,
             query_rules,
         }
     }
-    pub fn from_matching(rule: MPRule<'a>, matched: MPMatching<'a>, query_rules: bool) -> Activation<'a> {
+    pub fn from_matching(rule: MPRule<'a>, matched: Option<MPMatching<'a>>, query_rules: bool) -> Activation<'a> {
         Activation::Match {
-            rule: rule,
-            matched: matched,
+            rule,
+            matched,
             query_rules,
         }
     }

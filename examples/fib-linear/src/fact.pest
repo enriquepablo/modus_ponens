@@ -1,0 +1,16 @@
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
+
+fact       = _{ SOI ~ rfact ~ EOI }
+
+rfact        = { (pred ~ n ~ fib | pred ~ n) }
+
+n           = { var_range }
+fib           = { var_range }
+
+pred        = @{ "fib" | "q" }
+
+var_range        = _{ v_decimal | var }
+
+v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
+
+WHITESPACE  = { (" " | "\t" | NEWLINE)+ }

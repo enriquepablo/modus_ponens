@@ -17,7 +17,10 @@
 // along with any part of the modus_ponens project.    
 // If not, see <http://www.gnu.org/licenses/>.
 
-use std::{cell::RefCell, collections::{ HashSet, HashMap }, mem};
+use std::{cell::RefCell, collections::{ HashMap, HashSet }, mem};
+
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 use crate::constants;
 use crate::segment::MPSegment;
@@ -26,42 +29,73 @@ use crate::path::MPPath;
 
 
 pub struct Lexicon {
-    segments: RefCell<HashSet<Box<MPSegment>>>,
-    names: RefCell<HashMap<String, (bool, bool)>>,
+    segments: RefCell<HashMap<u64, Box<MPSegment>>>,
+    names: RefCell<HashSet<String>>,
 }
 
 impl Lexicon {
     pub fn new() -> Self {
         Lexicon { 
-            segments: RefCell::new(HashSet::new()),
-            names: RefCell::new(HashMap::new()),
+            segments: RefCell::new(HashMap::new()),
+            names: RefCell::new(HashSet::new()),
         }
     }
-
+    fn calculate_hash(&self, name: &str, text: &str, is_leaf: bool) -> u64 {
+        let mut s = DefaultHasher::new();
+        name.hash(&mut s);
+        text.hash(&mut s);
+        is_leaf.hash(&mut s);
+        s.finish()
+    }
     pub fn intern(&self, name: &str, text: &str, is_leaf: bool) -> &MPSegment {
-        let (is_var, in_var_range, new) = match self.names.borrow().get(name) {
-            Some((is_var, in_var_range)) => (*is_var, *in_var_range, false),
-            None => {
-                let is_var = name == constants::VAR_RULE_NAME;
-                let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
-                (is_var, in_var_range, true)
-            }
-        };
-        if new {
-            self.names.borrow_mut().insert(name.to_string(), (is_var, in_var_range));
+        self.intern_with_name(name.to_string(), text, is_leaf)
+    }
+    pub fn intern_with_name(&self, name: String, text: &str, is_leaf: bool) -> &MPSegment {
+        let is_var = name == constants::VAR_RULE_NAME;
+        let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
+        let unique = name.starts_with(constants::UNIQUE_PREFIX);
+
+        let mut map = self.segments.borrow_mut();
+        let key = self.calculate_hash(&name, text, is_leaf);
+
+        if !map.contains_key(&key) {
+            let segment = MPSegment::new(name,
+                                         text.to_string(),
+                                         is_leaf,
+                                         is_var,
+                                         in_var_range,
+                                         unique);
+            map.insert(key, Box::new(segment));
         }
-        let mut set = self.segments.borrow_mut();
-        let interned = set.get_or_insert(Box::new(MPSegment::new(name.to_string(),
-                                                                                  text.to_string(),
-                                                                                  is_leaf,
-                                                                                  is_var,
-                                                                                  in_var_range)));
+
+        let interned = map.get(&key).unwrap();
+
+        unsafe { mem::transmute(interned.as_ref()) }
+    }
+    pub fn intern_with_text(&self, name: &str, text: String, is_leaf: bool) -> &MPSegment {
+        let is_var = name == constants::VAR_RULE_NAME;
+        let in_var_range = name.starts_with(constants::VAR_RANGE_PREFIX);
+        let unique = name.starts_with(constants::UNIQUE_PREFIX);
+
+        let mut map = self.segments.borrow_mut();
+        let key = self.calculate_hash(name, &text, is_leaf);
+
+        if !map.contains_key(&key) {
+            let segment = MPSegment::new(name.to_string(),
+                                         text,
+                                         is_leaf,
+                                         is_var,
+                                         in_var_range,
+                                         unique);
+            map.insert(key, Box::new(segment));
+        }
+        let interned = map.get(&key).unwrap();
 
         unsafe { mem::transmute(interned.as_ref()) }
     }
 
     pub fn make_var(&self, n: usize) -> &MPSegment {
-        let text = format!("<__X{}>", &n);
+        let text = format!("<X{}>", &n);
         self.intern("var", &text, true)
     }
     pub fn empty_path(&self) -> MPPath {

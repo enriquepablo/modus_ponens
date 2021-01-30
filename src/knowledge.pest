@@ -1,0 +1,26 @@
+knowledge       = _{ SOI ~ rknowledge ~ EOI }
+
+rknowledge   = { (sentence ~ ("<>"|"◊"))+ }
+
+sentence    = _{ rule | fact }
+
+rule        = { antecedents+ ~ consequents }
+
+antecedents = { fact ~ transforms_section? ~ conditions_section? ~ ("->"|"→") }
+consequents = { factset | output_section }
+
+factset     = _{ fact ~ ((";"|"∧") ~ fact)* }
+
+fact        = { (!("<>"|"◊"|"->"|"→"|";"|"∧"|"{={"|"{?{"|"{<{") ~ ANY)+ }
+
+COMMENT     = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+WHITESPACE  = { (" " | "\t" | NEWLINE)+ }
+
+conditions   = { (!"}?}" ~ ANY)+ }
+conditions_section   = _{ "{?{" ~ conditions ~ "}?}" }
+
+transforms   = { (!"}=}" ~ ANY)+ }
+transforms_section   = _{ "{={" ~ transforms ~ "}=}" }
+
+output               = { (!"}>}" ~ ANY)+ }
+output_section   = _{ "{<{" ~ output ~ "}>}" }

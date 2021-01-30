@@ -1,0 +1,25 @@
+conditions       = _{ SOI ~ rconditions ~ EOI }
+
+rconditions  = { v_expr ~ ((";"|"∧") ~ v_expr)* }
+
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
+
+v_expr = { term ~ pred ~ term }
+
+term = _{ v_decimal | var | v_string }
+
+pred  = _{ num_pred | str_pred }
+
+num_pred = {
+    "==" | "!=" | "<=" | ">=" | "<" | ">"
+}
+
+str_pred = {
+    "eq" | "neq" | "contains" | "startswith" | "endswith"
+}
+
+v_decimal = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT*)? }
+
+v_string = @{ ( LETTER+ | SYMBOL ) }
+
+WHITESPACE = _{ (" " | "\t" | NEWLINE)+ }

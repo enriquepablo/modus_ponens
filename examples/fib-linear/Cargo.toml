@@ -1,5 +1,5 @@
 [package]
-name = "isa-bench"
+name = "fib-linear"
 version = "0.1.0"
 authors = ["enriquepablo <enrique@cazalla.net>"]
 edition = "2018"
@@ -9,8 +9,8 @@ edition = "2018"
 [dependencies]
 modus_ponens = { path = "../../" }
 modus_ponens_derive = { path = "../../modus_ponens_derive" }
-log = "0.4"
-env_logger = "0.7.1"
 pest = "2.1.2"
 pest_derive = "2.1.0"
+log = "0.4"
+env_logger = "0.7.1"
 structopt = "0.3.14"
