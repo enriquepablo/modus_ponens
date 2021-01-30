@@ -23,6 +23,7 @@ use crate::segment::MPSegment;
 
 pub type MPMatching<'a> = HashMap<&'a MPSegment, &'a MPSegment>;
 
+/// XXX check how people do this
 pub fn invert<'a>(matching: &'a MPMatching) -> MPMatching<'a> {
     let mut inverted: MPMatching = HashMap::with_capacity(matching.capacity());
     for (key, value) in matching {

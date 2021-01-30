@@ -39,6 +39,7 @@ impl<'a> MPPath<'a> {
         for &segment in segments.iter() {
             segment.name.hash(&mut hasher);
         }
+        // XXX is this redundant??
         value.text.hash(&mut hasher);
         let identity = hasher.finish();
         MPPath { value, segments, identity }
@@ -47,14 +48,12 @@ impl<'a> MPPath<'a> {
         self.segments.len()
     }
     pub fn starts_with(&self, path: &MPPath) -> bool {
-        let lself = self.len();
         let lpath = path.len();
-        lself >= lpath && &self.segments[0..lpath] == &path.segments[0..lpath]
+        self.len() >= lpath && &self.segments[0..lpath] == &path.segments[0..lpath]
     }
     pub fn starts_with_slice(&self, path_slice: &'a [&'a MPSegment]) -> bool {
-        let lself = self.len();
         let lpath = path_slice.len();
-        lself >= lpath && self.segments[0..lpath] == path_slice[0..lpath]
+        self.len() >= lpath && self.segments[0..lpath] == path_slice[0..lpath]
     }
     pub fn sub_path(&'a self, lpath: usize) -> MPPath<'a> {
         let new_segments = &self.segments[0..lpath];
