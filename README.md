@@ -8,24 +8,21 @@ http://www.modus-ponens.net/
 2. [Inference engines](#engines)
 3. [modus_ponens](#mopo)
 4. [Example](#example)
-5. [Complexity](#complexity)
+5. [API](#API)
+6. [Complexity](#complexity)
 
 ## Introduction
 
-modus_ponens allows you to deal with your data, whatever its structure.
-It allows you to query, analyse and massage your data
-at whatever level of structural detail you may need to do so,
-and to do so efficiently (the performance of modus_ponens
-is independent of the size of your dataset).
+modus_ponens helps dealing with data.
+It allows querying, analysing and massaging datasets
+at whatever level of structural detail that may be needed,
+efficiently. Whatever the structure of the data.
 
-The essence of modus_ponens is that you describe the structure of your data
-in the form of a Parsing Expression Grammar (PEG),
-and modus_ponens provides an inference engine that deals with sentences
-compliant with the provided PEG.
-
-So your data will take the form of a knowledge base,
-i.e. a database of sentences with the internal structure prescribed by the PEG,
-to which you can add rules (implications) according to your analysis and transformation needs.
+The essence of modus_ponens is that you describe how your data is structured,
+via a Parsing Expression Grammar (PEG),
+and then modus_ponens provides an inference engine that deals with
+knowledge bases made up of
+sentences and rules compliant with the provided PEG.
 
 We might approach modus_ponens from 3 different traditional, established perspectives:
 
