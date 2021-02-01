@@ -133,9 +133,9 @@ First of all, we must add some dependencies to our `Cargo.toml`:
 
 ```toml
 [dependencies]
-modus_ponens = "0.11.0"
-modus_ponens_derive = "0.1.0"
-pest = "2.1.2"
+modus_ponens = "0.11.3"
+modus_ponens_derive = "0.1.1"
+pest = "2.1.3"
 pest_derive = "2.1.0"
 log = "0.4"
 env_logger = "0.7.1"
@@ -211,7 +211,7 @@ let kb = KBGenerator::gen_kb();
 We can add rules to it:
 
 ```rust
-kb.tell("<x0> ⊆ <X1> ∧ <X1> ⊆ <X2> → <X0> ⊆ <X2>.");
+kb.tell("<X0> ⊆ <X1> ∧ <X1> ⊆ <X2> → <X0> ⊆ <X2>.");
 kb.tell("<X0> ∈ <X1> ∧ <X1> ⊆ <X2> → <X0> ∈ <X2>.");
 ```
 &nbsp;
@@ -361,4 +361,4 @@ than strictly needed.
 
 ---
 
-© Enrique Pérez Arnaud &lt;enrique at cazalla.net&gt; 2020
+© Enrique Pérez Arnaud &lt;enrique at cazalla.net&gt; 2021
