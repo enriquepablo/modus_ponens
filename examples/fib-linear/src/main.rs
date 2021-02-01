@@ -54,15 +54,15 @@ fn main() {
             →
         fib <Fst> <Val1>
         {={
-            <Snd> = <Fst> + 1
+            <Snd> n= <Fst> + 1
         }=} {?{
             <Snd> < <N>
         }?}
             →
         fib <Snd> <Val2>
         {={
-            <Nxt> = <Snd> + 1 ∧
-            <NxtVal> = <Val1> + <Val2>
+            <Nxt> n= <Snd> + 1 ∧
+            <NxtVal> n= <Val1> + <Val2>
         }=}
             →
         fib <Nxt> <NxtVal> ◊
