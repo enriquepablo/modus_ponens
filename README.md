@@ -13,16 +13,14 @@ http://www.modus-ponens.net/
 
 ## Introduction
 
-modus_ponens helps dealing with data.
-It allows querying, analysing and massaging datasets
-at whatever level of structural detail that may be needed,
-efficiently. Whatever the structure of the data.
+modus_ponens provides forward chaining inference engines
+that deal with facts whose syntax is prescribed by the user of the library.
 
-The essence of modus_ponens is that you describe how your data is structured,
+The essence of modus_ponens is that the user describes how her data is structured
 via a Parsing Expression Grammar (PEG),
 and then modus_ponens provides an inference engine that deals with
 knowledge bases made up of
-sentences and rules compliant with the provided PEG.
+facts and rules compliant with the provided PEG.
 
 We might approach modus_ponens from 3 different traditional, established perspectives:
 
@@ -33,11 +31,14 @@ We might approach modus_ponens from 3 different traditional, established perspec
 * And it can be compared to the rules engines behind bussiness rules systems,
   such as Drools or JRules.
 
+### From the perspective of logic programming.
+
 If we look at it from the perspective of logic programming,
+and compare it with the [CLIPS][5] progamming language (also with a forward chaining engine),
 we might note that:
 
 * It is fast. With hundreds or thousands of rules loaded in the system,
-  it is the same order of magnitude fast as the [CLIPS][5] programming language,
+  it is the same order of magnitude fast as [CLIPS][5],
   and with tens and hundreds of thousands of rules, it is an increasing number of orders
   of magnitude faster than CLIPS (e.g., with 200 000 rules in the system, modus\_ponens
   is 4 orders of magnitude faster adding another rule, see the results below).
@@ -51,14 +52,23 @@ we might note that:
 These properties should make it very appropriate for knowledge representation and reasoning,
 i.e. for logistic AI. 
 
-However, it must also be said that It is a work in progress. For example at the
-moment it doesn't even have some form of persistance.  If I publish this now
-it's because the results below show promise, and perhaps they might convince
-someone else into supporting the project.
+### From the perspective of data analysis.
 
-Below, I will try to substantiate the claims I have made above.
+modus_ponens can help dealing with data.
+The point here is that it is not necessary to transform the data to feed it to modus_ponens;
+it is just necessary to provide modus_ponens with a PEG that describes the structure of the data to analyse,
+and then the data can be added straight into a modus_ponens knowledge base.
+Then it will be possible to add rules to the knowledge base
+or query it at whatever level of structural detail that may be needed,
+as specified in the PEG.
+
+So for example to analyse and extract information from a set of logs,
+the PEG would prescribe facts that reflect the structure of the log entries,
+and then each entry would be fed into the knowledge base as a fact.
 
 ## Inference engines
+
+Brief introduction to inference engines, to establish some terminologic common ground.
 
 Inference engines deal with 2 basic kinds of objects: facts and rules.
 The fundamental operational semantics of these objects, in forward chaining systems,
