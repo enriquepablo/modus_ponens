@@ -28,7 +28,7 @@ We might approach modus_ponens from 3 different traditional, established perspec
   and be compared to the likes of Prolog or CLIPS;
 * It can also be seen as a tool for data analysis,
   and be compared to SQL engines and other data structuring schemes;
-* And it can be compared to the rules engines behind bussiness rules systems,
+* And it can be compared to the rules engines behind bussiness rules management systems,
   such as Drools or JRules.
 
 ### From the perspective of logic programming.
@@ -47,7 +47,9 @@ we might note that:
   since that syntax is provided by the user in the form of a PEG.
 * It is scalable. The algorithmic cost (time and space) of adding
   both new facts and new rules to the system is independent of the amount of them already there.
-  In this sense it must be noted that it uses a novel algorithm with little resemblance to [RETE][6].
+  (See below for soome benchmarks).
+  In this sense it must be noted that it uses a novel algorithm with little resemblance to [RETE][6],
+  the algorithm behind CLIPS and most bussiness rules systems.
 
 These properties should make it very appropriate for knowledge representation and reasoning,
 i.e. for logistic AI. 
@@ -166,7 +168,7 @@ WHITESPACE  = { " " | "\t" | "\r" | "\n" }
 &nbsp;
 &nbsp;
 
-In this grammar, the productions WHITESPACE and  `var` is prescribed by modus\_ponens.
+In this grammar, the productions WHITESPACE and  `var` are prescribed by modus\_ponens.
 On top of them, the user must provide a production for `fact`.
 So we, as "user", are providing `name`, `v_name`, and `pred`, to compose `fact`.
 Here we allow for very simple facts, just triples subject-predicate-object.
@@ -255,11 +257,70 @@ $ RUST_LOG=trace ./target/release/readme-example
 
 ## API
 
-TODO
+There are 3 steps in using this library: Providing a grammar, building a
+knowledge base with the grammar, and adding and retrieving data from the
+knowledge base.
 
-TODO: document queries with variables,
-TODO: document consecutive sets of conditions.
-TODO: document arithmetic and string conditions and transformations.
+### Grammars
+
+modus_ponens grammars must provide a top level production called `fact`.
+In principle, facts can have any possible structure, can be built out of
+any number of terminal or non-terminal sub-productions.
+
+modus_ponens provides a termination symbol for facts, `◊`, so to add a fact
+to a knowledge base, you would use a string like:
+
+```pest
+  <fact1> ◊
+```
+
+modus_ponens also provides symbols to compose facts into rules; it provides
+`∧` for conjuntion, and `→` for implication. So a rule might be:
+
+```pest
+  <fact1> ∧ <fact2> → <fact3> ◊
+```
+
+It is possible to use logical variables in the rules, both in the conditions
+and in the consecuents. The form of the variables can be customized, but by
+default is made out of a less than sign, followed by an upper case letter,
+followed by any number of lower case letters or numbers, followed by a grater
+than sign. For example, `<Var1>`, or `<X2>`.
+
+The user has to mark the productions that are in the range of variables, called
+logical productions in modus_ponens. To do so, the logical production must have
+a name starting by `v_`, and then be mixed in a further production with the
+`var` production. For example:
+
+```pest
+  v_name      = @{ ASCII_ALPHANUMERIC+ }
+
+  var_range   = _{ v_name | var }
+```
+
+It is also possible to add so called non-logical conditions in rules,
+that test for arithmetic or string conditions. This are provided surrounded by
+`{?{` and `}?}`.
+
+And it is also possible to add transformations in rules, both arithmetic and
+stringy, surrounded by `{={` and `}=}`. We use transformations to obtain new
+values out of those matched by the logical conditions.
+
+Finally, it is possible to add rules that produce new rules (instead of just
+new facts). This is achieved simply by using more than one implication symbol
+in the rule, e.g.:
+
+```pest
+  <fact1> ∧ <fact2> → <fact3> → <fact4> ◊
+```
+
+Once the facts `<fact1>` and `<fact2>` are matched, the rule `<fact3> → <fact4>◊`
+will be added, with any variables bound in `<fact1>` and `<fact2>` substituted by
+the matching productions.
+
+### Building knowledge bases
+
+### Using the knowledge bases.
 
 ## Complexity
 

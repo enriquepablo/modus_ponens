@@ -77,6 +77,6 @@ fn main() {
     let query = format!("q {} ◊", opt.n);
     kb.tell( unsafe { mem::transmute( query.as_str() ) });
 
-    kb.tell("fib 0 1 ◊");
+    kb.tell("fib 0 0 ◊");
     kb.tell("fib 1 1 ◊");
 }

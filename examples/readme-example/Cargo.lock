@@ -161,10 +161,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "modus_ponens"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d0109507e7c12274a7fcef0a21c8fc891473807fc97e4b5975c8d7c18a083b6"
+dependencies = [
+ "env_logger",
+ "log",
+ "pest",
+ "pest_derive",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "modus_ponens_derive"
 version = "0.1.1"
 dependencies = [
- "modus_ponens",
+ "modus_ponens 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -246,7 +261,7 @@ version = "0.1.0"
 dependencies = [
  "env_logger",
  "log",
- "modus_ponens",
+ "modus_ponens 0.11.3",
  "modus_ponens_derive",
  "pest",
  "pest_derive",
