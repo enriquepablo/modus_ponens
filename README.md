@@ -145,7 +145,7 @@ env_logger = "0.7.1"
 &nbsp;
 &nbsp;
 
-Now, the grammar. It is Pest that interprets this grammar,
+Now, the grammar. It is [Pest][11] that interprets this grammar,
 so look up the [Pest documentation][16] for its syntax.
 Since we can use unicode, we'll do so.
 For the "sub-taxon" predicate we'll use `⊆`, and for belongs, `∈`.
@@ -263,9 +263,13 @@ knowledge base.
 
 ### Grammars
 
-modus_ponens grammars must provide a top level production called `fact`.
-In principle, facts can have any possible structure, can be built out of
-any number of terminal or non-terminal sub-productions.
+The grammars in modus_ponens are interpreted by [Pest][11],
+so look up the [Pest documentation][16] for their syntax.
+
+
+modus_ponens grammars must provide a top level production called `fact`.  In
+principle, facts can have any possible structure, i.e., they can be built out
+of any number of terminal or non-terminal sub-productions.
 
 modus_ponens provides a termination symbol for facts, `◊`, so to add a fact
 to a knowledge base, you would use a string like:
@@ -284,13 +288,13 @@ modus_ponens also provides symbols to compose facts into rules; it provides
 It is possible to use logical variables in the rules, both in the conditions
 and in the consecuents. The form of the variables can be customized, but by
 default is made out of a less than sign, followed by an upper case letter,
-followed by any number of lower case letters or numbers, followed by a grater
+followed by any number of lower case letters or numbers, followed by a greater
 than sign. For example, `<Var1>`, or `<X2>`.
 
-The user has to mark the productions that are in the range of variables, called
-logical productions in modus_ponens. To do so, the logical production must have
-a name starting by `v_`, and then be mixed in a further production with the
-`var` production. For example:
+To use variables, the user has to mark the productions that are in the range of
+variables, called logical productions in modus_ponens. To do so, the logical
+production must have a name starting by `v_`, and then be mixed in a further
+production with the `var` production. For example:
 
 ```pest
   v_name      = @{ ASCII_ALPHANUMERIC+ }
@@ -316,11 +320,39 @@ in the rule, e.g.:
 
 Once the facts `<fact1>` and `<fact2>` are matched, the rule `<fact3> → <fact4>◊`
 will be added, with any variables bound in `<fact1>` and `<fact2>` substituted by
-the matching productions.
+the matching values.
 
 ### Building knowledge bases
 
+Having developed a grammar, the user of the library will want to produce
+knowledge bases on top of it. This just requires a little bit of boilerplate:
+
+```rust
+extern crate modus_ponens;
+#[macro_use]
+extern crate modus_ponens_derive;
+
+extern crate pest;
+#[macro_use]
+extern crate pest_derive;
+
+#[derive(KBGen)]
+#[grammar = "path/to/grammar.pest"]
+pub struct KBGenerator;
+
+let kb = KBGenerator::gen_kb();
+```
+
+The `"path/to/gammar.pest"` is relative to the project's `src/` directory.
+
 ### Using the knowledge bases.
+
+modus_ponens knowledge bases have 2 methods, `tell` and `ask`. The `tell`
+method takes a string slice with a facts and/or rules and puts them in its
+internal trees. The `ask` method takes a fact, possibly containing variables,
+and returns either `True` or `False` (in case the query contains no variables),
+or a vector of variable assignments, (in case the query contains variables).
+In the latter case, an empty vector signals a negative response.
 
 ## Complexity
 
