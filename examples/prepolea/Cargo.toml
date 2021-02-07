@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 modus_ponens = { path = "../../" }
 modus_ponens_derive = { path = "../../modus_ponens_derive" }
-pest = "2.1.2"
+pest = "2.1.3"
 pest_derive = "2.1.0"
 log = "0.4"
 env_logger = "0.7.1"
