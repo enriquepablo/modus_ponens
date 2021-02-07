@@ -17,24 +17,26 @@
 // along with any part of the modus_ponens project.    
 // If not, see <http://www.gnu.org/licenses/>.
 //!
-//! This software helps dealing with data, in whatever form or shape.
+//! modus_ponens generates inference engines on top of Parsing Expression Grammars (PEGs).
+//! It allows you to specify the syntax of your facts in a PEG, and
+//! automatically obtain an inference engine able to deal with knowledge bases
+//! composed of facts and rules compliant with the provided PEG.
+//!
+//! So on one hand, modus_ponens helps dealing with data, in whatever form or shape.
 //! It allows you to keep your data in knowledge bases under any shape
 //! and structural detail you may feel appropriate,
-//! and to query and massage it at any level of the detail you may have bothered to specify.
+//! and to query and massage it efficiently
+//! at any level of the detail you may have bothered to specify.
+//! 
+//! On the other hand, modus_ponens allows you to develop programs
+//! under the paradigm of logic programming,
+//! with a syntax that is exactly as expressive and clear as you care to specify.
 //!
-//! You describe the form of your data in a Parsing Expression Grammar (PEG),
-//! so that your data can be contained in a set of sentences compliant with this grammar.
+//! Finally, it is worth noting that modus_ponens is very performant,
+//! and furthermore, that its performance is fully independent of the size of the knowledge bases
+//! it deals with.
 //!
-//! In the grammar, you specify which of the productions needed to build up sentences
-//! you may want to abstract away in the rules of your knoledge bases, and in queries -
-//! i.e., which grammatic (syntactic) components correspond to logically quantifiable symbols.
-//!
-//! Then modus_ponens provides an inference engine that allows you to deal with
-//! knowledge bases compliant with the provided PEG,
-//! in which adding new sentences and rules is,
-//! in terms of algorithmic complexity, 
-//! independent of the number of sentences and rules in the knowledge base,
-//! and only dependent on the number of consequences of the added knowledge.
+//! Check out the [README](https://gitlab.com/enriquepablo/modus_ponens) for more detailed info.
 //!
 
 #![feature(hash_set_entry)]
