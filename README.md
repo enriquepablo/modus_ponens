@@ -18,7 +18,7 @@ that deal with facts whose syntax is prescribed by the user of the library.
 
 The essence of modus_ponens is that the user describes how her data is structured
 via a Parsing Expression Grammar (PEG),
-and then modus_ponens provides an inference engine that deals with
+and then on top of it modus_ponens generates an inference engine that deals with
 knowledge bases made up of
 facts and rules compliant with the provided PEG.
 
