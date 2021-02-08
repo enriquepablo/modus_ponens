@@ -154,19 +154,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "isa-bench"
-version = "0.1.0"
-dependencies = [
- "env_logger",
- "log",
- "modus_ponens 0.11.4",
- "modus_ponens_derive",
- "pest",
- "pest_derive",
- "structopt",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -361,6 +348,19 @@ dependencies = [
  "digest",
  "fake-simd",
  "opaque-debug",
+]
+
+[[package]]
+name = "socrate-bench"
+version = "0.1.0"
+dependencies = [
+ "env_logger",
+ "log",
+ "modus_ponens 0.11.4",
+ "modus_ponens_derive",
+ "pest",
+ "pest_derive",
+ "structopt",
 ]
 
 [[package]]

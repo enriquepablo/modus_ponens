@@ -149,7 +149,7 @@ checksum = "88579771288728879b57485cc7d6b07d648c9f0141eb955f8ab7f9d45394468e"
 
 [[package]]
 name = "modus_ponens"
-version = "0.11.3"
+version = "0.11.4"
 dependencies = [
  "env_logger",
  "log",

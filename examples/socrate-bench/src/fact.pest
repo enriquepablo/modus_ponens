@@ -1,0 +1,13 @@
+fact        = _{ SOI ~ rfact ~ EOI }
+
+rfact        = { pred ~ var_range }
+
+var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
+
+pred        = @{ "animal" ~ ('0'..'9')+ | "mammal" ~ ('0'..'9')+ | "primate" ~ ('0'..'9')+ | "human" ~ ('0'..'9')+ | "living" ~ ('0'..'9')+ | "mortal" ~ ('0'..'9')+ }
+
+v_name      = @{ ASCII_ALPHANUMERIC+ }
+
+var_range       = _{ v_name | var }
+
+WHITESPACE  = { (" " | "\t" | NEWLINE)+ }
