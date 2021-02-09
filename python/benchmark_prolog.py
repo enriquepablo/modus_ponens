@@ -35,43 +35,63 @@ parser.add_argument('-s', dest='s', type=int, default=1000,
                     help='take a batch of samples every s rules')
 
 
+num_rules = 0
+num_facts = 0
+
 if __name__ == '__main__':
     args = parser.parse_args()
     t = time.time()
     start = 0
-    lsets = len(sets)
-    num_r = 2
-    num_f = 4 + args.n
     prolog = Prolog()
 
+    #  prolog.assertz(":- set_prolog_stack(global, limit(1000000000000))")
+    #  prolog.assertz(":- set_prolog_stack(trail,  limit(200000000000))")
+    #  prolog.assertz(":- set_prolog_stack(local,  limit(20000000000))")
+
     def print_batch(start):
+        global num_rules
+        global num_facts
         for n in range(args.i):
             # time.sleep(.5)
-            t_rs = []
-            t_fs = []
+            rule_times = []
+            fact_times = []
+            query_times = []
+            tquery_times = []
+            query_nums = []
             for x in range(20):
                 start += 1
-                t_0 = time.time()
+                t_r_1 = time.time()
                 prolog.assertz(f"animal{start}(X) :- mammal{start}(X)")
                 prolog.assertz(f"mammal{start}(X) :- primate{start}(X)")
                 prolog.assertz(f"primate{start}(X) :- human{start}(X)")
                 prolog.assertz(f"mortal{start}(X) :- animal{start}(X), living{start}(X)")
-                t_1 = time.time()
+                t_r_2 = time.time()
+                rule_times.append((t_r_2 - t_r_1) / 4)
+                num_rules += 4
                 for i in range(args.n):
                     name = f"socrate{start}n{i}"
+                    t_f_1 = time.time()
                     prolog.assertz(f"human{start}({name})")
                     prolog.assertz(f"living{start}({name})")
+                    t_f_2 = time.time()
+                    fact_times.append((t_f_2 - t_f_1) / 2)
+                    num_facts += 2
+                    num_results = 0
+                    t_1 = time.time()
                     for sol in prolog.query(f"mortal{start}(X)"):
                         assert sol['X']
-                t_2 = time.time()
-                t_rs.append(t_1 - t_0)
-                t_fs.append(t_2 - t_1)
+                        num_results += 1
+                    query_nums.append(num_results)
+                    t_2 = time.time()
+                    query_times.append((t_2 - t_1) / num_results)
+                    tquery_times.append((t_2 - t_1))
 
-            t_r = sum(t_rs) / len(t_rs)
-            t_f = sum(t_fs) / len(t_fs)
-            t_r_1 = t_r * 1000 / num_r
-            t_f_1 = t_f * 1000 / num_f
-            print('%d %f %d %f' % (num_r * start, t_r_1, num_f * start, t_f_1))
+            q_time = (sum(query_times) / len(query_times)) * 1000000
+            tq_time = (sum(tquery_times) / len(tquery_times)) * 1000000
+            q_nums = sum(query_nums) / len(query_nums)
+            r_time = (sum(rule_times) / len(rule_times)) * 1000000
+            f_time = (sum(fact_times) / len(fact_times)) * 1000000
+            print(f'Rules: {num_rules}, facts: {num_facts}, query time: {tq_time} ({q_time} x {q_nums}), fact time: {f_time}, rule time: {r_time}')
 
         return start
 
@@ -81,10 +101,12 @@ if __name__ == '__main__':
         prolog.assertz(f"mammal{start}(X) :- primate{start}(X)")
         prolog.assertz(f"primate{start}(X) :- human{start}(X)")
         prolog.assertz(f"mortal{start}(X) :- animal{start}(X), living{start}(X)")
+        num_rules += 4
         for i in range(args.n):
             name = f"socrate{start}n{i}"
             prolog.assertz(f"human{start}({name})")
             prolog.assertz(f"living{start}({name})")
+            num_facts += 2
 
         if r % args.s == 0:
             start = print_batch(start)

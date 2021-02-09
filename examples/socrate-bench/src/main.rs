@@ -62,8 +62,8 @@ fn main() {
     env_logger::init();
     let kb = kb::IsaGen::gen_kb();
         
-    let num_r = 2;
-    let num_f = opt.facts + 4;
+    let mut num_rules = 0;
+    let mut num_facts = 0;
 
     //let o_one_sec = time::Duration::from_millis(100);
     let t0 = SystemTime::now();
@@ -79,24 +79,29 @@ fn main() {
         kb.tell( unsafe { mem::transmute( f3.as_str() ) });
         let f4 = format!("living{start} <X1> -> animal{start} <X1> -> mortal{start} <X1> ◊", start = start);
         kb.tell( unsafe { mem::transmute( f4.as_str() ) });
+        num_rules += 4;
         for i in 0..opt.facts {
             let name = format!("socrate{}n{}", start, i);
             let ff1 = Box::leak(Box::new(format!("human{start} {name} ◊", name = name, start = start)));
             kb.tell( unsafe { mem::transmute( ff1.as_str() ) });
             let ff2 = Box::leak(Box::new(format!("living{start} {name} ◊", name = name, start = start)));
             kb.tell( unsafe { mem::transmute( ff2.as_str() ) });
+            num_facts += 2;
         }
         if ((r % opt.report) == 0) || (r + 1 == opt.rules) {
             for _s in 0..opt.samples {
                 //thread::sleep(o_one_sec);
 
-                let mut t_rs = vec![];
-                let mut t_fs = vec![];
+                let mut rule_times = vec![];
+                let mut fact_times = vec![];
+                let mut query_times = vec![];
+                let mut tquery_times = vec![];
+                let mut query_nums = vec![];
 
                 for _x in 0..20 {
                     start += 1;
 
-                    let t0 = SystemTime::now();
+                    let t_r_1 = SystemTime::now();
 
                     let f1 = format!("mammal{start} <X1> -> animal{start} <X1> ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f1.as_str() ) });
@@ -106,29 +111,42 @@ fn main() {
                     kb.tell( unsafe { mem::transmute( f3.as_str() ) });
                     let f4 = format!("living{start} <X1> -> animal{start} <X1> -> mortal{start} <X1> ◊", start = start);
                     kb.tell( unsafe { mem::transmute( f4.as_str() ) });
+                    num_rules += 4;
 
-                    let t1 = SystemTime::now();
+                    let t_r_2 = SystemTime::now();
+                    rule_times.push(t_r_2.duration_since(t_r_1).unwrap().as_micros() as f64 / 4.0);
 
                     for i in 0..opt.facts {
                         let name = format!("socrate{}n{}", start, i);
+                        let t_f_1 = SystemTime::now();
                         let ff1 = Box::leak(Box::new(format!("human{start} {name} ◊", name = name, start = start)));
                         kb.tell( unsafe { mem::transmute( ff1.as_str() ) });
                         let ff2 = Box::leak(Box::new(format!("living{start} {name} ◊", name = name, start = start)));
                         kb.tell( unsafe { mem::transmute( ff2.as_str() ) });
-                    }
-                    let t2 = SystemTime::now();
+                        let t_f_2 = SystemTime::now();
+                        fact_times.push(t_f_2.duration_since(t_f_1).unwrap().as_micros() as f64 / 4.0);
+                        num_facts += 2;
 
-                    t_rs.push( t1.duration_since(t0).unwrap().as_micros() as f64 );
-                    t_fs.push( t2.duration_since(t1).unwrap().as_micros() as f64 );
+                        let q_1 = SystemTime::now();
+                        let q = Box::leak(Box::new(format!("human{start} <X1> ◊", start = start)));
+                        let res = kb.ask( unsafe { mem::transmute( q.as_str() ) });
+                        let q_2 = SystemTime::now();
+                        let num_results = res.len();
+
+                        query_times.push(q_2.duration_since(q_1).unwrap().as_micros() as f64 / num_results as f64);
+                        tquery_times.push(q_2.duration_since(q_1).unwrap().as_micros() as f64);
+                        query_nums.push(num_results as f64);
+                    }
                 }
 
                 
-                let t_r_micros: f64 = t_rs.iter().sum::<f64>() / t_rs.len() as f64;
-                let t_f_micros: f64 = t_fs.iter().sum::<f64>() / t_fs.len() as f64;
+                let q_time: f64 = query_times.iter().sum::<f64>() / query_times.len() as f64;
+                let tq_time: f64 = tquery_times.iter().sum::<f64>() / tquery_times.len() as f64;
+                let q_nums: f64 = query_nums.iter().sum::<f64>() / query_nums.len() as f64;
+                let r_time: f64 = rule_times.iter().sum::<f64>() / rule_times.len() as f64;
+                let f_time: f64 = fact_times.iter().sum::<f64>() / fact_times.len() as f64;
                 
-                let t_r_1 = t_r_micros / (1000.0 * num_r as f64);    
-                let t_f_1 = t_f_micros / (1000.0 * num_f as f64);    
-                println!("{} {} {} {}", num_r * start, t_r_1, num_f * start, t_f_1);
+                println!("'Rules: {}, facts: {}, query time: {} ({} x {}), fact time: {}, rule time: {}'", num_rules, num_facts, tq_time, q_time, q_nums, f_time, r_time);
             }
         }
     }
