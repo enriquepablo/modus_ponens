@@ -118,7 +118,6 @@ fn main() {
 
                     let q = Box::leak(Box::new(format!("mortal{start} <X1> ◊", start = start)));
                     let res = kb.ask( unsafe { mem::transmute( q.as_str() ) });
-                    let _num_results = res.len();
                 }
 
                 let name = format!("socrate{}", start);
