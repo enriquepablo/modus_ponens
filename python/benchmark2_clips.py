@@ -19,7 +19,7 @@
 # If not, see <http://www.gnu.org/licenses/>.
 import argparse
 import time
-from pyswip import Prolog
+import clips
 
 
 parser = argparse.ArgumentParser(description='Benchmark on ont.')
@@ -40,7 +40,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     t = time.time()
     start = 0
-    prolog = Prolog()
 
     #  prolog.assertz(":- set_prolog_stack(global, limit(1000000000000))")
     #  prolog.assertz(":- set_prolog_stack(trail,  limit(200000000000))")
@@ -53,57 +52,60 @@ if __name__ == '__main__':
             # time.sleep(.5)
             start += 1
             t_r_1 = time.time()
-            prolog.assertz(f"animal{start}(X) :- mammal{start}(X)")
-            prolog.assertz(f"mammal{start}(X) :- primate{start}(X)")
-            prolog.assertz(f"primate{start}(X) :- human{start}(X)")
-            prolog.assertz(f"mortal{start}(X) :- animal{start}(X), living{start}(X)")
+
+            clips.BuildRule("one%s" % start, "(mammal%s ?x1)" % start, "(assert (animal%s ?x1))" % start, "animal%s" % start)
+            clips.BuildRule("two%s" % start, "(primate%s ?x1)" % start, "(assert (mammal%s ?x1))" % start, "mammal%s" % start)
+            clips.BuildRule("thr%s" % start, "(human%s ?x1)" % start, "(assert (primate%s ?x1))" % start, "primate%s" % start)
+            clips.BuildRule("fou%s" % start, "(human%s ?x1) (living%s ?x1)" % (start, start), "(assert (mortal%s ?x1))" % start, "primate%s" % start)
+
             t_r_2 = time.time()
             r_time = ((t_r_2 - t_r_1) / 4) * 1e6
             num_rules += 4
             for i in range(args.n - 1):
-                name = f"socrate{start}n{i}"
-                prolog.assertz(f"human{start}({name})")
-                prolog.assertz(f"living{start}({name})")
+                name = "socrate%sn%s" % (start, i)
+
+                clips.Assert("(human%s %s)" % (start, name))
+                clips.Assert("(living%s %s)" % (start, name))
+
                 num_facts += 2
 
-                sols = prolog.query(f"mortal{start}(X)")
-                num_results = len(list(sols))
+                clips.Run()
 
-            name = f"socrate{start}"
+            name = "socrate%s" % start
             t_f_1 = time.time()
-            prolog.assertz(f"human{start}({name})")
-            prolog.assertz(f"living{start}({name})")
+            clips.Assert("(human%s %s)" % (start, name))
+            clips.Assert("(living%s %s)" % (start, name))
             t_f_2 = time.time()
             f_time = ((t_f_2 - t_f_1) / 2) * 1e6
             num_facts += 2
             t_1 = time.time()
-            sols = prolog.query(f"mortal{start}(X)")
-            num_results = len(list(sols))
-            q_nums = num_results
+            clips.Run()
+            # query
             t_2 = time.time()
-            q_time = ((t_2 - t_1) / num_results) * 1e6
             tq_time = (t_2 - t_1) * 1e6
 
-            print(f'Rules: {num_rules}, facts: {num_facts}, query time: {tq_time:.3f} ({q_time:.3f} x {q_nums}), fact time: {f_time:.3f}, rule time: {r_time:.3f}')
+            print('Rules: %s, facts: %s, query time: %s , fact time: %s, rule time: %s' % (num_rules, num_facts, tq_time, f_time, r_time))
 
         return start
 
     for r in range(args.r):
         start += 1
-        prolog.assertz(f"animal{start}(X) :- mammal{start}(X)")
-        prolog.assertz(f"mammal{start}(X) :- primate{start}(X)")
-        prolog.assertz(f"primate{start}(X) :- human{start}(X)")
-        prolog.assertz(f"mortal{start}(X) :- animal{start}(X), living{start}(X)")
+        clips.BuildRule("one%s" % start, "(mammal%s ?x1)" % start, "(assert (animal%s ?x1))" % start, "animal%s" % start)
+        clips.BuildRule("two%s" % start, "(primate%s ?x1)" % start, "(assert (mammal%s ?x1))" % start, "mammal%s" % start)
+        clips.BuildRule("thr%s" % start, "(human%s ?x1)" % start, "(assert (primate%s ?x1))" % start, "primate%s" % start)
+        clips.BuildRule("fou%s" % start, "(human%s ?x1) (living%s ?x1)" % (start, start), "(assert (mortal%s ?x1))" % start, "primate%s" % start)
         num_rules += 4
         for i in range(args.n):
-            name = f"socrate{start}n{i}"
-            prolog.assertz(f"human{start}({name})")
-            prolog.assertz(f"living{start}({name})")
+            name = "socrate%sn%s" % (start, i)
+            clips.Assert("(human%s %s)" % (start, name))
+            clips.Assert("(living%s %s)" % (start, name))
             num_facts += 2
 
         if r % args.s == 0:
+            clips.Run()
             start = print_batch(start)
 
     print_batch(start)
 
     print("total Time: ", (time.time() - t))
+
