@@ -52,13 +52,13 @@ if __name__ == '__main__':
         for n in range(args.i):
             # time.sleep(.5)
             start += 1
-            t_r_1 = time.time()
+            # t_r_1 = time.time()
             prolog.assertz(f"animal{start}(X) :- mammal{start}(X)")
             prolog.assertz(f"mammal{start}(X) :- primate{start}(X)")
             prolog.assertz(f"primate{start}(X) :- human{start}(X)")
             prolog.assertz(f"mortal{start}(X) :- animal{start}(X), living{start}(X)")
-            t_r_2 = time.time()
-            r_time = ((t_r_2 - t_r_1) / 4) * 1e6
+            # t_r_2 = time.time()
+            # r_time = ((t_r_2 - t_r_1) / 4) * 1e6
             num_rules += 4
             for i in range(args.n - 1):
                 name = f"socrate{start}n{i}"
@@ -70,21 +70,22 @@ if __name__ == '__main__':
                 num_results = len(list(sols))
 
             name = f"socrate{start}"
-            t_f_1 = time.time()
+            # t_f_1 = time.time()
             prolog.assertz(f"human{start}({name})")
             prolog.assertz(f"living{start}({name})")
-            t_f_2 = time.time()
-            f_time = ((t_f_2 - t_f_1) / 2) * 1e6
+            # t_f_2 = time.time()
+            # f_time = ((t_f_2 - t_f_1) / 2) * 1e6
             num_facts += 2
             t_1 = time.time()
             sols = prolog.query(f"mortal{start}(X)")
             num_results = len(list(sols))
             q_nums = num_results
             t_2 = time.time()
-            q_time = ((t_2 - t_1) / num_results) * 1e6
+            # q_time = ((t_2 - t_1) / num_results) * 1e6
             tq_time = (t_2 - t_1) * 1e6
 
-            print(f'Rules: {num_rules}, facts: {num_facts}, query time: {tq_time:.3f} ({q_time:.3f} x {q_nums}), fact time: {f_time:.3f}, rule time: {r_time:.3f}')
+            # print(f'Rules: {num_rules}, facts: {num_facts}, query time: {tq_time:.3f} ({q_time:.3f} x {q_nums}), fact time: {f_time:.3f}, rule time: {r_time:.3f}')
+            print(f"{q_nums} {tq_time}")
 
         return start
 
@@ -106,4 +107,4 @@ if __name__ == '__main__':
 
     print_batch(start)
 
-    print("total Time: ", (time.time() - t))
+    # print("total Time: ", (time.time() - t))
