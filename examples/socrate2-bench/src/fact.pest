@@ -4,7 +4,7 @@ rfact        = { pred ~ var_range }
 
 var         = @{ ("<" ~ &ASCII_ALPHA_UPPER) ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA* ~ ('0'..'9')* ~ ">" }
 
-pred        = @{ "animal" ~ ('0'..'9')+ | "living" ~ ('0'..'9')+ | "mortal" | "thing" ~ ASCII_ALPHANUMERIC* | "thong" ~ ASCII_ALPHANUMERIC* | "prething" ~ ASCII_ALPHANUMERIC* | "prethong" ~ ASCII_ALPHANUMERIC*  }
+pred        = @{ "animal" ~ ('0'..'9')* | "living" ~ ('0'..'9')* | "mortal" | "thing" ~ ASCII_ALPHANUMERIC* | "thong" ~ ASCII_ALPHANUMERIC* | "prething" ~ ASCII_ALPHANUMERIC* | "prethong" ~ ASCII_ALPHANUMERIC*  }
 
 v_name      = @{ ASCII_ALPHANUMERIC+ }
 

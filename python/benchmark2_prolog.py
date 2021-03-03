@@ -31,6 +31,8 @@ parser.add_argument('-g', dest='g', type=int, default=0,
                     help='amount of garbage')
 parser.add_argument('-r', dest='r', type=int, default=0,
                     help='amount of related garbage')
+parser.add_argument('-q', dest='q', type=int, default=0,
+                    help='number of queries to make')
 
 
 num_rules = 0
@@ -73,14 +75,20 @@ if __name__ == '__main__':
         prolog.assertz(f"{animal}({mortal})")
         prolog.assertz(f"{living}({mortal})")
 
-    t_1 = time.time()
-    sols = prolog.query("mortal(X)")
+    sols = None
+    q_mean = 0.0
+
+    for q in range(args.q):
+        t_1 = time.time()
+        sols = prolog.query("mortal(X)")
+        q_mean += time.time() - t_1
+
+    query_time = (q_mean / args.q) * 1e6
+
+    t_3 = time.time()
+    total_time = (t_3 - t_0) * 1e6
+
     lsols = list(sols)
     num_results = len(lsols)
-    t_2 = time.time()
-    query_time = (t_2 - t_1) * 1e6
-    total_time = (t_2 - t_0) * 1e6
-
-    print(lsols)
 
     print(f"total: {total_time}, query: {query_time}, results: {num_results}")

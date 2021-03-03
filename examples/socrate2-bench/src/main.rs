@@ -55,6 +55,10 @@ struct Opt {
     /// amount of related garbage
     #[structopt(short, long)]
     rgarbage: usize,
+
+    /// number of queries to make
+    #[structopt(short, long)]
+    queries: usize,
 }
 
 fn main() {
@@ -129,15 +133,22 @@ fn main() {
         kb.tell( unsafe { mem::transmute( f2.as_str() ) });
     }
 
-    let t_1 = SystemTime::now();
-    let res = kb.ask("mortal <X1> ◊");
-    let num_results = res.len();
-    let t_2 = SystemTime::now();
+    let mut query_mean: f64 = 0.0;
+    let mut num_results = 0;
 
-    println!("{:#?}", res);
+    for _q in 0..opt.queries {
+        let t_1 = SystemTime::now();
+        let res = kb.ask("mortal <X1> ◊");
+        let t_2 = SystemTime::now();
+        num_results = res.len();
+        query_mean += t_2.duration_since(t_1).unwrap().as_micros() as f64;
+    }
 
-    let query_time = t_2.duration_since(t_1).unwrap().as_micros() as f64;
-    let total_time = t_2.duration_since(t_0).unwrap().as_micros() as f64;
+    query_mean /= opt.queries as f64;
 
-    println!("total: {}, query: {}, results: {}", total_time, query_time, num_results);
+    let t_3 = SystemTime::now();
+
+    let total_time = t_3.duration_since(t_0).unwrap().as_micros() as f64;
+
+    println!("total: {}, query: {}, results: {}", total_time, query_mean, num_results);
 }
