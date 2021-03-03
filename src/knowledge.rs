@@ -128,11 +128,16 @@ pub fn derive_kb() -> TokenStream {
                 }
                 queues
             }
-            fn process_rule(&'a self, rule: MPRule<'a>, paths: Option<Vec<MPPath<'a>>>, query_rules: bool, mut queues: Queues<'a>) -> Queues<'a> {
+            fn process_rule(&'a self, mut rule: MPRule<'a>, paths: Option<Vec<MPPath<'a>>>, query_rules: bool, mut queues: Queues<'a>) -> Queues<'a> {
                 
                 trace!("ADDING RULE {}", rule);
 
                 if rule.antecedents.fact.is_some() {
+                    if paths.is_none() && query_rules {
+                        let (new_queues, new_paths, old_rule, unique) = self.query_rule(rule, queues);
+                        rule = old_rule;
+                        queues = new_queues;
+                    };
                     let MPRule {
                         antecedents: Antecedents {
                             fact,
