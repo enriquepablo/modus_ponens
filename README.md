@@ -46,7 +46,7 @@ perspectives.
 modus_ponens can be seen as a tool for producing DSLs. Using the terminology of
 model driven engineering, it might be said that modus_ponens is the metamodel,
 comprised of a PEG engine and an implementation of logical connectives and
-varibales that can produce rules out of any provided PEG. Then, modus_ponens
+variables that can produce rules out of any provided PEG. Then, modus_ponens
 plus a given PEG would correspond to a model, and a knowledge base built on top
 of the given PEG would correspond to an original. This means that the space of
 models that can be derived from modus_ponens as a metamodel is only bound by
