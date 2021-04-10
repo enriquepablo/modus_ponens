@@ -22,14 +22,44 @@ and then on top of it modus_ponens generates an inference engine that deals with
 knowledge bases made up of
 facts and rules compliant with the provided PEG.
 
-We might approach modus_ponens from 3 different traditional, established perspectives:
+We might approach modus_ponens from different traditional, established perspectives:
 
+* It can be approached from the perspective of (external) DSLs (domain specific
+  languages). modus_ponens can be seen as a DSL engine, where the user
+  prescribes the syntax of the language through a PEG, and modus_ponens adds
+  the ability to produce rules with conditions and consequences formed
+  according to the provided PEG;
+* It can be approached from the perspective of knowledge representation and
+  reasonging (KRR);
 * modus_ponens can be understood from the perspective of logic programming,
-  and be compared to the likes of Prolog or CLIPS;
+  and be compared to the likes of CLIPS or Jess (or even Prolog);
 * It can also be seen as a tool for data analysis,
   and be compared to SQL engines and other data structuring schemes;
-* And it can be compared to the rules engines behind bussiness rules management systems,
+* It can be compared to the rules engines behind bussiness rules management systems,
   such as Drools or JRules.
+
+TODO: Add the pending work to provide finished tools for each of the provided
+perspectives.
+
+### From the perspective of DSLs.
+
+modus_ponens can be seen as a tool for producing DSLs. Using the terminology of
+model driven engineering, it might be said that modus_ponens is the metamodel,
+comprised of a PEG engine and an implementation of logical connectives and
+varibales that can produce rules out of any provided PEG. Then, modus_ponens
+plus a given PEG would correspond to a model, and a knowledge base built on top
+of the given PEG would correspond to an original. This means that the space of
+models that can be derived from modus_ponens as a metamodel is only bound by
+the limits of PEGs in describing languages, which are practically inexistent,
+thus making modus_ponens a truly universal DSL engine.
+
+### From the perspective of KRR.
+
+modus_ponens is able to hold knowledge structured in whatever possible form,
+since, practically, any language can be described in a PEG; and whatever the
+PEG used, modus_ponens allows to add rules according to the PEG. Thus,
+modus_ponens allows a user to represent any kind of knowledge in the most
+effective way, and reason about it imposing appropriate rules.
 
 ### From the perspective of logic programming.
 
@@ -47,7 +77,7 @@ we might note that:
   since that syntax is provided by the user in the form of a PEG.
 * It is scalable. The algorithmic cost (time and space) of adding
   both new facts and new rules to the system is independent of the amount of them already there.
-  (See below for soome benchmarks).
+  (See below for some benchmarks).
   In this sense it must be noted that it uses a novel algorithm with little resemblance to [RETE][6],
   the algorithm behind CLIPS and most bussiness rules systems.
 
@@ -66,7 +96,7 @@ as specified in the PEG.
 
 So for example to analyse and extract information from a set of logs,
 the PEG would prescribe facts that reflect the structure of the log entries,
-and then each entry would be fed into the knowledge base as a fact.
+and then each log entry would be fed into the knowledge base as a fact.
 
 ## Inference engines
 
@@ -232,10 +262,10 @@ kb.tell("susan ∈ human.");
 And we query the system:
 
 ```rust
-assert_eq!(kb.ask("susan ∈ animal.", true);
+assert_eq!(kb.ask("susan ∈ animal."), true);
 
-assert_eq!(kb.ask("susan ⊆ animal.", false);
-assert_eq!(kb.ask("primate ∈ animal.", false);
+assert_eq!(kb.ask("susan ⊆ animal."), false);
+assert_eq!(kb.ask("primate ∈ animal."), false);
 ```
 &nbsp;
 &nbsp;
@@ -302,12 +332,14 @@ production with the `var` production. For example:
   var_range   = _{ v_name | var }
 ```
 
-It is also possible to add so called non-logical conditions in rules,
-that test for arithmetic or string conditions. This are provided surrounded by
+It is also possible to add so called non-logical conditions in rules, that test
+for arithmetic or string conditions usin a number of numeric or string
+predicates (TODO: list available predicates). This are provided surrounded by
 `{?{` and `}?}`.
 
 And it is also possible to add transformations in rules, both arithmetic and
-stringy, surrounded by `{={` and `}=}`. We use transformations to obtain new
+stringy, surrounded by `{={` and `}=}`, using string and numeric operators
+(TODO: list all available operators). We use transformations to obtain new
 values out of those matched by the logical conditions.
 
 Finally, it is possible to add rules that produce new rules (instead of just
