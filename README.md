@@ -81,9 +81,6 @@ we might note that:
   In this sense it must be noted that it uses a novel algorithm with little resemblance to [RETE][6],
   the algorithm behind CLIPS and most bussiness rules systems.
 
-These properties should make it very appropriate for knowledge representation and reasoning,
-i.e. for logistic AI. 
-
 ### From the perspective of data analysis.
 
 modus_ponens can help dealing with data.
