@@ -21,3 +21,5 @@ pub const VAR_RANGE_PREFIX: &str = "v_";
 pub const UNIQUE_PREFIX: &str = "v_u_";
 
 pub const NODE_MAP_CAPACITY: usize = 3;
+
+pub const NEW_RULES: bool = false;

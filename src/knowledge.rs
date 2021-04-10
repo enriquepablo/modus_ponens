@@ -133,7 +133,7 @@ pub fn derive_kb() -> TokenStream {
                 trace!("ADDING RULE {}", rule);
 
                 if rule.antecedents.fact.is_some() {
-                    if paths.is_none() && query_rules {
+                    if constants::NEW_RULES && paths.is_none() && query_rules {
                         let (new_queues, new_paths, old_rule, unique) = self.query_rule(rule, queues);
                         rule = old_rule;
                         queues = new_queues;
